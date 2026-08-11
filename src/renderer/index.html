@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeshViewer</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./node_modules/three/build/three.module.js",
+        "three/addons/": "./node_modules/three/examples/jsm/",
+        "three/": "./node_modules/three/",
+        "i18next": "./node_modules/i18next/dist/esm/i18next.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="toolbar">
+    <button id="btn-up" type="button" data-i18n-title="toolbar.upTitle">..</button>
+    <button id="btn-home" type="button" data-i18n-title="toolbar.homeTitle">&#8962; <span data-i18n="toolbar.home">Home</span></button>
+    <input
+      id="current-dir"
+      class="current-dir"
+      type="text"
+      value=""
+      spellcheck="false"
+      autocomplete="off"
+      data-i18n-aria-label="currentDir.ariaLabel"
+      data-i18n-title="currentDir.ariaLabel"
+    />
+  </header>
+
+  <main>
+    <div class="layout">
+      <aside class="sidebar">
+        <div id="tree"></div>
+      </aside>
+      <section class="content">
+        <div id="empty-state" class="empty-state" data-i18n="emptyState">
+          Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).
+        </div>
+        <div id="grid" class="grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="large-view" class="large-view hidden">
+    <header class="large-header">
+      <button id="large-back" type="button" data-i18n="largeView.back">Back</button>
+      <span id="large-title" class="large-title"></span>
+    </header>
+    <div id="large-canvas" class="large-canvas"></div>
+  </div>
+
+  <script type="module" src="./renderer.js"></script>
+</body>
+</html>

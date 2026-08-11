@@ -1,0 +1,74 @@
+{
+  "name": "meshviewer",
+  "productName": "MeshViewer",
+  "desktopName": "meshviewer.desktop",
+  "version": "0.1.0",
+  "description": "Electron viewer that renders thumbnails of local *.glb files using three.js",
+  "main": "src/main.js",
+  "author": "John Doe",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist:linux": "electron-builder --linux",
+    "dist:win": "electron-builder --win",
+    "dist": "electron-builder --linux --win",
+    "test": "vitest run",
+    "test:unit": "vitest run unit",
+    "test:main": "vitest run main",
+    "test:e2e": "playwright test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "i18next": "^26.3.6",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.8",
+    "@playwright/test": "^1.62.1",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
+    "jsdom": "^30.0.1",
+    "vitest": "^4.1.10"
+  },
+  "build": {
+    "appId": "org.notabug.meshviewer",
+    "productName": "MeshViewer",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "src/**",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Graphics",
+      "icon": "build/icon.png",
+      "synopsis": "Preview of local GLB and image files",
+      "description": "Preview of local GLB and image files",
+      "syncDesktopName": true,
+      "desktop": {
+        "entry": {
+          "Comment[de]": "Vorschau lokaler GLB- und Bilddateien"
+        }
+      }
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable",
+        "zip"
+      ],
+      "icon": "build/icon.ico"
+    }
+  },
+  "allowScripts": {
+    "electron@43.3.0": true
+  }
+}

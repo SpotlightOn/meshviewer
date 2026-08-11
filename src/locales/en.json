@@ -1,0 +1,36 @@
+{
+  "toolbar": {
+    "upTitle": "One level up",
+    "homeTitle": "Home directory",
+    "home": "Home"
+  },
+  "currentDir": {
+    "home": "Home",
+    "ariaLabel": "Current directory - press Enter to open it"
+  },
+  "emptyState": "Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).",
+  "grid": {
+    "typeGlb": "3D model",
+    "typeImage": "Image",
+    "loadError": "Error reading folder",
+    "noMedia": "No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files found in this folder.",
+    "previewFailed": "Preview failed"
+  },
+  "largeView": {
+    "back": "Back"
+  },
+  "menu": {
+    "help": "Help",
+    "about": "About MeshViewer"
+  },
+  "about": {
+    "title": "About MeshViewer",
+    "version": "Version",
+    "copyright": "Copyright",
+    "license": "License"
+  },
+  "console": {
+    "glbLoadError": "Error loading GLB in the large view:",
+    "previewFailed": "Preview failed:"
+  }
+}
