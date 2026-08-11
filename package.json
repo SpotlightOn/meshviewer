@@ -7,6 +7,7 @@
   "main": "src/main.js",
   "author": "John Doe",
   "license": "MIT",
+  "repository": "https://codeberg.org/notabug/meshviewer.git",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
@@ -66,7 +67,8 @@
         "zip"
       ],
       "icon": "build/icon.ico"
-    }
+    },
+    "publish": null
   },
   "allowScripts": {
     "electron@43.3.0": true
