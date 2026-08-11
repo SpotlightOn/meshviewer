@@ -144,3 +144,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+
+# Playwright
+node_modules/.cache/
+test-results/
+playwright-report/
+blob-report/

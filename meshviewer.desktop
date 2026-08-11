@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=MeshViewer
+Comment=Preview of local GLB and image files
+Comment[de]=Vorschau lokaler GLB- und Bilddateien
+Exec=@INSTALL_DIR@/launch.sh
+Path=@INSTALL_DIR@
+Icon=meshviewer
+Terminal=false
+Categories=Graphics;Viewer;3DGraphics;
+StartupWMClass=MeshViewer

@@ -1,0 +1,36 @@
+{
+  "toolbar": {
+    "upTitle": "Eine Ebene höher",
+    "homeTitle": "Home-Verzeichnis",
+    "home": "Home"
+  },
+  "currentDir": {
+    "home": "Home",
+    "ariaLabel": "Aktuelles Verzeichnis - Enter drücken zum Öffnen"
+  },
+  "emptyState": "Wähle links einen Ordner im Verzeichnisbaum aus, um die darin enthaltenen *.glb Dateien als 3D-Vorschau und Bilddateien (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO) anzuzeigen.",
+  "grid": {
+    "typeGlb": "3D-Modell",
+    "typeImage": "Bild",
+    "loadError": "Fehler beim Lesen des Ordners",
+    "noMedia": "In diesem Ordner wurden keine *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg oder *.ico Dateien gefunden.",
+    "previewFailed": "Vorschau fehlgeschlagen"
+  },
+  "largeView": {
+    "back": "Zurück"
+  },
+  "menu": {
+    "help": "Hilfe",
+    "about": "Über MeshViewer"
+  },
+  "about": {
+    "title": "Über MeshViewer",
+    "version": "Version",
+    "copyright": "Copyright",
+    "license": "Lizenz"
+  },
+  "console": {
+    "glbLoadError": "GLB-Ladefehler in der Großansicht:",
+    "previewFailed": "Vorschau fehlgeschlagen:"
+  }
+}
