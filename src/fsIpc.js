@@ -1,5 +1,6 @@
 const path = require("node:path");
 const fsp = require("node:fs/promises");
+const { getThumbnail } = require("./thumbnails.js");
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",
@@ -29,7 +30,7 @@ async function isDirectory(fullPath) {
 /**
  * Recursively collects all media files (GLB and images) of a directory.
  * @param {string} dir - Start directory.
- * @returns {Promise<Array<{path: string, name: string, size: number, type: 'glb'|'image'}>>} List of media files.
+ * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
  */
 async function findMediaFiles(dir) {
   const results = [];
@@ -56,7 +57,13 @@ async function findMediaFiles(dir) {
       }
       if (type) {
         const stat = await fsp.stat(fullPath);
-        results.push({ path: fullPath, name: entry.name, size: stat.size, type });
+        results.push({
+          path: fullPath,
+          name: entry.name,
+          size: stat.size,
+          mtimeMs: stat.mtimeMs,
+          type,
+        });
       }
     }
   }
@@ -127,6 +134,7 @@ async function readFileBuffer(filePath) {
  * @param {{openPath: Function}} shell - The Electron shell module.
  */
 function registerFsIpc(ipcMain, app, shell) {
+  const cacheDir = path.join(app.getPath("userData"), "thumbnails");
   ipcMain.handle("fs:listMediaFiles", (_event, dirPath) => findMediaFiles(dirPath));
   ipcMain.handle("fs:listDirectories", (_event, dirPath) => listDirectories(dirPath));
   ipcMain.handle("fs:homeDir", () => app.getPath("home"));
@@ -135,6 +143,7 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("fs:rootDir", () => path.parse(app.getPath("home")).root);
   ipcMain.handle("fs:parentDir", (_event, dirPath) => parentDir(dirPath));
   ipcMain.handle("fs:readFile", (_event, filePath) => readFileBuffer(filePath));
+  ipcMain.handle("fs:getThumbnail", (_event, file) => getThumbnail(file, cacheDir));
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
 

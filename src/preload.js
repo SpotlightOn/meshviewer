@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 /**
  * Renderer API exposed via contextBridge.
  * @typedef {object} MeshViewerApi
- * @property {(dirPath: string) => Promise<Array<{path: string, name: string, size: number, type: string}>>} listMediaFiles - Lists media files of a directory.
+ * @property {(dirPath: string) => Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: string}>>} listMediaFiles - Lists media files of a directory.
  * @property {(dirPath: string) => Promise<Array<{path: string, name: string}>>} listDirectories - Lists child directories.
  * @property {() => Promise<string>} getHomeDir - Returns the user's home directory.
  * @property {() => Promise<string>} getCwd - Returns the current working directory.
@@ -11,6 +11,7 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {() => Promise<string>} getRootDir - Returns the filesystem root directory.
  * @property {(dirPath: string) => Promise<string>} getParentDir - Returns the parent directory.
  * @property {(filePath: string) => Promise<ArrayBuffer>} readFile - Reads a file as an ArrayBuffer.
+ * @property {(file: {path: string, size: number, mtimeMs: number}) => Promise<string|null>} getThumbnail - Returns a JPEG data URL thumbnail for an image, or null if it could not be generated.
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
  */
 
@@ -24,6 +25,7 @@ const api = {
   getRootDir: () => ipcRenderer.invoke("fs:rootDir"),
   getParentDir: (dirPath) => ipcRenderer.invoke("fs:parentDir", dirPath),
   readFile: (filePath) => ipcRenderer.invoke("fs:readFile", filePath),
+  getThumbnail: (file) => ipcRenderer.invoke("fs:getThumbnail", file),
   openPath: (filePath) => ipcRenderer.invoke("shell:openPath", filePath),
 };
 

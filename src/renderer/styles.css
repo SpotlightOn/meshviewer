@@ -196,6 +196,8 @@ main {
   transition:
     border-color 0.15s,
     background 0.15s;
+  content-visibility: auto;
+  contain-intrinsic-size: 200px 260px;
 }
 
 .card:hover {
