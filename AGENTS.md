@@ -35,6 +35,12 @@ Guidance for AI coding agents working in this repository.
 - `npm run lint` / `npm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
 - Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (npm may block postinstall scripts; `allowScripts` in `package.json`).
 
+## CI / releases
+
+- Forgejo Actions workflow: `.forgejo/workflows/release.yml` (Codeberg). Trigger: push of a `v*` tag (or manual `workflow_dispatch`).
+- Pipeline: `npm ci` (+ re-runs Electron install), `npm run lint`, `npm test`, `npm run dist:linux` (AppImage), `git archive` source tarball (`meshviewer-<version>.src.tar.gz`), then publishes a Codeberg release with both assets via the Forgejo API.
+- Publishing needs a repository token with write scope set as the Codeberg action secret `CODEBERG_TOKEN` (Codeberg → Settings → Actions → Secrets).
+
 ## Testing
 
 - `npm test` – run all Vitest projects (unit, main, renderer)
