@@ -40,7 +40,7 @@ test("navigates to a folder and displays media thumbnails", async () => {
 
   await expect(page.locator(".card", { hasText: "foto.png" }).locator(".thumb")).toHaveAttribute(
     "src",
-    /^blob:/,
+    /^(blob:|data:image\/jpeg;)/,
   );
   await electronApp.close();
 });

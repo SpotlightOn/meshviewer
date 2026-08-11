@@ -6,7 +6,6 @@ import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { OrbitControls } from "./vendor/OrbitControls.js";
 
 const THUMB_SIZE = 256;
-const CONCURRENCY = 4;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setSize(THUMB_SIZE, THUMB_SIZE);
@@ -17,6 +16,7 @@ const homeBtn = document.getElementById("btn-home");
 const currentDirEl = document.getElementById("current-dir");
 const grid = document.getElementById("grid");
 const emptyState = document.getElementById("empty-state");
+const contentEl = document.querySelector(".content");
 
 const largeView = document.getElementById("large-view");
 const largeCanvas = document.getElementById("large-canvas");
@@ -97,33 +97,52 @@ function renderThumbnail(arrayBuffer) {
 }
 
 /**
- * Processes a list with limited concurrency.
- * @template T
- * @template R
- * @param {Array<T>} items - Items to process.
- * @param {number} concurrency - Maximum number of parallel workers.
- * @param {(item: T, index: number) => Promise<R>} worker - Async processing function.
- * @returns {Promise<Array<R>>} Results in original order.
+ * Loads the preview for a card into its thumbnail element.
+ * @param {{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}} file - File object.
+ * @param {HTMLDivElement} card - The tile element.
+ * @returns {Promise<void>}
  */
-async function processQueue(items, concurrency, worker) {
-  const results = new Array(items.length);
-  let index = 0;
-  const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (index < items.length) {
-      const i = index++;
-      results[i] = await worker(items[i], i);
+async function loadThumb(file, card) {
+  const wrap = card.querySelector(".thumb-wrap");
+  const thumb = card.querySelector(".thumb");
+  try {
+    if (file.type === "glb") {
+      thumb.src = await renderThumbnail(toArrayBuffer(await window.api.readFile(file.path)));
+      wrap.classList.remove("loading");
+    } else {
+      thumb.src = await loadImageThumbnail(file);
+      const markLoaded = () => {
+        const displaySize = wrap.clientWidth || THUMB_SIZE;
+        if (thumb.naturalWidth <= displaySize && thumb.naturalHeight <= displaySize) {
+          thumb.classList.add("natural");
+        }
+        wrap.classList.remove("loading");
+      };
+      if (thumb.complete) {
+        markLoaded();
+      } else {
+        thumb.addEventListener("load", markLoaded);
+      }
     }
-  });
-  await Promise.all(runners);
-  return results;
+  } catch (error) {
+    console.error(`${t("console.previewFailed")} ${file.name}`, error);
+    wrap.remove();
+    const errorBox = document.createElement("div");
+    errorBox.className = "error";
+    errorBox.textContent = t("grid.previewFailed");
+    card.prepend(errorBox);
+  }
 }
 
 /**
- * Reads an image file and creates a blob URL for it.
- * @param {{path: string, name: string}} file - File object.
- * @returns {Promise<string>} Blob URL of the image.
+ * Reads an image file from the thumbnail cache and returns its data URL.
+ * Falls back to the full file as a blob URL when no cached thumbnail exists.
+ * @param {{path: string, name: string, size: number, mtimeMs: number}} file - File object.
+ * @returns {Promise<string>} Data or blob URL of the thumbnail.
  */
 async function loadImageThumbnail(file) {
+  const dataUrl = await window.api.getThumbnail(file);
+  if (dataUrl) return dataUrl;
   const data = await window.api.readFile(file.path);
   const blob = new Blob([toArrayBuffer(data)], { type: mimeFor(file.name) });
   return URL.createObjectURL(blob);
@@ -131,7 +150,7 @@ async function loadImageThumbnail(file) {
 
 /**
  * Creates a grid tile for a file.
- * @param {{path: string, name: string, size: number, type: 'glb'|'image'}} file - File object.
+ * @param {{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}} file - File object.
  * @returns {HTMLDivElement} The tile.
  */
 function createCard(file) {
@@ -319,8 +338,11 @@ largeBack.addEventListener("click", closeLargeView);
 /** @type {number} */
 let loadToken = 0;
 
+/** @type {IntersectionObserver|null} */
+let thumbnailObserver = null;
+
 /**
- * Loads a folder into the grid and renders its previews.
+ * Loads a folder into the grid and lazily renders its previews.
  * @param {string} dirPath - Path of the folder to display.
  * @returns {Promise<boolean>} true if the folder was opened successfully.
  */
@@ -355,38 +377,23 @@ async function loadFolder(dirPath) {
     grid.append(card);
   }
 
-  await processQueue(files, CONCURRENCY, async (file, i) => {
-    const card = cards[i];
-    const wrap = card.querySelector(".thumb-wrap");
-    const thumb = card.querySelector(".thumb");
-    try {
-      if (file.type === "glb") {
-        thumb.src = await renderThumbnail(toArrayBuffer(await window.api.readFile(file.path)));
-        wrap.classList.remove("loading");
-      } else {
-        thumb.src = await loadImageThumbnail(file);
-        const markLoaded = () => {
-          const displaySize = wrap.clientWidth || THUMB_SIZE;
-          if (thumb.naturalWidth <= displaySize && thumb.naturalHeight <= displaySize) {
-            thumb.classList.add("natural");
-          }
-          wrap.classList.remove("loading");
-        };
-        if (thumb.complete) {
-          markLoaded();
-        } else {
-          thumb.addEventListener("load", markLoaded);
-        }
+  if (thumbnailObserver) thumbnailObserver.disconnect();
+  thumbnailObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        thumbnailObserver.unobserve(entry.target);
+        const index = Number(entry.target.dataset.index);
+        loadThumb(files[index], cards[index]);
       }
-    } catch (error) {
-      console.error(`${t("console.previewFailed")} ${file.name}`, error);
-      wrap.remove();
-      const errorBox = document.createElement("div");
-      errorBox.className = "error";
-      errorBox.textContent = t("grid.previewFailed");
-      card.prepend(errorBox);
-    }
-  });
+    },
+    { root: contentEl, rootMargin: "400px" },
+  );
+  for (let i = 0; i < cards.length; i++) {
+    const wrap = cards[i].querySelector(".thumb-wrap");
+    wrap.dataset.index = String(i);
+    thumbnailObserver.observe(wrap);
+  }
 
   return true;
 }

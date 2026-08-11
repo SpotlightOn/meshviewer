@@ -55,8 +55,9 @@ Guidance for AI coding agents working in this repository.
 
 - `src/main.js` – main process: custom `app://` protocol (`protocol.handle`) with CSP header, application menu (`Hilfe → Über MeshViewer` opens a modal About window via data URL)
 - `src/fsIpc.js` – testable filesystem IPC logic (`fs:*`, `fs:locale`, `shell:openPath`), wired to Electron in `main.js` via `registerFsIpc(ipcMain, app, shell)`
+- `src/thumbnails.js` – testable thumbnail cache: 256 px JPEGs generated with `sharp` (N-API, no ABI rebuild) in `app.getPath('userData')/thumbnails`, keyed by sha1 of `path + size + mtimeMs`; exposed via `fs:getThumbnail` IPC. Returns `null` when `sharp` is unavailable or decoding fails (renderer falls back to the full-file blob)
 - `src/preload.js` – `contextBridge` API exposed as `window.api` (typed via `@typedef {MeshViewerApi}`)
-- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`), thumbnail grid (`renderer.js`), GLB rendering via three.js (GLTFLoader), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (size/MIME helpers)
+- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`), thumbnail grid (`renderer.js`) with lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, GLB rendering via three.js (GLTFLoader), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (size/MIME helpers)
 - `src/locales/` – `en.json` (default) and `de.json` (translation) for i18next
 - `package.json` holds the electron-builder config (Linux AppImage+tar.gz, Windows nsis+portable+zip). macOS cannot be built from Linux (needs a macOS CI runner).
 

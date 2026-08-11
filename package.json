@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "i18next": "^26.3.6",
+    "sharp": "^0.35.3",
     "three": "^0.185.1"
   },
   "devDependencies": {

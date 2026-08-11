@@ -2,7 +2,11 @@
 
 Electron application that renders local `*.glb` files as thumbnails (three.js, GLTFLoader). It also support SVG and most common pixel formats.
 
-## Running
+## Install
+
+You can download the AppImage (from releases)[https://codeberg.org/notabug/meshviewer/releases]. Currently there are only Linux AppImage builds.
+
+## Running from sources
 
 ```bash
 npm install
@@ -20,7 +24,7 @@ Image formats are decoded directly by the Chromium/Electron image decoder; addit
 
 ## Localization
 
-The UI is English by default; German is provided as a translation via i18next. The language follows the system locale (`app.getLocale()`): German systems show the German UI, all other locales fall back to English.
+The UI is English by default; German is provided as a translation via i18next. The language follows the system locale (`app.getLocale()`). Pull requests for new translations are welcome.
 
 ## Structure
 
