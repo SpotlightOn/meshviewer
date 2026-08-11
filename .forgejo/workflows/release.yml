@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: https://code.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          node node_modules/electron/install.js
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build Linux distributables
+        run: npm run dist:linux -- --publish never
+
+      - name: Create source tarball
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          git archive --format=tar.gz -o "dist/meshviewer-${VERSION}.src.tar.gz" --prefix="meshviewer-${VERSION}/" HEAD
+
+      - name: Publish release
+        env:
+          TOKEN: ${{ secrets.CODEBERG_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          REPO="${{ github.repository }}"
+          OWNER="${REPO%/*}"
+          NAME="${REPO#*/}"
+          API="https://codeberg.org/api/v1/repos/${OWNER}/${NAME}"
+          AUTH="Authorization: token ${TOKEN}"
+
+          # Delete a previous release for the same tag so re-runs are idempotent.
+          PREV=$(curl -fsS -H "$AUTH" "${API}/releases/tags/v${VERSION}" 2>/dev/null | jq -r '.id // empty' || true)
+          if [ -n "${PREV}" ]; then
+            curl -fsS -X DELETE -H "$AUTH" "${API}/releases/${PREV}"
+          fi
+
+          jq -n --arg tag "v${VERSION}" --arg name "MeshViewer ${VERSION}" \
+            --arg body "Automated release of MeshViewer ${VERSION} (AppImage and source tarball)." \
+            '{tag_name: $tag, name: $name, body: $body}' > /tmp/release-request.json
+          curl -fsS -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            -d @/tmp/release-request.json "${API}/releases" > /tmp/release-response.json
+          RELEASE_ID=$(jq -r '.id' /tmp/release-response.json)
+
+          for file in dist/*.AppImage dist/meshviewer-*.src.tar.gz; do
+            [ -e "$file" ] || continue
+            curl -fsS -X POST -H "$AUTH" \
+              --data-binary @"$file" \
+              "${API}/releases/${RELEASE_ID}/assets?name=$(basename "$file")" > /dev/null
+          done
