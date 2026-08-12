@@ -95,7 +95,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
 
     const twisty = document.createElement("span");
     twisty.className = "tree-twisty";
-    twisty.textContent = "\u203a";
+    twisty.textContent = "\u25b8";
     twisty.setAttribute("aria-hidden", "true");
 
     const text = document.createElement("span");
@@ -214,7 +214,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
       return;
     }
     state.twisty.classList.remove("hidden");
-    state.twisty.textContent = state.expanded ? "\u2304" : "\u203a";
+    state.twisty.textContent = state.expanded ? "\u25be" : "\u25b8";
   }
 
   /**
