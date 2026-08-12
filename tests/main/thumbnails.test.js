@@ -1,15 +1,18 @@
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { getThumbnail, thumbnailKey } from "../../src/thumbnails.js";
+import { freedesktopUri, getThumbnail, thumbnailKey } from "../../src/thumbnails.js";
 
 let fixtureDir;
 let cacheDir;
 let largeFile;
 let smallFile;
 let brokenFile;
+let desktopSource;
+let desktopDir;
 
 beforeAll(async () => {
   fixtureDir = await mkdtemp(join(tmpdir(), "meshviewer-thumb-"));
@@ -17,16 +20,23 @@ beforeAll(async () => {
   largeFile = join(fixtureDir, "large.png");
   smallFile = join(fixtureDir, "small.png");
   brokenFile = join(fixtureDir, "broken.png");
+  desktopSource = join(fixtureDir, "desktop.png");
+  desktopDir = join(fixtureDir, "xdg");
+  process.env.XDG_CACHE_HOME = desktopDir;
   await sharp({ create: { width: 640, height: 480, channels: 3, background: "#336699" } })
     .png()
     .toFile(largeFile);
   await sharp({ create: { width: 40, height: 30, channels: 3, background: "#99cc33" } })
     .png()
     .toFile(smallFile);
+  await sharp({ create: { width: 300, height: 200, channels: 3, background: "#ff8800" } })
+    .png()
+    .toFile(desktopSource);
   await writeFile(brokenFile, "this is not an image");
 });
 
 afterAll(async () => {
+  delete process.env.XDG_CACHE_HOME;
   await rm(fixtureDir, { recursive: true, force: true });
 });
 
@@ -104,5 +114,55 @@ describe("getThumbnail", () => {
       cacheDir,
     );
     expect(result).toBeNull();
+  });
+});
+
+describe("readFreedesktopThumbnail", () => {
+  function desktopThumbPath() {
+    const hash = createHash("md5").update(freedesktopUri(desktopSource)).digest("hex");
+    return join(desktopDir, "thumbnails", "large", `${hash}.png`);
+  }
+
+  async function writeDesktopThumb() {
+    const png = await sharp({
+      create: { width: 256, height: 256, channels: 3, background: "#0000ff" },
+    })
+      .png()
+      .toBuffer();
+    await mkdir(join(desktopDir, "thumbnails", "large"), { recursive: true });
+    await writeFile(
+      desktopThumbPath(),
+      Buffer.concat([Buffer.from([0, 0, 0, 0, 0, 0, 0, 1]), png]),
+    );
+  }
+
+  it("uses a fresh freedesktop thumbnail without generating one", async () => {
+    await writeDesktopThumb();
+    const ownCache = join(fixtureDir, "cache-desktop-hit");
+    const fileState = await stat(desktopSource);
+    const file = { path: desktopSource, size: fileState.size, mtimeMs: fileState.mtimeMs };
+    const result = await getThumbnail(file, ownCache);
+    expect(result).toMatch(/^data:image\/png;base64,/);
+    const cached = await readFile(desktopThumbPath());
+    const png = cached.subarray(8);
+    expect(result).toBe(`data:image/png;base64,${png.toString("base64")}`);
+    let ownEntries = [];
+    try {
+      ownEntries = await readdir(ownCache);
+    } catch {
+      // own cache directory was never created
+    }
+    expect(ownEntries).toHaveLength(0);
+  });
+
+  it("ignores a stale freedesktop thumbnail and falls back to sharp", async () => {
+    await writeDesktopThumb();
+    await utimes(desktopThumbPath(), 0, 0);
+    const ownCache = join(fixtureDir, "cache-desktop-stale");
+    const fileState = await stat(desktopSource);
+    const file = { path: desktopSource, size: fileState.size, mtimeMs: fileState.mtimeMs };
+    const result = await getThumbnail(file, ownCache);
+    expect(result).toMatch(/^data:image\/jpeg;base64,/);
+    expect(await readdir(ownCache)).toHaveLength(1);
   });
 });
