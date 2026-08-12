@@ -28,59 +28,82 @@ async function isDirectory(fullPath) {
 }
 
 /**
- * Recursively collects all media files (GLB and images) of a directory.
- * @param {string} dir - Start directory.
- * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
+ * Classifies a directory entry and resolves its media files (with parallel I/O).
+ * @param {string} dir - Parent directory.
+ * @param {Set<string>} ancestors - Realpaths of the directories in the current recursion path.
+ * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} Media files of the entry.
  */
-async function findMediaFiles(dir) {
-  const results = [];
-  const entries = await fsp.readdir(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    let isDir = entry.isDirectory();
-    let isFile = entry.isFile();
-    if (entry.isSymbolicLink()) {
-      const targetDir = await isDirectory(fullPath);
-      isDir = targetDir;
-      isFile = !targetDir && (await fileSize(fullPath)) !== null;
-    }
-    if (isDir) {
-      results.push(...(await findMediaFiles(fullPath)));
-    } else if (isFile) {
-      const ext = path.extname(entry.name).toLowerCase();
-      let type = null;
-      if (ext === ".glb") {
-        type = "glb";
-      } else if (IMAGE_EXTENSIONS.has(ext)) {
-        type = "image";
-      }
-      if (type) {
-        const stat = await fsp.stat(fullPath);
-        results.push({
-          path: fullPath,
-          name: entry.name,
-          size: stat.size,
-          mtimeMs: stat.mtimeMs,
-          type,
-        });
-      }
-    }
+async function findMediaEntry(dir, entry, ancestors) {
+  const fullPath = path.join(dir, entry.name);
+  if (entry.isDirectory()) {
+    return findMediaFiles(fullPath, ancestors);
   }
-
-  return results;
+  let stat;
+  if (entry.isSymbolicLink()) {
+    try {
+      stat = await fsp.stat(fullPath);
+    } catch {
+      return []; // broken symlink
+    }
+    if (stat.isDirectory()) {
+      return findMediaFiles(fullPath, ancestors);
+    }
+    if (!stat.isFile()) {
+      return [];
+    }
+  } else if (entry.isFile()) {
+    try {
+      stat = await fsp.stat(fullPath);
+    } catch {
+      return []; // file vanished or its name cannot be re-encoded
+    }
+  } else {
+    return [];
+  }
+  const ext = path.extname(entry.name).toLowerCase();
+  let type = null;
+  if (ext === ".glb") {
+    type = "glb";
+  } else if (IMAGE_EXTENSIONS.has(ext)) {
+    type = "image";
+  }
+  if (!type) {
+    return [];
+  }
+  return [{ path: fullPath, name: entry.name, size: stat.size, mtimeMs: stat.mtimeMs, type }];
 }
 
 /**
- * Returns the size of a file, or null if the path is not a file.
- * @param {string} fullPath - Absolute path.
- * @returns {Promise<number|null>} Size in bytes or null.
+ * Recursively collects all media files (GLB and images) of a directory.
+ * @param {string} dir - Start directory.
+ * @param {Set<string>} ancestors - Realpaths of the directories in the current recursion path (cycle guard).
+ * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
  */
-async function fileSize(fullPath) {
+async function findMediaFiles(dir, ancestors = new Set()) {
+  let real;
   try {
-    return (await fsp.stat(fullPath)).size;
+    real = await fsp.realpath(dir);
   } catch {
-    return null;
+    return []; // directory does not exist or is not accessible
+  }
+  if (ancestors.has(real)) {
+    return []; // symlink cycle, avoid infinite recursion
+  }
+  ancestors.add(real);
+  try {
+    let entries;
+    try {
+      entries = await fsp.readdir(dir, { withFileTypes: true });
+    } catch {
+      return []; // no read permission
+    }
+    const results = [];
+    for (const entry of entries) {
+      results.push(...(await findMediaEntry(dir, entry, ancestors)));
+    }
+    return results;
+  } finally {
+    ancestors.delete(real);
   }
 }
 

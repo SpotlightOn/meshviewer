@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -65,6 +65,42 @@ describe("findMediaFiles", () => {
       expect(await findMediaFiles(empty)).toEqual([]);
     } finally {
       await rm(empty, { recursive: true, force: true });
+    }
+  });
+
+  it("returns an empty array for a non-existent directory", async () => {
+    expect(await findMediaFiles(join(fixtureDir, "missing"))).toEqual([]);
+  });
+
+  it("skips directories without read permission instead of throwing", async () => {
+    const locked = await mkdtemp(join(tmpdir(), "meshviewer-locked-"));
+    await mkdir(join(locked, "locked-sub"));
+    await writeFile(join(locked, "locked-sub", "secret.png"), "secret");
+    await writeFile(join(locked, "open.png"), "open");
+    try {
+      await chmod(join(locked, "locked-sub"), 0o000);
+      if (typeof process.getuid === "function" && process.getuid() === 0) {
+        return; // root ignores permissions
+      }
+      const result = await findMediaFiles(locked);
+      expect(result.map((f) => f.name)).toEqual(["open.png"]);
+    } finally {
+      await chmod(join(locked, "locked-sub"), 0o755);
+      await rm(locked, { recursive: true, force: true });
+    }
+  });
+
+  it("terminates on symlink cycles instead of recursing forever", async () => {
+    const cycleDir = await mkdtemp(join(tmpdir(), "meshviewer-cycle-"));
+    try {
+      await symlink(cycleDir, join(cycleDir, "self"));
+      await symlink(join(cycleDir, "a"), join(cycleDir, "b"));
+      await mkdir(join(cycleDir, "a"));
+      await symlink(cycleDir, join(cycleDir, "a", "back"));
+      const result = await findMediaFiles(cycleDir);
+      expect(result).toEqual([]);
+    } finally {
+      await rm(cycleDir, { recursive: true, force: true });
     }
   });
 
