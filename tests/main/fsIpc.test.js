@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-  findMediaFiles,
   listDirectories,
+  listMediaFiles,
   parentDir,
   readFileBuffer,
   registerFsIpc,
@@ -39,19 +39,11 @@ afterAll(async () => {
   await rm(fixtureDir, { recursive: true, force: true });
 });
 
-describe("findMediaFiles", () => {
-  it("collects glb and image files recursively, ignoring non-media files", async () => {
-    const result = await findMediaFiles(fixtureDir);
+describe("listMediaFiles", () => {
+  it("lists media files directly in the directory, ignoring non-media files", async () => {
+    const result = await listMediaFiles(fixtureDir);
     const names = result.map((f) => f.path.slice(fixtureDir.length + 1)).sort();
-    expect(names).toEqual([
-      ".hidden/secret.glb",
-      "foto.jpg",
-      "foto.png",
-      "link-to-sub/inner.webp",
-      "link.png",
-      "model.glb",
-      "sub/inner.webp",
-    ]);
+    expect(names).toEqual(["foto.jpg", "foto.png", "link.png", "model.glb"]);
     expect(result.every((f) => f.type === "glb" || f.type === "image")).toBe(true);
     const glb = result.find((f) => f.name === "model.glb");
     expect(glb.type).toBe("glb");
@@ -59,17 +51,28 @@ describe("findMediaFiles", () => {
     expect(glb.path).toBe(join(fixtureDir, "model.glb"));
   });
 
+  it("does not recurse into subdirectories", async () => {
+    const result = await listMediaFiles(fixtureDir);
+    expect(result.map((f) => f.name)).not.toContain("inner.webp");
+    expect(result.map((f) => f.name)).not.toContain("secret.glb");
+  });
+
+  it("includes symlinks that point to media files", async () => {
+    const result = await listMediaFiles(fixtureDir);
+    expect(result.map((f) => f.name)).toContain("link.png");
+  });
+
   it("returns an empty array for an empty directory", async () => {
     const empty = await mkdtemp(join(tmpdir(), "meshviewer-empty-"));
     try {
-      expect(await findMediaFiles(empty)).toEqual([]);
+      expect(await listMediaFiles(empty)).toEqual([]);
     } finally {
       await rm(empty, { recursive: true, force: true });
     }
   });
 
   it("returns an empty array for a non-existent directory", async () => {
-    expect(await findMediaFiles(join(fixtureDir, "missing"))).toEqual([]);
+    expect(await listMediaFiles(join(fixtureDir, "missing"))).toEqual([]);
   });
 
   it("skips directories without read permission instead of throwing", async () => {
@@ -82,33 +85,12 @@ describe("findMediaFiles", () => {
       if (typeof process.getuid === "function" && process.getuid() === 0) {
         return; // root ignores permissions
       }
-      const result = await findMediaFiles(locked);
+      const result = await listMediaFiles(locked);
       expect(result.map((f) => f.name)).toEqual(["open.png"]);
     } finally {
       await chmod(join(locked, "locked-sub"), 0o755);
       await rm(locked, { recursive: true, force: true });
     }
-  });
-
-  it("terminates on symlink cycles instead of recursing forever", async () => {
-    const cycleDir = await mkdtemp(join(tmpdir(), "meshviewer-cycle-"));
-    try {
-      await symlink(cycleDir, join(cycleDir, "self"));
-      await symlink(join(cycleDir, "a"), join(cycleDir, "b"));
-      await mkdir(join(cycleDir, "a"));
-      await symlink(cycleDir, join(cycleDir, "a", "back"));
-      const result = await findMediaFiles(cycleDir);
-      expect(result).toEqual([]);
-    } finally {
-      await rm(cycleDir, { recursive: true, force: true });
-    }
-  });
-
-  it("traverses symlinked directories and collects symlinked media files", async () => {
-    const result = await findMediaFiles(fixtureDir);
-    const names = result.map((f) => f.name);
-    expect(names).toContain("inner.webp");
-    expect(names).toContain("link.png");
   });
 });
 
