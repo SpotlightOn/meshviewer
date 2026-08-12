@@ -28,83 +28,59 @@ async function isDirectory(fullPath) {
 }
 
 /**
- * Classifies a directory entry and resolves its media files (with parallel I/O).
- * @param {string} dir - Parent directory.
- * @param {Set<string>} ancestors - Realpaths of the directories in the current recursion path.
- * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} Media files of the entry.
- */
-async function findMediaEntry(dir, entry, ancestors) {
-  const fullPath = path.join(dir, entry.name);
-  if (entry.isDirectory()) {
-    return findMediaFiles(fullPath, ancestors);
-  }
-  let stat;
-  if (entry.isSymbolicLink()) {
-    try {
-      stat = await fsp.stat(fullPath);
-    } catch {
-      return []; // broken symlink
-    }
-    if (stat.isDirectory()) {
-      return findMediaFiles(fullPath, ancestors);
-    }
-    if (!stat.isFile()) {
-      return [];
-    }
-  } else if (entry.isFile()) {
-    try {
-      stat = await fsp.stat(fullPath);
-    } catch {
-      return []; // file vanished or its name cannot be re-encoded
-    }
-  } else {
-    return [];
-  }
-  const ext = path.extname(entry.name).toLowerCase();
-  let type = null;
-  if (ext === ".glb") {
-    type = "glb";
-  } else if (IMAGE_EXTENSIONS.has(ext)) {
-    type = "image";
-  }
-  if (!type) {
-    return [];
-  }
-  return [{ path: fullPath, name: entry.name, size: stat.size, mtimeMs: stat.mtimeMs, type }];
-}
-
-/**
- * Recursively collects all media files (GLB and images) of a directory.
- * @param {string} dir - Start directory.
- * @param {Set<string>} ancestors - Realpaths of the directories in the current recursion path (cycle guard).
+ * Lists the media files (GLB and images) directly inside a directory.
+ * Subdirectories are not scanned; they are handled by the directory tree.
+ * @param {string} dir - Directory to scan.
  * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
  */
-async function findMediaFiles(dir, ancestors = new Set()) {
-  let real;
+async function listMediaFiles(dir) {
+  let entries;
   try {
-    real = await fsp.realpath(dir);
+    entries = await fsp.readdir(dir, { withFileTypes: true });
   } catch {
-    return []; // directory does not exist or is not accessible
+    return []; // directory does not exist or is not readable
   }
-  if (ancestors.has(real)) {
-    return []; // symlink cycle, avoid infinite recursion
-  }
-  ancestors.add(real);
-  try {
-    let entries;
-    try {
-      entries = await fsp.readdir(dir, { withFileTypes: true });
-    } catch {
-      return []; // no read permission
+  const results = [];
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    let stat;
+    if (entry.isFile()) {
+      try {
+        stat = await fsp.stat(fullPath);
+      } catch {
+        continue; // file vanished or its name cannot be re-encoded
+      }
+    } else if (entry.isSymbolicLink()) {
+      try {
+        stat = await fsp.stat(fullPath);
+      } catch {
+        continue; // broken symlink
+      }
+      if (!stat.isFile()) {
+        continue; // directories are handled by the tree
+      }
+    } else {
+      continue; // directories and special files are not media
     }
-    const results = [];
-    for (const entry of entries) {
-      results.push(...(await findMediaEntry(dir, entry, ancestors)));
+    const ext = path.extname(entry.name).toLowerCase();
+    let type = null;
+    if (ext === ".glb") {
+      type = "glb";
+    } else if (IMAGE_EXTENSIONS.has(ext)) {
+      type = "image";
     }
-    return results;
-  } finally {
-    ancestors.delete(real);
+    if (!type) {
+      continue;
+    }
+    results.push({
+      path: fullPath,
+      name: entry.name,
+      size: stat.size,
+      mtimeMs: stat.mtimeMs,
+      type,
+    });
   }
+  return results;
 }
 
 /**
@@ -158,7 +134,7 @@ async function readFileBuffer(filePath) {
  */
 function registerFsIpc(ipcMain, app, shell) {
   const cacheDir = path.join(app.getPath("userData"), "thumbnails");
-  ipcMain.handle("fs:listMediaFiles", (_event, dirPath) => findMediaFiles(dirPath));
+  ipcMain.handle("fs:listMediaFiles", (_event, dirPath) => listMediaFiles(dirPath));
   ipcMain.handle("fs:listDirectories", (_event, dirPath) => listDirectories(dirPath));
   ipcMain.handle("fs:homeDir", () => app.getPath("home"));
   ipcMain.handle("fs:cwd", () => process.cwd());
@@ -172,8 +148,8 @@ function registerFsIpc(ipcMain, app, shell) {
 
 module.exports = {
   IMAGE_EXTENSIONS,
-  findMediaFiles,
   listDirectories,
+  listMediaFiles,
   parentDir,
   readFileBuffer,
   registerFsIpc,
