@@ -125,6 +125,39 @@ describe("createDirectoryTree", () => {
     expect(selected).toEqual([]);
   });
 
+  it("prefetches grandchildren after a node is expanded", async () => {
+    const { tree } = makeTree({
+      "/": [{ path: "/a", name: "a" }],
+      "/a": [{ path: "/a/b", name: "b" }],
+    });
+    await flush();
+    expect(tree.el.textContent).toContain("b");
+    const bLi = Array.from(tree.el.querySelectorAll("li")).find(
+      (li) => li.querySelector(".tree-label").textContent === "b",
+    );
+    expect(bLi).toBeTruthy();
+  });
+
+  it("prefetches only one level ahead without cascading", async () => {
+    const calls = [];
+    const tree = createDirectoryTree({
+      rootPath: "/",
+      rootLabel: "Root",
+      getChildren: async (path) => {
+        calls.push(path);
+        if (path === "/") return [{ path: "/a", name: "a" }];
+        if (path === "/a") return [{ path: "/a/b", name: "b" }];
+        if (path === "/a/b") return [{ path: "/a/b/c", name: "c" }];
+        return [];
+      },
+    });
+    await flush();
+    expect(calls).toContain("/a");
+    expect(calls).not.toContain("/a/b");
+    expect(tree.el.textContent).toContain("b");
+    expect(tree.el.textContent).not.toContain("c");
+  });
+
   it("navigates with keyboard arrows and enter", async () => {
     const { tree, selected } = makeTree({
       "/": [

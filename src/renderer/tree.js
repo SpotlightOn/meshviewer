@@ -15,6 +15,32 @@
  */
 
 /**
+ * Creates a scheduler that limits how many async tasks run concurrently.
+ * @param {number} limit - Maximum number of tasks running at the same time.
+ * @returns {(task: () => Promise<void>) => void} Scheduler for fire-and-forget tasks.
+ */
+function createTaskQueue(limit) {
+  let running = 0;
+  /** @type {Array<() => Promise<void>>} */
+  const pending = [];
+  const next = () => {
+    if (running >= limit || pending.length === 0) return;
+    running++;
+    const task = pending.shift();
+    Promise.resolve()
+      .then(task)
+      .finally(() => {
+        running--;
+        next();
+      });
+  };
+  return (task) => {
+    pending.push(task);
+    next();
+  };
+}
+
+/**
  * Creates a lazily loading directory tree.
  * @param {object} options - Configuration.
  * @param {string} options.rootPath - Root path.
@@ -38,6 +64,19 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
 
   /** @type {string | null} */
   let selectedPath = null;
+
+  /** Bounded background prefetch of child directories. */
+  const schedulePrefetch = createTaskQueue(4);
+
+  /**
+   * Preloads the children of a node's children so the next expand is instant.
+   * @param {NodeState} state - Expanded node whose children should be prefetched.
+   */
+  function prefetch(state) {
+    for (const childState of state.childStates) {
+      schedulePrefetch(() => ensureLoaded(childState).then(() => undefined));
+    }
+  }
 
   /**
    * Creates a tree node and its state.
@@ -138,6 +177,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
     if (state.children.length === 0) {
       state.twisty.classList.add("hidden");
     }
+    prefetch(state);
   }
 
   /**
