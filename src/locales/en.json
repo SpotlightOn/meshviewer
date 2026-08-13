@@ -17,11 +17,24 @@
     "previewFailed": "Preview failed"
   },
   "largeView": {
-    "back": "Back"
+    "back": "Back",
+    "slideshow": "Slideshow"
   },
   "menu": {
+    "edit": "Edit",
+    "settings": "Settings",
     "help": "Help",
     "about": "About MeshViewer"
+  },
+  "settings": {
+    "title": "Settings",
+    "slideshow": "Slideshow",
+    "interval": "Interval (seconds)",
+    "transition": "Transition",
+    "transitionFade": "Fade",
+    "transitionSlide": "Slide",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "about": {
     "title": "About MeshViewer",

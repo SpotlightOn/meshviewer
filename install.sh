@@ -12,12 +12,12 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="meshviewer"
 DESKTOP_TEMPLATE="$SCRIPT_DIR/$APP_NAME.desktop"
-ICON_SRC="$SCRIPT_DIR/icons/$APP_NAME.png"
+ICON_SRC="$SCRIPT_DIR/icons/$APP_NAME.svg"
 
 APPS_DIR="$HOME/.local/share/applications"
-ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
 DESKTOP_DEST="$APPS_DIR/$APP_NAME.desktop"
-ICON_DEST="$ICON_DIR/$APP_NAME.png"
+ICON_DEST="$ICON_DIR/$APP_NAME.svg"
 
 do_uninstall() {
   rm -f "$DESKTOP_DEST" "$ICON_DEST"

@@ -6,6 +6,7 @@
   --text: #e0e0e0;
   --text-dim: #9a9a9a;
   --accent: #4f9cf9;
+  --tile-size: 200px;
 }
 
 * {
@@ -180,7 +181,7 @@ main {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-size), 1fr));
   gap: 14px;
 }
 
@@ -196,7 +197,7 @@ main {
     border-color 0.15s,
     background 0.15s;
   content-visibility: auto;
-  contain-intrinsic-size: 200px 260px;
+  contain-intrinsic-size: var(--tile-size) 260px;
 }
 
 .card:hover {
@@ -302,6 +303,16 @@ main {
   filter: brightness(1.1);
 }
 
+.large-header .large-slideshow {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.large-header .large-slideshow.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .large-title {
   font-size: 13px;
   color: var(--text-dim);
@@ -310,22 +321,144 @@ main {
   text-overflow: ellipsis;
 }
 
+.large-info {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .large-canvas {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: none;
   overflow: hidden;
-}
-
-.large-canvas .large-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  margin: auto;
+  touch-action: none;
 }
 
 .large-canvas canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.large-canvas .large-frame {
+  position: absolute;
+  inset: 0;
+}
+
+@keyframes large-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes large-slide-in {
+  from {
+    transform: translateX(48px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.large-canvas .large-frame.enter-fade {
+  animation: large-fade-in 350ms ease;
+}
+
+.large-canvas .large-frame.enter-slide {
+  animation: large-slide-in 350ms ease;
+}
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.settings-overlay.hidden {
+  display: none;
+}
+
+.settings-dialog {
+  width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.settings-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.settings-dialog fieldset {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
+
+.settings-dialog legend {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 0 4px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.settings-row input,
+.settings-row select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 13px;
+  width: 90px;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.settings-actions button {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.settings-actions button:hover {
+  filter: brightness(1.1);
+}
+
+.settings-actions #settings-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
 }

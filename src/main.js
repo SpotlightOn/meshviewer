@@ -5,6 +5,7 @@ const i18next = require("i18next");
 const i18nEn = require("./locales/en.json");
 const i18nDe = require("./locales/de.json");
 const { registerFsIpc } = require("./fsIpc");
+const { registerSettingsIpc } = require("./settingsStore");
 
 const PROTOCOL = "app";
 
@@ -111,6 +112,7 @@ function createWindow() {
     width: 1200,
     height: 800,
     title: "MeshViewer",
+    icon: path.join(PROJECT_ROOT, "icons", "meshviewer.png"),
     backgroundColor: "#1e1e1e",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -189,6 +191,16 @@ function showAbout() {
 }
 
 /**
+ * Asks the main window to open the settings dialog.
+ */
+function openSettings() {
+  const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  if (win) {
+    win.webContents.send("menu:open-settings");
+  }
+}
+
+/**
  * Creates the application menu.
  */
 function createMenu() {
@@ -196,7 +208,19 @@ function createMenu() {
   const template = [
     ...(isMac ? [{ role: "appMenu" }] : []),
     { role: "fileMenu" },
-    { role: "editMenu" },
+    {
+      label: i18next.t("menu.edit"),
+      submenu: [
+        // { role: "undo" },
+        // { role: "redo" },
+        // { role: "cut" },
+        // { role: "copy" },
+        // { role: "paste" },
+        // { role: "selectAll" },
+        { type: "separator" },
+        { label: i18next.t("menu.settings"), click: openSettings },
+      ],
+    },
     { role: "viewMenu" },
     { role: "windowMenu" },
     {
@@ -210,6 +234,7 @@ function createMenu() {
 app.whenReady().then(() => {
   registerProtocol();
   registerFsIpc(ipcMain, app, shell);
+  registerSettingsIpc(ipcMain, (fileName) => path.join(app.getPath("userData"), fileName));
   initI18n();
   createMenu();
   createWindow();
