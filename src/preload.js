@@ -13,6 +13,9 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {(filePath: string) => Promise<ArrayBuffer>} readFile - Reads a file as an ArrayBuffer.
  * @property {(file: {path: string, size: number, mtimeMs: number}) => Promise<string|null>} getThumbnail - Returns a JPEG data URL thumbnail for an image, or null if it could not be generated.
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
+ * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string}>} getSettings - Returns the current application settings.
+ * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string}>} saveSettings - Persists and returns the normalized settings.
+ * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
  */
 
 /** @type {MeshViewerApi} */
@@ -27,6 +30,13 @@ const api = {
   readFile: (filePath) => ipcRenderer.invoke("fs:readFile", filePath),
   getThumbnail: (file) => ipcRenderer.invoke("fs:getThumbnail", file),
   openPath: (filePath) => ipcRenderer.invoke("shell:openPath", filePath),
+  getSettings: () => ipcRenderer.invoke("settings:get"),
+  saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
+  onOpenSettings: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on("menu:open-settings", listener);
+    return () => ipcRenderer.removeListener("menu:open-settings", listener);
+  },
 };
 
 contextBridge.exposeInMainWorld("api", api);

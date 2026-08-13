@@ -150,3 +150,6 @@ node_modules/.cache/
 test-results/
 playwright-report/
 blob-report/
+
+# Temporary files
+WORKX/
