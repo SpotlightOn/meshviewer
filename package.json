@@ -10,6 +10,7 @@
   "repository": "https://codeberg.org/notabug/meshviewer.git",
   "scripts": {
     "start": "electron .",
+    "icons": "node scripts/generate-icons.js",
     "pack": "electron-builder --dir",
     "dist:linux": "electron-builder --linux",
     "dist:win": "electron-builder --win",
