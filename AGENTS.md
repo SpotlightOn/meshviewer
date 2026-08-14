@@ -24,12 +24,14 @@ Guidance for AI coding agents working in this repository.
 
 - Add **JSDoc** to every function (English, with `@param`/`@returns`). See `src/renderer/tree.js` for the `@typedef` pattern.
 - Do not add inline comments unless asked.
-- No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
+- No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `scripts/install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
+- Icons: `icons/meshviewer.svg` is the single source of truth. `npm run icons` regenerates `icons/meshviewer.png` and `icons/meshviewer.ico` from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
 - Never install into `~/.local/share` — only create files inside the project directory.
 
 ## Commands
 
 - `npm start` – run the app
+- `npm run icons` – regenerate `icons/meshviewer.png` and `icons/meshviewer.ico` from the SVG (`scripts/generate-icons.js`)
 - `npm run pack` – electron-builder `--dir` (unpacked)
 - `npm run dist:linux` / `npm run dist:win` / `npm run dist` – build distributables
 - `npm run lint` / `npm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)

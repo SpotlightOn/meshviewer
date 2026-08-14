@@ -10,9 +10,10 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 APP_NAME="meshviewer"
-DESKTOP_TEMPLATE="$SCRIPT_DIR/$APP_NAME.desktop"
-ICON_SRC="$SCRIPT_DIR/icons/$APP_NAME.svg"
+DESKTOP_TEMPLATE="$PROJECT_DIR/$APP_NAME.desktop"
+ICON_SRC="$PROJECT_DIR/icons/$APP_NAME.svg"
 
 APPS_DIR="$HOME/.local/share/applications"
 ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
@@ -42,7 +43,7 @@ mkdir -p "$APPS_DIR" "$ICON_DIR"
 
 # Replace the @INSTALL_DIR@ placeholder in the .desktop template with the actual
 # project path. This keeps the template in Git free of absolute paths.
-sed "s|@INSTALL_DIR@|$SCRIPT_DIR|g" "$DESKTOP_TEMPLATE" > "$DESKTOP_DEST"
+sed "s|@INSTALL_DIR@|$PROJECT_DIR|g" "$DESKTOP_TEMPLATE" > "$DESKTOP_DEST"
 chmod 0644 "$DESKTOP_DEST"
 
 cp "$ICON_SRC" "$ICON_DEST"
