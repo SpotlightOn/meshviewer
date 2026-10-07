@@ -29,21 +29,29 @@ Guidance for AI coding agents working in this repository.
 - Add **JSDoc** to every function (English, with `@param`/`@returns`). See `src/renderer/tree.js` for the `@typedef` pattern.
 - Do not add inline comments unless asked.
 - No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `scripts/install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
-- Icons: `icons/meshviewer.svg` is the single source of truth. `pnpm run icons` regenerates `icons/meshviewer.png` and `icons/meshviewer.ico` from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
+- Icons: `icons/meshviewer.svg` is the single source of truth. `pnpm run icons` regenerates `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` (macOS icon) from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
 - Never install into `~/.local/share` — only create files inside the project directory.
 
 ## Commands
 
 - `pnpm start` – run the app
-- `pnpm run icons` – regenerate `icons/meshviewer.png` and `icons/meshviewer.ico` from the SVG (`scripts/generate-icons.js`)
+- `pnpm run icons` – regenerate `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` from the SVG (`scripts/generate-icons.js`)
 - `pnpm run pack` – electron-builder `--dir` (unpacked)
-- `pnpm run dist:linux` / `pnpm run dist:win` / `pnpm run dist` – build distributables
+- `pnpm run dist:linux` / `pnpm run dist:win` / `pnpm run dist:mac` / `pnpm run dist` – build distributables (macOS builds need a macOS host; `dist` = Linux + Windows)
 - `pnpm run lint` / `pnpm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
 - Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (pnpm blocks build scripts by default; approvals live in `pnpm-workspace.yaml` under `allowBuilds`).
 
 ## CI / releases
 
-- Release automation: `.github/workflows/release.yml` (GitHub) and `.forgejo/workflows/release.yml` (Codeberg), triggered by a `v*` tag push or `workflow_dispatch`.
+- Release automation: `.github/workflows/release.yml` (GitHub: Linux, Windows, macOS) and `.forgejo/workflows/release.yml` (Codeberg: Linux), triggered by a `v*` tag push or `workflow_dispatch`. On GitHub, lint and tests run once in a `checks` job before the per-OS builds, and the release notes are taken from the changelog's `[Unreleased]` section.
+- pnpm only links `sharp`'s platform packages for the host architecture, so the x64 macOS DMG is built without `@img/sharp-darwin-x64`; thumbnails on Intel Macs fall back to the full-file decode as documented above (arm64 and all other builds include the matching native binary).
+
+## Changelog
+
+- `CHANGELOG.md` (Keep a Changelog / SemVer) is updated in the same commit as every user-visible change.
+- Entries are short keywords under `Added` / `Changed` / `Fixed` / `Removed` – no prose: the section is pasted into the GitHub release notes at release time.
+- Skip changes users never see (CI, docs, tests, dependency bumps, refactors) unless they change behaviour or install steps.
+- On release: rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` above it and bump `version` in `package.json` in the same commit.
 
 ## Testing
 

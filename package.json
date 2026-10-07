@@ -15,6 +15,7 @@
     "pack": "electron-builder --dir",
     "dist:linux": "electron-builder --linux",
     "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
     "dist": "electron-builder --linux --win",
     "test": "vitest run",
     "test:unit": "vitest run unit",
@@ -75,6 +76,20 @@
         "zip"
       ],
       "icon": "icons/meshviewer.ico"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icons/meshviewer-1024.png",
+      "category": "public.app-category.graphics-design",
+      "identity": null
     },
     "publish": null
   },
