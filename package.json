@@ -2,7 +2,7 @@
   "name": "meshviewer",
   "productName": "MeshViewer",
   "desktopName": "meshviewer.desktop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Electron viewer that renders thumbnails of local *.glb files using three.js",
   "main": "src/main.js",
   "author": "John Doe",

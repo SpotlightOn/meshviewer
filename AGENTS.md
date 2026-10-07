@@ -43,7 +43,7 @@ Guidance for AI coding agents working in this repository.
 
 ## CI / releases
 
-- Release automation: `.github/workflows/release.yml` (GitHub: Linux, Windows, macOS) and `.forgejo/workflows/release.yml` (Codeberg: Linux), triggered by a `v*` tag push or `workflow_dispatch`. On GitHub, lint and tests run once in a `checks` job before the per-OS builds, and the release notes are taken from the changelog's `[Unreleased]` section.
+- Release automation: `.github/workflows/release.yml` (GitHub: Linux, Windows, macOS) and `.forgejo/workflows/release.yml` (Codeberg: Linux), triggered by a `v*` tag push or `workflow_dispatch`. On GitHub, lint and tests run once in a `checks` job before the per-OS builds, and the release notes are taken from the changelog's versioned section (`[Unreleased]` as a fallback).
 - pnpm only links `sharp`'s platform packages for the host architecture, so the x64 macOS DMG is built without `@img/sharp-darwin-x64`; thumbnails on Intel Macs fall back to the full-file decode as documented above (arm64 and all other builds include the matching native binary).
 
 ## Changelog
