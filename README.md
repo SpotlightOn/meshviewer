@@ -2,6 +2,9 @@
 
 Electron application that renders local `*.glb` files as thumbnails (three.js, GLTFLoader). It also support SVG and most common pixel formats.
 
+![Meshviewer screenshot](./docs/screen.png)]
+
+
 ## Install
 
 Currently there are only Linux AppImage builds, but the app runs on any OS.
