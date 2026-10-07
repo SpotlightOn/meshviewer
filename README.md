@@ -4,7 +4,7 @@ Electron application that renders local `*.glb` files as thumbnails (three.js, G
 
 ## Install
 
-You can download the AppImage (from releases)[https://codeberg.org/notabug/meshviewer/releases]. Currently there are only Linux AppImage builds.
+Currently there are only Linux AppImage builds, but the app runs on any OS.
 
 ## Running from sources
 
