@@ -12,8 +12,8 @@ Currently there are only Linux AppImage builds, but the app runs on any OS.
 ## Running from sources
 
 ```bash
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Clicking a tile opens the large view in full window size (3D models can be rotated and zoomed with the mouse); "Back" or `ESC` returns to the list view.

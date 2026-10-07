@@ -29,17 +29,17 @@ Guidance for AI coding agents working in this repository.
 - Add **JSDoc** to every function (English, with `@param`/`@returns`). See `src/renderer/tree.js` for the `@typedef` pattern.
 - Do not add inline comments unless asked.
 - No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `scripts/install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
-- Icons: `icons/meshviewer.svg` is the single source of truth. `npm run icons` regenerates `icons/meshviewer.png` and `icons/meshviewer.ico` from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
+- Icons: `icons/meshviewer.svg` is the single source of truth. `pnpm run icons` regenerates `icons/meshviewer.png` and `icons/meshviewer.ico` from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
 - Never install into `~/.local/share` — only create files inside the project directory.
 
 ## Commands
 
-- `npm start` – run the app
-- `npm run icons` – regenerate `icons/meshviewer.png` and `icons/meshviewer.ico` from the SVG (`scripts/generate-icons.js`)
-- `npm run pack` – electron-builder `--dir` (unpacked)
-- `npm run dist:linux` / `npm run dist:win` / `npm run dist` – build distributables
-- `npm run lint` / `npm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
-- Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (npm may block postinstall scripts; `allowScripts` in `package.json`).
+- `pnpm start` – run the app
+- `pnpm run icons` – regenerate `icons/meshviewer.png` and `icons/meshviewer.ico` from the SVG (`scripts/generate-icons.js`)
+- `pnpm run pack` – electron-builder `--dir` (unpacked)
+- `pnpm run dist:linux` / `pnpm run dist:win` / `pnpm run dist` – build distributables
+- `pnpm run lint` / `pnpm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
+- Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (pnpm blocks build scripts by default; approvals live in `pnpm-workspace.yaml` under `allowBuilds`).
 
 ## CI / releases
 
@@ -47,8 +47,8 @@ Guidance for AI coding agents working in this repository.
 
 ## Testing
 
-- `npm test` – run all Vitest projects (unit, main, renderer)
-- `npm run test:unit` / `npm run test:main` / `npm run test:e2e` – run a single project
+- `pnpm test` – run all Vitest projects (unit, main, renderer)
+- `pnpm run test:unit` / `pnpm run test:main` / `pnpm run test:e2e` – run a single project
 - Vitest config lives in `vitest.config.mjs` (three projects: `unit` = pure helpers, `main` = Node + real temp fixtures, `renderer` = jsdom). Tests live in `tests/unit/`, `tests/main/`, `tests/renderer/`.
 - E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app and need a display. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
 - Testable code is kept out of the Electron runtime where possible: filesystem IPC logic lives in `src/fsIpc.js` (takes `ipcMain`/`app`/`shell` as arguments), renderer helpers in `src/renderer/utils.js`. Keep new pure logic there or in `tests/*` rather than in `main.js`/`renderer.js`.

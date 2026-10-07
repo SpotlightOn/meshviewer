@@ -153,3 +153,6 @@ blob-report/
 
 # Temporary files
 WORKX/
+
+# pnpm is the package manager; keep npm lockfile out
+package-lock.json

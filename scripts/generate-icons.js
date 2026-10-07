@@ -33,7 +33,7 @@ async function generateIcons() {
   try {
     sharp = require("sharp");
   } catch {
-    console.error("Error: sharp is not available. Run `npm install` first.");
+    console.error("Error: sharp is not available. Run `pnpm install` first.");
     process.exit(1);
   }
 
