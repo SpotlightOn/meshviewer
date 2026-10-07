@@ -166,7 +166,7 @@ function showAbout() {
   <div class="meta">${escapeHtml(i18next.t("about.copyright"))} &copy; ${year} ${escapeHtml(APP_INFO.author)}</div>
   <div class="meta">${escapeHtml(i18next.t("about.license"))}: ${escapeHtml(APP_INFO.license)}</div>
   <div class="license">${escapeHtml(licenseText())}</div>
-  <p><a href="https://codeberg.org/notabug/meshviewer" target="_blank">codeberg.org/notabug/meshviewer</a></p>
+  <p><a href="https://github.com/SpotlightOn/meshviewer" target="_blank">github.com/SpotlightOn/meshviewer</a></p>
 </body>
 </html>`;
 

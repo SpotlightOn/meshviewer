@@ -33,6 +33,7 @@
     "transition": "Übergang",
     "transitionFade": "Fade",
     "transitionSlide": "Schieben",
+    "animationDuration": "Animationsdauer (ms)",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },
@@ -44,6 +45,7 @@
   },
   "console": {
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
+    "fileOpenError": "Fehler beim Öffnen der Datei in der Großansicht:",
     "previewFailed": "Vorschau fehlgeschlagen:"
   }
 }

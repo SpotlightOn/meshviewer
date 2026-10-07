@@ -6,6 +6,10 @@ Guidance for AI coding agents working in this repository.
 
 `meshviewer` is an Electron application that renders local `*.glb` files as thumbnails with three.js and displays image files in a grid. Vanilla JS (no framework), German UI.
 
+## Git rules
+
+- **Never push to a remote without the user reviewing the exact changes first.** Commit locally, show the diff, wait for explicit approval. This covers every push — new files, docs, config, CI, "trivial" fixes, follow-ups to an already approved change — and every force-push. Approval for one push is not approval for the next one.
+
 ## Language conventions
 
 - **Code comments and JSDoc**: always English.
@@ -25,30 +29,34 @@ Guidance for AI coding agents working in this repository.
 - Add **JSDoc** to every function (English, with `@param`/`@returns`). See `src/renderer/tree.js` for the `@typedef` pattern.
 - Do not add inline comments unless asked.
 - No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `scripts/install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
-- Icons: `icons/meshviewer.svg` is the single source of truth. `npm run icons` regenerates `icons/meshviewer.png` and `icons/meshviewer.ico` from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
+- Icons: `icons/meshviewer.svg` is the single source of truth. `pnpm run icons` regenerates `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` (macOS icon) from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
 - Never install into `~/.local/share` — only create files inside the project directory.
 
 ## Commands
 
-- `npm start` – run the app
-- `npm run icons` – regenerate `icons/meshviewer.png` and `icons/meshviewer.ico` from the SVG (`scripts/generate-icons.js`)
-- `npm run pack` – electron-builder `--dir` (unpacked)
-- `npm run dist:linux` / `npm run dist:win` / `npm run dist` – build distributables
-- `npm run lint` / `npm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
-- Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (npm may block postinstall scripts; `allowScripts` in `package.json`).
+- `pnpm start` – run the app
+- `pnpm run icons` – regenerate `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` from the SVG (`scripts/generate-icons.js`)
+- `pnpm run pack` – electron-builder `--dir` (unpacked)
+- `pnpm run dist:linux` / `pnpm run dist:win` / `pnpm run dist:mac` / `pnpm run dist` – build distributables (macOS builds need a macOS host; `dist` = Linux + Windows)
+- `pnpm run lint` / `pnpm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
+- Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (pnpm blocks build scripts by default; approvals live in `pnpm-workspace.yaml` under `allowBuilds`).
 
 ## CI / releases
 
-- Forgejo Actions workflow: `.forgejo/workflows/release.yml` (Codeberg). Trigger: push of a `v*` tag (or manual `workflow_dispatch`).
-- Actions must be enabled per repo: Codeberg → repository Settings → Units → "Enable Actions" (otherwise no jobs run).
-- Codeberg's hosted runners are NOT `ubuntu-latest`; the job uses `runs-on: codeberg-medium` (4 CPU / 8 GB / 10 min; also available: `codeberg-tiny`, `codeberg-small`, plus `-lazy` variants). See https://codeberg.org/actions/meta.
-- Pipeline: `npm ci` (+ re-runs Electron install), `npm run lint`, `npm test`, `npm run dist:linux` (AppImage), `git archive` source tarball (`meshviewer-<version>.src.tar.gz`), then publishes a Codeberg release with both assets via the Forgejo API.
-- Publishing needs a repository token with `write:repository` scope set as the Codeberg action secret `CODEBERG_TOKEN` (Codeberg → Settings → Actions → Secrets).
+- Release automation: `.github/workflows/release.yml` (GitHub: Linux, Windows, macOS) and `.forgejo/workflows/release.yml` (Codeberg: Linux), triggered by a `v*` tag push or `workflow_dispatch`. On GitHub, lint and tests run once in a `checks` job before the per-OS builds, and the release notes are taken from the changelog's `[Unreleased]` section.
+- pnpm only links `sharp`'s platform packages for the host architecture, so the x64 macOS DMG is built without `@img/sharp-darwin-x64`; thumbnails on Intel Macs fall back to the full-file decode as documented above (arm64 and all other builds include the matching native binary).
+
+## Changelog
+
+- `CHANGELOG.md` (Keep a Changelog / SemVer) is updated in the same commit as every user-visible change.
+- Entries are short keywords under `Added` / `Changed` / `Fixed` / `Removed` – no prose: the section is pasted into the GitHub release notes at release time.
+- Skip changes users never see (CI, docs, tests, dependency bumps, refactors) unless they change behaviour or install steps.
+- On release: rename `## [Unreleased]` to `## [x.y.z] - YYYY-MM-DD`, add a fresh empty `## [Unreleased]` above it and bump `version` in `package.json` in the same commit.
 
 ## Testing
 
-- `npm test` – run all Vitest projects (unit, main, renderer)
-- `npm run test:unit` / `npm run test:main` / `npm run test:e2e` – run a single project
+- `pnpm test` – run all Vitest projects (unit, main, renderer)
+- `pnpm run test:unit` / `pnpm run test:main` / `pnpm run test:e2e` – run a single project
 - Vitest config lives in `vitest.config.mjs` (three projects: `unit` = pure helpers, `main` = Node + real temp fixtures, `renderer` = jsdom). Tests live in `tests/unit/`, `tests/main/`, `tests/renderer/`.
 - E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app and need a display. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
 - Testable code is kept out of the Electron runtime where possible: filesystem IPC logic lives in `src/fsIpc.js` (takes `ipcMain`/`app`/`shell` as arguments), renderer helpers in `src/renderer/utils.js`. Keep new pure logic there or in `tests/*` rather than in `main.js`/`renderer.js`.
