@@ -6,6 +6,10 @@ Guidance for AI coding agents working in this repository.
 
 `meshviewer` is an Electron application that renders local `*.glb` files as thumbnails with three.js and displays image files in a grid. Vanilla JS (no framework), German UI.
 
+## Git rules
+
+- **Never push to a remote without the user reviewing the exact changes first.** Commit locally, show the diff, wait for explicit approval. This covers every push — new files, docs, config, CI, "trivial" fixes, follow-ups to an already approved change — and every force-push. Approval for one push is not approval for the next one.
+
 ## Language conventions
 
 - **Code comments and JSDoc**: always English.
@@ -39,11 +43,7 @@ Guidance for AI coding agents working in this repository.
 
 ## CI / releases
 
-- Forgejo Actions workflow: `.forgejo/workflows/release.yml` (Codeberg). Trigger: push of a `v*` tag (or manual `workflow_dispatch`).
-- Actions must be enabled per repo: Codeberg → repository Settings → Units → "Enable Actions" (otherwise no jobs run).
-- Codeberg's hosted runners are NOT `ubuntu-latest`; the job uses `runs-on: codeberg-medium` (4 CPU / 8 GB / 10 min; also available: `codeberg-tiny`, `codeberg-small`, plus `-lazy` variants). See https://codeberg.org/actions/meta.
-- Pipeline: `npm ci` (+ re-runs Electron install), `npm run lint`, `npm test`, `npm run dist:linux` (AppImage), `git archive` source tarball (`meshviewer-<version>.src.tar.gz`), then publishes a Codeberg release with both assets via the Forgejo API.
-- Publishing needs a repository token with `write:repository` scope set as the Codeberg action secret `CODEBERG_TOKEN` (Codeberg → Settings → Actions → Secrets).
+- Release automation: `.github/workflows/release.yml` (GitHub) and `.forgejo/workflows/release.yml` (Codeberg), triggered by a `v*` tag push or `workflow_dispatch`.
 
 ## Testing
 

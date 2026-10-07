@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Determine version
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == v* ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          node node_modules/electron/install.js
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build Linux distributables
+        run: npm run dist:linux -- --publish never
+
+      - name: Create source tarball
+        run: |
+          git archive --format=tar.gz -o "dist/meshviewer-${VERSION}.src.tar.gz" --prefix="meshviewer-${VERSION}/" HEAD
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+
+          CANDIDATES=(dist/*.AppImage "dist/meshviewer-${VERSION}.src.tar.gz")
+          FILES=()
+          for file in "${CANDIDATES[@]}"; do
+            [ -e "$file" ] && FILES+=("$file")
+          done
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "No release assets found in dist/" >&2
+            ls -la dist/ >&2 || true
+            exit 1
+          fi
+
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "MeshViewer ${VERSION}" \
+              --notes "Automated release of MeshViewer ${VERSION} (AppImage and source tarball)."
+          fi
+
+          gh release upload "$TAG" "${FILES[@]}" --clobber
+
+      - name: Upload build artifacts
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: meshviewer-dist
+          if-no-files-found: error
+          path: |
+            dist/*.AppImage
+            dist/*.src.tar.gz
