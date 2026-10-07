@@ -8,7 +8,7 @@
   "author": "John Doe",
   "license": "MIT",
   "packageManager": "pnpm@12.10.0",
-  "repository": "https://codeberg.org/notabug/meshviewer.git",
+  "repository": "https://github.com/SpotlightOn/meshviewer.git",
   "scripts": {
     "start": "electron .",
     "icons": "node scripts/generate-icons.js",
