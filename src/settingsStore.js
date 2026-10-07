@@ -6,12 +6,14 @@ const fsp = require("node:fs/promises");
  * @typedef {object} AppSettings
  * @property {number} slideshowIntervalSeconds - Seconds between slideshow images.
  * @property {"fade"|"slide"} slideshowTransition - Slideshow image transition.
+ * @property {number} animationDurationMs - Duration of the transition animation in milliseconds.
  */
 
 /** @type {Readonly<AppSettings>} */
 const DEFAULT_SETTINGS = Object.freeze({
   slideshowIntervalSeconds: 5,
   slideshowTransition: "fade",
+  animationDurationMs: 1000,
 });
 
 /** @type {ReadonlyArray<AppSettings["slideshowTransition"]>} */
@@ -31,6 +33,10 @@ function normalizeSettings(value) {
     }
     if (TRANSITIONS.includes(value.slideshowTransition)) {
       settings.slideshowTransition = value.slideshowTransition;
+    }
+    const duration = Number(value.animationDurationMs);
+    if (Number.isFinite(duration)) {
+      settings.animationDurationMs = Math.min(5000, Math.max(0, Math.round(duration)));
     }
   }
   return settings;

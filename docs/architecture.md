@@ -108,14 +108,28 @@ directory tree (sidebar)          grid (content area)
   directories responsive.
 - The large view keeps a single token (`largeToken`) so a navigation that
   supersedes an in-flight load can ignore its result.
+- Transitions start only when the new content is ready to paint: a navigation
+  disposes the previous view's resources first (WebGL context, listeners, object
+  URL) but keeps its frames. Images are built detached, decoded and fitted, then
+  appended with their `enter-fade`/`enter-slide` class; the GLB renderer canvas
+  joins only after the model is parsed. Only at that point `retireLargeFrames()`
+  adds a `leave-fade`/`leave-slide` class to the old frame, which is removed once
+  its animation ended (with a timeout as safety net). For the slide transition the
+  navigation direction decides the direction via the `--slide-dir` custom
+  property — forward enters from the right and pushes the old frame out to the
+  left, backward does the mirror image.
 
 ## Settings
 
 `src/settingsStore.js` normalizes untrusted input against defaults
-(`slideshowIntervalSeconds`, `slideshowTransition`), clamps the interval to
-1–3600 seconds and rejects unknown transitions. The file lives in
-`app.getPath('userData')/settings.json`; missing or corrupt files fall back to
-defaults instead of failing.
+(`slideshowIntervalSeconds`, `slideshowTransition`, `animationDurationMs`), clamps
+the interval to 1–3600 seconds and the animation duration to 0–5000 ms, and rejects
+unknown transitions. The duration is applied through the `--transition-duration` CSS
+custom property, so the fade/slide animation of the large view follows the setting.
+The defaults are a 5 second interval, the fade transition and a 1000 ms animation
+duration.
+The file lives in `app.getPath('userData')/settings.json`; missing or corrupt files
+fall back to defaults instead of failing.
 
 ## Internationalization
 

@@ -27,6 +27,7 @@ const largeSlideshow = document.getElementById("large-slideshow");
 const settingsOverlay = document.getElementById("settings-overlay");
 const settingsInterval = document.getElementById("settings-interval");
 const settingsTransition = document.getElementById("settings-transition");
+const settingsDuration = document.getElementById("settings-duration");
 const settingsSave = document.getElementById("settings-save");
 const settingsCancel = document.getElementById("settings-cancel");
 
@@ -37,7 +38,22 @@ let currentFiles = [];
 let navInFlight = false;
 let largeToken = 0;
 let slideshowTimer = null;
-let settings = { slideshowIntervalSeconds: 5, slideshowTransition: "fade" };
+let settings = {
+  slideshowIntervalSeconds: 5,
+  slideshowTransition: "fade",
+  animationDurationMs: 1000,
+};
+
+/**
+ * Applies settings to the document styles.
+ * @param {{animationDurationMs: number}} value - Settings to read the animation duration from.
+ */
+function applySettingsToStyles(value) {
+  document.documentElement.style.setProperty(
+    "--transition-duration",
+    `${value.animationDurationMs}ms`,
+  );
+}
 
 /**
  * Disposes geometries and materials (including textures) of a three.js object.
@@ -197,28 +213,61 @@ function createCard(file) {
 }
 
 /**
- * Disposes the resources of the large view (renderer, controls, scene).
+ * Disposes the resources of the current large view (renderer, controls, scene,
+ * image listeners, object URL) without touching the DOM.
+ */
+function disposeLargeViewResources() {
+  if (!largeViewState) return;
+  const { renderer, controls, scene, resizeObserver, gltf, objectUrl, imageView } = largeViewState;
+  if (renderer) {
+    renderer.setAnimationLoop(null);
+    renderer.dispose();
+    renderer.forceContextLoss();
+    if (renderer.domElement) renderer.domElement.remove();
+  }
+  if (controls) controls.dispose();
+  if (resizeObserver) resizeObserver.disconnect();
+  if (imageView) imageView.dispose();
+  if (scene) disposeObject(scene);
+  if (gltf) disposeObject(gltf.scene);
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  largeViewState = null;
+}
+
+/**
+ * Disposes the resources of the large view and clears its DOM.
  */
 function disposeLargeView() {
-  if (largeViewState) {
-    const { renderer, controls, scene, resizeObserver, gltf, objectUrl, imageView } =
-      largeViewState;
-    if (renderer) {
-      renderer.setAnimationLoop(null);
-      renderer.dispose();
-      renderer.forceContextLoss();
-      if (renderer.domElement) renderer.domElement.remove();
-    }
-    if (controls) controls.dispose();
-    if (resizeObserver) resizeObserver.disconnect();
-    if (imageView) imageView.dispose();
-    if (scene) disposeObject(scene);
-    if (gltf) disposeObject(gltf.scene);
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    largeViewState = null;
-  }
+  disposeLargeViewResources();
   largeCanvas.replaceChildren();
   largeCanvas.style.display = "none";
+}
+
+/**
+ * Starts the exit animation of the frames that are still in the large view.
+ * A frame is removed once its animation ended or, as a safety net, after the
+ * configured animation duration has passed.
+ * @param {number} direction - Navigation direction: 1 forward, -1 backward, 0 none.
+ */
+function retireLargeFrames(direction) {
+  const slide = settings.slideshowTransition === "slide";
+  const leaving = [
+    ...largeCanvas.querySelectorAll(".large-frame:not(.leave-slide):not(.leave-fade)"),
+  ];
+  for (const frame of leaving) {
+    frame.classList.remove("enter-slide", "enter-fade");
+    frame.classList.add(slide ? "leave-slide" : "leave-fade");
+    if (slide) frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
+    const remove = () => frame.remove();
+    frame.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === frame) remove();
+      },
+      { once: true },
+    );
+    setTimeout(remove, settings.animationDurationMs + 200);
+  }
 }
 
 /**
@@ -273,6 +322,7 @@ function toggleSlideshow() {
 function openSettingsDialog() {
   settingsInterval.value = String(settings.slideshowIntervalSeconds);
   settingsTransition.value = settings.slideshowTransition;
+  settingsDuration.value = String(settings.animationDurationMs);
   settingsOverlay.classList.remove("hidden");
   settingsInterval.focus();
   settingsInterval.select();
@@ -290,15 +340,20 @@ function closeSettingsDialog() {
  * @returns {Promise<void>}
  */
 async function saveSettingsDialog() {
+  const parsedDuration = Number(settingsDuration.value);
   const next = {
     slideshowIntervalSeconds: Math.max(1, Math.min(3600, Number(settingsInterval.value) || 5)),
     slideshowTransition: settingsTransition.value === "slide" ? "slide" : "fade",
+    animationDurationMs: Number.isFinite(parsedDuration)
+      ? Math.max(0, Math.min(5000, Math.round(parsedDuration)))
+      : settings.animationDurationMs,
   };
   try {
     settings = await window.api.saveSettings(next);
   } catch {
     settings = next;
   }
+  applySettingsToStyles(settings);
   if (slideshowTimer) {
     stopSlideshow();
     startSlideshow();
@@ -317,20 +372,29 @@ window.api.onOpenSettings(openSettingsDialog);
 
 /**
  * Opens the large view for a file (GLB or image).
+ * The previous content stays visible until the new one is decoded and fitted;
+ * only then do the frames start their transition.
  * @param {{path: string, name: string, size: number, type: 'glb'|'image'}} file - File object.
+ * @param {number} [direction] - Navigation direction: 1 forward, -1 backward, 0 none.
  * @returns {Promise<void>}
  */
-async function showLargeView(file) {
+async function showLargeView(file, direction = 0) {
   const token = ++largeToken;
-  closeLargeView();
+  disposeLargeViewResources();
   largeViewState = { token, file };
   largeView.classList.remove("hidden");
   largeTitle.textContent = file.name;
+  largeInfo.textContent = "";
 
-  if (file.type === "glb") {
-    await showLargeGlb(file, token);
-  } else {
-    await showLargeImage(file, token);
+  try {
+    if (file.type === "glb") {
+      await showLargeGlb(file, token, direction);
+    } else {
+      await showLargeImage(file, token, direction);
+    }
+  } catch (error) {
+    console.error(t("console.fileOpenError"), file.path, error);
+    if (largeViewState?.token === token) closeLargeView();
   }
 }
 
@@ -553,11 +617,14 @@ function createImageView(canvas, img, onChange) {
 
 /**
  * Displays an image at full size in the large view.
+ * The frame is built detached, decoded and fitted first, then appended in the
+ * same task that starts its enter animation, so no unscaled image is painted.
  * @param {{path: string, name: string}} file - File object.
  * @param {number} token - Load token; aborts if the view changed meanwhile.
+ * @param {number} [direction] - Navigation direction: 1 forward, -1 backward, 0 none.
  * @returns {Promise<void>}
  */
-async function showLargeImage(file, token) {
+async function showLargeImage(file, token, direction = 0) {
   const data = await window.api.readFile(file.path);
   if (largeViewState?.token !== token) return;
   const blob = new Blob([toArrayBuffer(data)], { type: mimeFor(file.name) });
@@ -568,33 +635,59 @@ async function showLargeImage(file, token) {
   img.alt = file.name;
   img.src = url;
   const frame = document.createElement("div");
-  frame.className = `large-frame ${settings.slideshowTransition === "slide" ? "enter-slide" : "enter-fade"}`;
+  frame.className = "large-frame";
+  if (settings.slideshowTransition === "slide") {
+    frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
+  }
   frame.append(img);
-  largeCanvas.append(frame);
-  largeCanvas.style.display = "block";
 
   try {
     await img.decode();
   } catch {
     // The view still shows whatever could be decoded.
   }
-  if (largeViewState?.token !== token) return;
+  if (largeViewState?.token !== token) {
+    URL.revokeObjectURL(url);
+    return;
+  }
 
+  largeCanvas.style.display = "block";
   const imageView = createImageView(largeCanvas, img, (scale) => {
     largeInfo.textContent = `${img.naturalWidth}x${img.naturalHeight} | ${Math.round(scale * 100)}%`;
   });
   imageView.fitView();
 
+  frame.classList.add(settings.slideshowTransition === "slide" ? "enter-slide" : "enter-fade");
+  largeCanvas.append(frame);
+  retireLargeFrames(direction);
+
   largeViewState = { token, file, type: "image", objectUrl: url, imageView };
 }
 
 /**
+ * Releases the resources of a GLB view that never became the active large
+ * view, because its load failed or was superseded by another navigation.
+ * @param {{renderer: object, controls: object, resizeObserver: ResizeObserver, gltf?: object}} parts - Resources to release.
+ */
+function disposeUnusedGlbView({ renderer, controls, resizeObserver, gltf }) {
+  renderer.setAnimationLoop(null);
+  renderer.dispose();
+  renderer.forceContextLoss();
+  controls.dispose();
+  resizeObserver.disconnect();
+  if (gltf) disposeObject(gltf.scene);
+}
+
+/**
  * Displays a GLB model interactively in the large view.
+ * The renderer canvas joins the view only once the model is parsed, so the
+ * previous content stays visible for the whole load.
  * @param {{path: string, name: string}} file - File object.
  * @param {number} token - Load token; aborts if the view changed meanwhile.
+ * @param {number} [direction] - Navigation direction: 1 forward, -1 backward, 0 none.
  * @returns {Promise<void>}
  */
-async function showLargeGlb(file, token) {
+async function showLargeGlb(file, token, direction = 0) {
   const data = await window.api.readFile(file.path);
   if (largeViewState?.token !== token) return;
 
@@ -608,7 +701,6 @@ async function showLargeGlb(file, token) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setPixelRatio(window.devicePixelRatio);
-  largeCanvas.append(renderer.domElement);
   largeCanvas.style.display = "block";
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -632,10 +724,14 @@ async function showLargeGlb(file, token) {
     );
   } catch (error) {
     console.error(t("console.glbLoadError"), error);
+    disposeUnusedGlbView({ renderer, controls, resizeObserver });
     closeLargeView();
     return;
   }
-  if (largeViewState?.token !== token) return;
+  if (largeViewState?.token !== token) {
+    disposeUnusedGlbView({ renderer, controls, resizeObserver, gltf });
+    return;
+  }
 
   const object = gltf.scene;
   scene.add(object);
@@ -650,6 +746,9 @@ async function showLargeGlb(file, token) {
   camera.position.set(maxDim * 0.9, maxDim * 0.6, maxDim * 1.6);
   controls.target.set(0, 0, 0);
   controls.update();
+
+  largeCanvas.append(renderer.domElement);
+  retireLargeFrames(direction);
 
   renderer.setAnimationLoop(() => {
     controls.update();
@@ -778,7 +877,7 @@ function navigateLargeView(delta, wrap = false) {
   let next = index + delta;
   if (wrap) next = ((next % count) + count) % count;
   if (next < 0 || next >= count) return;
-  showLargeView(currentFiles[next]);
+  showLargeView(currentFiles[next], delta);
 }
 
 /**
@@ -789,7 +888,10 @@ function navigateLargeView(delta, wrap = false) {
 function handleLargeViewNavigation(event) {
   if (!largeViewState) return;
   const target = event.target;
-  if (target instanceof HTMLElement && target.closest("input, textarea, button, select")) return;
+  if (target instanceof HTMLElement) {
+    if (target.closest("input, textarea, select")) return;
+    if (target.closest("button") && (event.key === " " || event.key === "Enter")) return;
+  }
 
   let delta = 0;
   if (event.key === "ArrowLeft" || event.key === "Backspace") delta = -1;
@@ -939,6 +1041,7 @@ homeBtn.addEventListener("click", async () => {
 window.api.getRootDir().then(async (root) => {
   await initI18n();
   settings = await window.api.getSettings();
+  applySettingsToStyles(settings);
   setTreeRoot(root);
   const [home, cwd] = await Promise.all([window.api.getHomeDir(), window.api.getCwd()]);
   currentDirEl.value = home;

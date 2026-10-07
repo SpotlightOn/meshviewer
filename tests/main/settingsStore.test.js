@@ -27,8 +27,16 @@ describe("normalizeSettings", () => {
 
   it("keeps valid values", () => {
     expect(
-      normalizeSettings({ slideshowIntervalSeconds: 7, slideshowTransition: "slide" }),
-    ).toEqual({ slideshowIntervalSeconds: 7, slideshowTransition: "slide" });
+      normalizeSettings({
+        slideshowIntervalSeconds: 7,
+        slideshowTransition: "slide",
+        animationDurationMs: 800,
+      }),
+    ).toEqual({
+      slideshowIntervalSeconds: 7,
+      slideshowTransition: "slide",
+      animationDurationMs: 800,
+    });
   });
 
   it("clamps the interval to the allowed range and rounds it", () => {
@@ -41,6 +49,13 @@ describe("normalizeSettings", () => {
 
   it("rejects unknown transitions", () => {
     expect(normalizeSettings({ slideshowTransition: "zoom" }).slideshowTransition).toBe("fade");
+  });
+
+  it("clamps the animation duration to the allowed range and rounds it", () => {
+    expect(normalizeSettings({ animationDurationMs: -100 }).animationDurationMs).toBe(0);
+    expect(normalizeSettings({ animationDurationMs: 99999 }).animationDurationMs).toBe(5000);
+    expect(normalizeSettings({ animationDurationMs: 150.4 }).animationDurationMs).toBe(150);
+    expect(normalizeSettings({ animationDurationMs: "fast" }).animationDurationMs).toBe(1000);
   });
 });
 
@@ -60,13 +75,23 @@ describe("loadSettings / saveSettings", () => {
     const saved = await saveSettings(file, {
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
+      animationDurationMs: 1200,
     });
-    expect(saved).toEqual({ slideshowIntervalSeconds: 10, slideshowTransition: "slide" });
+    expect(saved).toEqual({
+      slideshowIntervalSeconds: 10,
+      slideshowTransition: "slide",
+      animationDurationMs: 1200,
+    });
     await expect(loadSettings(file)).resolves.toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
+      animationDurationMs: 1200,
     });
     const raw = await readFile(file, "utf8");
-    expect(JSON.parse(raw)).toEqual({ slideshowIntervalSeconds: 10, slideshowTransition: "slide" });
+    expect(JSON.parse(raw)).toEqual({
+      slideshowIntervalSeconds: 10,
+      slideshowTransition: "slide",
+      animationDurationMs: 1200,
+    });
   });
 });
