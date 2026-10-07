@@ -159,7 +159,7 @@ fall back to defaults instead of failing.
 - GitHub release automation (`.github/workflows/release.yml`): lint and tests
   run once in a `checks` job, then Linux/Windows/macOS builds run in parallel
   and a `publish` job assembles the GitHub release on `v*` tags, taking the
-  notes from the changelog's `[Unreleased]` section.
+  notes from the changelog's versioned section (`[Unreleased]` as a fallback).
   `.forgejo/workflows/release.yml` builds the Linux artifacts for Codeberg.
 
 ## Testing

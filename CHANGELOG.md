@@ -4,6 +4,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
 ### Added
 - Settings dialog: interval, transition, animation duration (0-5000 ms, default 1000 ms)
 - Slideshow with fade/slide transition (header button, F5)
