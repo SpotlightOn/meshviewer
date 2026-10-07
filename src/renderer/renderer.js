@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { initI18n, t } from "./i18n.js";
 import { createDirectoryTree } from "./tree.js";
-import { formatSize, mimeFor, toArrayBuffer } from "./utils.js";
+import { formatSize, mimeFor, retireFrames, toArrayBuffer } from "./utils.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { OrbitControls } from "./vendor/OrbitControls.js";
 
@@ -245,29 +245,16 @@ function disposeLargeView() {
 
 /**
  * Starts the exit animation of the frames that are still in the large view.
- * A frame is removed once its animation ended or, as a safety net, after the
- * configured animation duration has passed.
  * @param {number} direction - Navigation direction: 1 forward, -1 backward, 0 none.
+ * @param {HTMLElement} [keep] - The frame that was just added and must stay.
  */
-function retireLargeFrames(direction) {
-  const slide = settings.slideshowTransition === "slide";
-  const leaving = [
-    ...largeCanvas.querySelectorAll(".large-frame:not(.leave-slide):not(.leave-fade)"),
-  ];
-  for (const frame of leaving) {
-    frame.classList.remove("enter-slide", "enter-fade");
-    frame.classList.add(slide ? "leave-slide" : "leave-fade");
-    if (slide) frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
-    const remove = () => frame.remove();
-    frame.addEventListener(
-      "animationend",
-      (event) => {
-        if (event.target === frame) remove();
-      },
-      { once: true },
-    );
-    setTimeout(remove, settings.animationDurationMs + 200);
-  }
+function retireLargeFrames(direction, keep = null) {
+  retireFrames(largeCanvas, {
+    direction,
+    slide: settings.slideshowTransition === "slide",
+    durationMs: settings.animationDurationMs,
+    keep,
+  });
 }
 
 /**
@@ -659,7 +646,7 @@ async function showLargeImage(file, token, direction = 0) {
 
   frame.classList.add(settings.slideshowTransition === "slide" ? "enter-slide" : "enter-fade");
   largeCanvas.append(frame);
-  retireLargeFrames(direction);
+  retireLargeFrames(direction, frame);
 
   largeViewState = { token, file, type: "image", objectUrl: url, imageView };
 }

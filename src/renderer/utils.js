@@ -45,4 +45,33 @@ function toArrayBuffer(data) {
   return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
 }
 
-export { formatSize, IMAGE_MIME, mimeFor, toArrayBuffer };
+/**
+ * Starts the exit animation of the `.large-frame` elements left in a container
+ * and removes each of them when its animation ended, or after the configured
+ * duration plus a grace period as a safety net. The frame that was just added
+ * is passed as `keep` and is never retired.
+ * @param {HTMLElement} container - Element holding the frames.
+ * @param {{direction: number, slide: boolean, durationMs: number, keep?: HTMLElement}} options - Navigation direction (1 forward, -1 backward, 0 none), whether the slide transition is active, the animation duration in milliseconds and the frame to keep.
+ * @returns {void}
+ */
+function retireFrames(container, { direction, slide, durationMs, keep = null }) {
+  const leaving = [
+    ...container.querySelectorAll(".large-frame:not(.leave-slide):not(.leave-fade)"),
+  ].filter((frame) => frame !== keep);
+  for (const frame of leaving) {
+    frame.classList.remove("enter-slide", "enter-fade");
+    frame.classList.add(slide ? "leave-slide" : "leave-fade");
+    if (slide) frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
+    const remove = () => frame.remove();
+    frame.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === frame) remove();
+      },
+      { once: true },
+    );
+    setTimeout(remove, Math.max(0, durationMs) + 200);
+  }
+}
+
+export { formatSize, IMAGE_MIME, mimeFor, retireFrames, toArrayBuffer };
