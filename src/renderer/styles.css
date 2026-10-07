@@ -7,6 +7,7 @@
   --text-dim: #9a9a9a;
   --accent: #4f9cf9;
   --tile-size: 200px;
+  --transition-duration: 1000ms;
 }
 
 * {
@@ -358,23 +359,48 @@ main {
   }
 }
 
+@keyframes large-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes large-slide-in {
   from {
-    transform: translateX(48px);
-    opacity: 0;
+    transform: translateX(calc(100% * var(--slide-dir, 1)));
   }
   to {
     transform: translateX(0);
-    opacity: 1;
+  }
+}
+
+@keyframes large-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% * var(--slide-dir, 1)));
   }
 }
 
 .large-canvas .large-frame.enter-fade {
-  animation: large-fade-in 350ms ease;
+  animation: large-fade-in var(--transition-duration, 1000ms) ease;
+}
+
+.large-canvas .large-frame.leave-fade {
+  animation: large-fade-out var(--transition-duration, 1000ms) ease forwards;
 }
 
 .large-canvas .large-frame.enter-slide {
-  animation: large-slide-in 350ms ease;
+  animation: large-slide-in var(--transition-duration, 1000ms) ease;
+}
+
+.large-canvas .large-frame.leave-slide {
+  animation: large-slide-out var(--transition-duration, 1000ms) ease forwards;
+  pointer-events: none;
 }
 
 .settings-overlay {

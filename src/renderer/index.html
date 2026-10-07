@@ -72,6 +72,12 @@
             <option value="slide" data-i18n="settings.transitionSlide">Slide</option>
           </select>
         </div>
+        <div class="settings-row">
+          <label for="settings-duration" data-i18n="settings.animationDuration"
+            >Animation duration (ms)</label
+          >
+          <input id="settings-duration" type="number" min="0" max="5000" step="50" />
+        </div>
       </fieldset>
       <div class="settings-actions">
         <button id="settings-cancel" type="button" data-i18n="settings.cancel">Cancel</button>
