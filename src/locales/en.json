@@ -33,6 +33,7 @@
     "transition": "Transition",
     "transitionFade": "Fade",
     "transitionSlide": "Slide",
+    "animationDuration": "Animation duration (ms)",
     "save": "Save",
     "cancel": "Cancel"
   },
@@ -44,6 +45,7 @@
   },
   "console": {
     "glbLoadError": "Error loading GLB in the large view:",
+    "fileOpenError": "Error opening the file in the large view:",
     "previewFailed": "Preview failed:"
   }
 }

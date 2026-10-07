@@ -7,13 +7,15 @@
   "main": "src/main.js",
   "author": "John Doe",
   "license": "MIT",
-  "repository": "https://codeberg.org/notabug/meshviewer.git",
+  "packageManager": "pnpm@12.10.0",
+  "repository": "https://github.com/SpotlightOn/meshviewer.git",
   "scripts": {
     "start": "electron .",
     "icons": "node scripts/generate-icons.js",
     "pack": "electron-builder --dir",
     "dist:linux": "electron-builder --linux",
     "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
     "dist": "electron-builder --linux --win",
     "test": "vitest run",
     "test:unit": "vitest run unit",
@@ -23,18 +25,18 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "i18next": "^26.3.6",
+    "i18next": "^26.4.2",
     "piexifjs": "^1.0.6",
-    "sharp": "^0.35.3",
-    "three": "^0.185.1"
+    "sharp": "^0.35.5",
+    "three": "^0.186.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.8",
-    "@playwright/test": "^1.62.1",
-    "electron": "^43.3.0",
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "^1.63.0",
+    "electron": "^44.5.1",
     "electron-builder": "^26.15.3",
-    "jsdom": "^30.0.1",
-    "vitest": "^4.1.10"
+    "jsdom": "^30.1.2",
+    "vitest": "^5.0.3"
   },
   "build": {
     "appId": "org.notabug.meshviewer",
@@ -75,9 +77,23 @@
       ],
       "icon": "icons/meshviewer.ico"
     },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icons/meshviewer-1024.png",
+      "category": "public.app-category.graphics-design",
+      "identity": null
+    },
     "publish": null
   },
   "allowScripts": {
-    "electron@43.3.0": true
+    "electron@44.5.1": true
   }
 }

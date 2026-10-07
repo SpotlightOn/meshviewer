@@ -7,8 +7,10 @@ const ROOT = path.join(__dirname, "..");
 const ICONS_DIR = path.join(ROOT, "icons");
 const SVG = path.join(ICONS_DIR, "meshviewer.svg");
 const PNG = path.join(ICONS_DIR, "meshviewer.png");
+const PNG_MAC = path.join(ICONS_DIR, "meshviewer-1024.png");
 const ICO = path.join(ICONS_DIR, "meshviewer.ico");
 const PNG_SIZE = 256;
+const PNG_MAC_SIZE = 1024;
 const ICO_SIZES = [256, 128, 64, 48, 32, 16];
 
 /**
@@ -25,7 +27,7 @@ function run(command, args) {
 }
 
 /**
- * Regenerates the PNG and ICO icons from the SVG source.
+ * Regenerates the PNG, macOS PNG and ICO icons from the SVG source.
  * @returns {Promise<void>}
  */
 async function generateIcons() {
@@ -33,13 +35,19 @@ async function generateIcons() {
   try {
     sharp = require("sharp");
   } catch {
-    console.error("Error: sharp is not available. Run `npm install` first.");
+    console.error("Error: sharp is not available. Run `pnpm install` first.");
     process.exit(1);
   }
 
   await fsp.mkdir(ICONS_DIR, { recursive: true });
   await sharp(SVG, { density: PNG_SIZE }).resize(PNG_SIZE, PNG_SIZE).png().toFile(PNG);
   console.log(`Wrote ${path.relative(ROOT, PNG)}`);
+
+  await sharp(SVG, { density: PNG_MAC_SIZE })
+    .resize(PNG_MAC_SIZE, PNG_MAC_SIZE)
+    .png()
+    .toFile(PNG_MAC);
+  console.log(`Wrote ${path.relative(ROOT, PNG_MAC)}`);
 
   const tmp = path.join(ICONS_DIR, ".icon-src.png");
   await fsp.copyFile(PNG, tmp);
