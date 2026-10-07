@@ -150,15 +150,17 @@ fall back to defaults instead of failing.
 
 ## Packaging and CI
 
-- electron-builder targets: Linux (AppImage, tar.gz) and Windows (nsis,
-  portable, zip). macOS needs a macOS runner and cannot be built here.
+- electron-builder targets: Linux (AppImage, tar.gz), Windows (nsis, portable,
+  zip) and macOS (arm64 and x64 DMG, built on a macOS runner).
 - `meshviewer.desktop` is a template: `scripts/install.sh` substitutes
   `@INSTALL_DIR@` at install time.
-- `icons/meshviewer.svg` is the single icon source; `npm run icons` regenerates
-  PNG and ICO from it.
-- Release automation: `.github/workflows/release.yml` and
-  `.forgejo/workflows/release.yml`, both triggered by a `v*` tag push or a
-  manual `workflow_dispatch`.
+- `icons/meshviewer.svg` is the single icon source; `pnpm run icons` regenerates
+  PNG, ICO and the 1024 px macOS PNG from it.
+- GitHub release automation (`.github/workflows/release.yml`): lint and tests
+  run once in a `checks` job, then Linux/Windows/macOS builds run in parallel
+  and a `publish` job assembles the GitHub release on `v*` tags, taking the
+  notes from the changelog's `[Unreleased]` section.
+  `.forgejo/workflows/release.yml` builds the Linux artifacts for Codeberg.
 
 ## Testing
 

@@ -1,13 +1,22 @@
 # Meshviewer
 
-Electron application that renders local `*.glb` files as thumbnails (three.js, GLTFLoader). It also support SVG and most common pixel formats.
+Every file manager shows nice thumbnails, so why another app?
+I want something that is really fast and easy for browsing my images.
+There are still lots of things I'd like to improve, but it's already really good.
+It's fast thanks to advanced caching.
+Enjoy a modern, old-fashioned photo browser that even supports GLTF 3D scenes.
 
-![Meshviewer screenshot](./docs/screen.png)]
+Have an idea? Open an issue and let's see what we can do.
+
+**Short description:**
+Electron application that renders local `*.glb` files as thumbnails (three.js, GLTFLoader). It also supports SVG and most common pixel formats.
+
+![Meshviewer screenshot](./docs/screen.png)
 
 
 ## Install
 
-Currently there are only Linux AppImage builds, but the app runs on any OS.
+Release binaries are built for Linux (AppImage), Windows (NSIS installer, portable, ZIP) and macOS (arm64 and x64 DMG).
 
 ## Running from sources
 
