@@ -146,8 +146,29 @@
     </header>
     <div id="large-canvas" class="large-canvas"></div>
     <footer class="large-statusbar">
-      <span id="large-title" class="large-title"></span>
-      <span id="large-info" class="large-info"></span>
+      <span id="large-file-info" class="large-file-info"></span>
+      <div class="large-nav">
+        <button
+          id="large-prev"
+          type="button"
+          class="icon-btn"
+          data-i18n-title="largeView.previous"
+          data-i18n-aria-label="largeView.previous"
+          disabled
+        >
+          <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z" /></svg>
+        </button>
+        <button
+          id="large-next"
+          type="button"
+          class="icon-btn"
+          data-i18n-title="largeView.next"
+          data-i18n-aria-label="largeView.next"
+          disabled
+        >
+          <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" /></svg>
+        </button>
+      </div>
     </footer>
     <button
       id="large-fullscreen-exit"

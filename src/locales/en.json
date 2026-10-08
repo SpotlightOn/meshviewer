@@ -17,6 +17,8 @@
   },
   "largeView": {
     "back": "Back",
+    "previous": "Previous file",
+    "next": "Next file",
     "slideshow": "Slideshow",
     "zoom": "Zoom",
     "zoomInput": "Zoom percentage",

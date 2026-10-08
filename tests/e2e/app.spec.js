@@ -122,3 +122,29 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
 
   await electronApp.close();
 });
+
+test("status bar shows file info and the arrow buttons navigate", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  const info = (await page.locator("#large-file-info").textContent()) ?? "";
+  expect(info).toMatch(/^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/);
+
+  const before = (await page.locator("#large-file-info").textContent()) ?? "";
+  if (await page.locator("#large-next").isEnabled()) {
+    await page.locator("#large-next").click();
+    await expect(page.locator("#large-file-info")).not.toHaveText(before);
+    await page.locator("#large-prev").click();
+    await expect(page.locator("#large-file-info")).toHaveText(before);
+  }
+
+  await electronApp.close();
+});

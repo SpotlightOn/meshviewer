@@ -502,7 +502,7 @@ main {
   fill: currentColor;
 }
 
-.large-title {
+.large-file-info {
   flex: 1;
   min-width: 0;
   font-size: 13px;
@@ -510,6 +510,7 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 
 .large-right {
@@ -520,13 +521,6 @@ main {
   min-width: 0;
 }
 
-.large-info {
-  font-size: 13px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
 .large-statusbar {
   display: flex;
   align-items: center;
@@ -534,6 +528,39 @@ main {
   padding: 5px 16px;
   background: var(--surface);
   border-top: 1px solid var(--border);
+}
+
+.large-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.large-statusbar button.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.large-statusbar button.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.large-statusbar button.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.large-statusbar button.icon-btn:hover:disabled {
+  background: transparent;
 }
 
 .large-view.fullscreen .large-header,
