@@ -1,6 +1,6 @@
-const path = require("node:path");
-const fsp = require("node:fs/promises");
-const { getThumbnail } = require("./thumbnails.js");
+import fsp from "node:fs/promises";
+import path from "node:path";
+import { getThumbnail } from "./thumbnails.js";
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",
@@ -32,36 +32,39 @@ async function isDirectory(fullPath) {
  * Subdirectories are not scanned; they are handled by the directory tree.
  * @param {string} dir - Directory to scan.
  * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
+ * @throws {Error} When the directory does not exist (ENOENT).
  */
 async function listMediaFiles(dir) {
   let entries;
   try {
     entries = await fsp.readdir(dir, { withFileTypes: true });
-  } catch {
-    return []; // directory does not exist or is not readable
+  } catch (error) {
+    if (error?.code === "ENOENT") throw error; // a missing folder is not an empty folder
+    return []; // unreadable directory
   }
-  const results = [];
+  const jobs = [];
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    let stat;
     if (entry.isFile()) {
-      try {
-        stat = await fsp.stat(fullPath);
-      } catch {
-        continue; // file vanished or its name cannot be re-encoded
-      }
+      jobs.push(
+        fsp.stat(fullPath).then(
+          (stat) => ({ entry, fullPath, stat }),
+          () => null, // file vanished or its name cannot be re-encoded
+        ),
+      );
     } else if (entry.isSymbolicLink()) {
-      try {
-        stat = await fsp.stat(fullPath);
-      } catch {
-        continue; // broken symlink
-      }
-      if (!stat.isFile()) {
-        continue; // directories are handled by the tree
-      }
-    } else {
-      continue; // directories and special files are not media
+      jobs.push(
+        fsp.stat(fullPath).then(
+          (stat) => (stat.isFile() ? { entry, fullPath, stat } : null),
+          () => null, // broken symlink
+        ),
+      );
     }
+  }
+  const results = [];
+  for (const job of await Promise.all(jobs)) {
+    if (!job) continue;
+    const { entry, fullPath, stat } = job;
     const ext = path.extname(entry.name).toLowerCase();
     let type = null;
     if (ext === ".glb") {
@@ -146,7 +149,7 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
 
-module.exports = {
+export {
   IMAGE_EXTENSIONS,
   listDirectories,
   listMediaFiles,

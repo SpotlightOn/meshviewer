@@ -71,8 +71,8 @@ describe("listMediaFiles", () => {
     }
   });
 
-  it("returns an empty array for a non-existent directory", async () => {
-    expect(await listMediaFiles(join(fixtureDir, "missing"))).toEqual([]);
+  it("rejects for a non-existent directory", async () => {
+    await expect(listMediaFiles(join(fixtureDir, "missing"))).rejects.toThrow();
   });
 
   it("skips directories without read permission instead of throwing", async () => {

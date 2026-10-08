@@ -2,10 +2,9 @@
   "toolbar": {
     "upTitle": "Eine Ebene höher",
     "homeTitle": "Home-Verzeichnis",
-    "home": "Home"
+    "pathHint": "Auf einen Ordner im Pfad klicken zum Öffnen oder hier klicken zum Bearbeiten"
   },
   "currentDir": {
-    "home": "Home",
     "ariaLabel": "Aktuelles Verzeichnis - Enter drücken zum Öffnen"
   },
   "emptyState": "Wähle links einen Ordner im Verzeichnisbaum aus, um die darin enthaltenen *.glb Dateien als 3D-Vorschau und Bilddateien (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO) anzuzeigen.",
@@ -18,13 +17,61 @@
   },
   "largeView": {
     "back": "Zurück",
-    "slideshow": "Diashow"
+    "slideshow": "Diashow",
+    "zoom": "Zoom",
+    "zoomInput": "Zoom in Prozent",
+    "fitToScreen": "An Bildschirm anpassen",
+    "fullscreen": "Vollbild",
+    "fullscreenExit": "Vollbild beenden"
   },
   "menu": {
+    "file": "Datei",
+    "quit": "Beenden",
+    "closeWindow": "Fenster schließen",
     "edit": "Bearbeiten",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "cut": "Ausschneiden",
+    "copy": "Kopieren",
+    "paste": "Einfügen",
+    "selectAll": "Alles auswählen",
     "settings": "Einstellungen",
+    "view": "Ansicht",
+    "reload": "Neu laden",
+    "forceReload": "Neu laden erzwingen",
+    "toggleDevTools": "Entwicklertools umschalten",
+    "resetZoom": "Tatsächliche Größe",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "toggleFullscreen": "Vollbild umschalten",
+    "window": "Fenster",
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "macZoom": "Zoom",
     "help": "Hilfe",
+    "shortcuts": "Tastenkombinationen",
     "about": "Über MeshViewer"
+  },
+  "shortcuts": {
+    "title": "Tastenkombinationen",
+    "largeView": "Großansicht",
+    "grid": "Dateiraster",
+    "pathField": "Pfadleiste",
+    "previous": "Vorherige Datei",
+    "next": "Nächste Datei",
+    "toggleFit": "Einpassen / 100 % umschalten (Bilder)",
+    "zoomIn": "Hineinzoomen",
+    "zoomOut": "Herauszoomen",
+    "zoomReset": "Zoom auf 100 %",
+    "slideshow": "Diashow starten / stoppen",
+    "closeLarge": "Großansicht schließen",
+    "fullscreen": "Vollbild umschalten",
+    "largerTiles": "Größere Kacheln",
+    "smallerTiles": "Kleinere Kacheln",
+    "resetTiles": "Kachelgröße zurücksetzen",
+    "openPath": "Eingegebenen Pfad öffnen",
+    "revertPath": "Feld zurücksetzen",
+    "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab."
   },
   "settings": {
     "title": "Einstellungen",
@@ -42,6 +89,9 @@
     "version": "Version",
     "copyright": "Copyright",
     "license": "Lizenz"
+  },
+  "dialog": {
+    "close": "Schließen"
   },
   "console": {
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",

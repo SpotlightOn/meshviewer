@@ -13,6 +13,13 @@ test("packaged app renders the directory tree and media grid", async () => {
   const page = await electronApp.firstWindow();
   await expect(page).toHaveTitle("MeshViewer");
   await expect(page.locator(".tree-label").first()).toHaveText("/");
-  await expect(page.locator(".card").first()).toBeVisible();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
+  await expect(page.locator(".card")).toHaveCount(4);
   await electronApp.close();
 });

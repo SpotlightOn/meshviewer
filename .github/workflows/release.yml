@@ -161,6 +161,9 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download build artifacts
         uses: actions/download-artifact@v7
         with:
@@ -182,7 +185,10 @@ jobs:
             ls -la dist/ >&2 || true
             exit 1
           fi
-          NOTES="$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)"
+          NOTES="$(awk -v s="## [${VERSION}]" 'index($0,s)==1 {flag=1; next} /^## \[/{flag=0; next} flag' CHANGELOG.md)"
+          if [ -z "$NOTES" ]; then
+            NOTES="$(awk '/^## \[Unreleased\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)"
+          fi
           if [ -z "$NOTES" ]; then
             NOTES="Automated release of MeshViewer ${VERSION}."
           fi
