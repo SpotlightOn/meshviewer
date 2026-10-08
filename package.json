@@ -5,6 +5,7 @@
   "version": "0.3.0",
   "description": "Electron viewer that renders thumbnails of local *.glb files using three.js",
   "main": "src/main.js",
+  "type": "module",
   "author": "John Doe",
   "license": "MIT",
   "packageManager": "pnpm@12.10.0",

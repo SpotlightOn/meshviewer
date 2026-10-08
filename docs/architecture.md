@@ -5,24 +5,34 @@ grid: `*.glb` models are rendered to thumbnails with three.js, images are shown
 from a generated or embedded thumbnail. Selecting an item opens a large view with
 keyboard navigation and a slideshow.
 
-It is plain JavaScript — no framework, no bundler. The renderer loads ES modules
-directly through a custom `app://` protocol.
+It is plain JavaScript — no framework, no bundler. The whole app runs as ES
+modules (`"type": "module"` in `package.json`): the main process is ESM, the
+renderer loads ES modules directly through a custom `app://` protocol. The only
+CommonJS files are the sandboxed preloads (`src/preload.js`,
+`src/dialogPreload.js`) — sandboxed preload scripts always run as CommonJS, so
+they cannot be ESM.
 
 ## Process model
 
 ```
-┌──────────────────────────── Electron main process ────────────────────────────┐
-│ src/main.js        menu, About + shortcuts dialogs, app:// protocol + CSP      │
+┌──────────────────────────── Electron main process (ESM) ─────────────────────┐
+│ src/main.js        entry: app lifecycle, i18next init, module wiring         │
+│ src/protocol.js    app:// protocol handler (CSP, MIME map, path routing)      │
+│ src/main-window.js main BrowserWindow (preload, icon)                         │
+│ src/menu.js        application menu (Edit roles, Help → dialogs)              │
+│ src/dialogs.js     About + shortcuts dialogs, dialog:close IPC                │
 │ src/fsIpc.js       filesystem IPC handlers (fs:*)                             │
 │ src/thumbnails.js  thumbnail cache (sharp, freedesktop, EXIF)                 │
 │ src/settingsStore.js  settings.json in userData (settings:*)                  │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
                 │ ipcRenderer.invoke / handle                  │ protocol.handle
 ┌───────────────┴───────────────┐   ┌──────────────────────────┴───────────────┐
-│ src/preload.js                │   │ Renderer (src/renderer/)                 │
-│ contextBridge → window.api    │   │ index.html, renderer.js, tree.js,        │
-│ contextIsolation: true        │   │ i18n.js, utils.js, styles.css            │
-│ nodeIntegration: false        │   │ three.js + vendored GLTFLoader           │
+│ src/preload.js (CommonJS)     │   │ Renderer (src/renderer/, ES modules)     │
+│ contextBridge → window.api    │   │ index.html, renderer.js (entry), tree.js,│
+│ contextIsolation: true        │   │ grid.js, large-view.js, settings.js,     │
+│ nodeIntegration: false        │   │ keyboard.js, three-utils.js, i18n.js,    │
+│                               │   │ utils.js, styles.css                     │
+│                               │   │ three.js + vendored GLTFLoader           │
 └───────────────────────────────┘   └──────────────────────────────────────────┘
 ```
 
@@ -35,14 +45,23 @@ directly through a custom `app://` protocol.
 
 | File | Responsibility |
 | --- | --- |
-| `src/main.js` | App lifecycle, `app://` protocol with CSP, application menu, modal About and keyboard shortcuts dialogs |
+| `src/main.js` | Entry: app lifecycle, i18next init, wires all modules together |
+| `src/protocol.js` | Custom `app://` protocol: CSP header, MIME map, path routing (renderer root, `node_modules`, `locales`) |
+| `src/main-window.js` | Creates the main `BrowserWindow` (sandboxed preload, window icon) |
+| `src/menu.js` | Application menu with fully i18n labels (Edit roles, Help → dialogs) |
+| `src/dialogs.js` | About + shortcuts dialogs without a menu bar (plain windows), `dialog:close` IPC |
 | `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file reads, locale, `shell:openPath` |
 | `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
 | `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
-| `src/renderer/renderer.js` | Grid, large view, slideshow, settings dialog, navigation |
+| `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard, directory field, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
+| `src/renderer/grid.js` | Media grid: folder loading, cards, image/GLB thumbnails |
+| `src/renderer/large-view.js` | Image/GLB large view: zoom, navigation, slideshow |
+| `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
+| `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc, grid zoom) |
+| `src/renderer/three-utils.js` | Shared three.js helpers (`disposeObject`) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, `ArrayBuffer` conversion |
 | `src/renderer/vendor/` | Pinned three.js add-ons (GLTFLoader, OrbitControls, …) |
@@ -64,6 +83,7 @@ launching the app.
 | `shell:openPath` | renderer → main | Open a file with the system handler |
 | `settings:get` / `settings:save` | renderer → main | Read/validate/persist settings |
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |
+| `dialog:close` | dialog → main | Close the modal About/shortcuts dialog |
 
 Directory listings are deliberately one level deep: the grid lists the current
 directory only, while the tree loads children on demand.
@@ -105,6 +125,9 @@ directory tree (sidebar)          grid (content area)
 
 - `createDirectoryTree()` in `tree.js` lazily fetches children per node; a
   `createTaskQueue(4)` bounds concurrency and prefetches exactly one level ahead.
+- `renderer.js` is a thin entry: it constructs the modules and wires them through
+  injected callbacks (tree `onSelect` → grid `loadFolder`, grid `onOpenFile` →
+  large view), so every module stays independently testable.
 - Grid cards render only when they approach the viewport, which keeps large
   directories responsive.
 - The large view keeps a single token (`largeToken`) so a navigation that

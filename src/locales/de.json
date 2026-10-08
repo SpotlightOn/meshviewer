@@ -23,15 +23,35 @@
     "zoomInput": "Zoom in Prozent"
   },
   "menu": {
+    "file": "Datei",
+    "quit": "Beenden",
+    "closeWindow": "Fenster schließen",
     "edit": "Bearbeiten",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "cut": "Ausschneiden",
+    "copy": "Kopieren",
+    "paste": "Einfügen",
+    "selectAll": "Alles auswählen",
     "settings": "Einstellungen",
+    "view": "Ansicht",
+    "reload": "Neu laden",
+    "forceReload": "Neu laden erzwingen",
+    "toggleDevTools": "Entwicklertools umschalten",
+    "resetZoom": "Tatsächliche Größe",
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "toggleFullscreen": "Vollbild umschalten",
+    "window": "Fenster",
+    "minimize": "Minimieren",
+    "maximize": "Maximieren",
+    "macZoom": "Zoom",
     "help": "Hilfe",
     "shortcuts": "Tastenkombinationen",
     "about": "Über MeshViewer"
   },
   "shortcuts": {
     "title": "Tastenkombinationen",
-    "close": "Schließen",
     "largeView": "Großansicht",
     "grid": "Dateiraster",
     "pathField": "Pfadfeld",
@@ -66,7 +86,9 @@
     "title": "Über MeshViewer",
     "version": "Version",
     "copyright": "Copyright",
-    "license": "Lizenz",
+    "license": "Lizenz"
+  },
+  "dialog": {
     "close": "Schließen"
   },
   "console": {

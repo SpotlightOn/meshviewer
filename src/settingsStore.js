@@ -1,5 +1,5 @@
-const path = require("node:path");
-const fsp = require("node:fs/promises");
+import fsp from "node:fs/promises";
+import path from "node:path";
 
 /**
  * Default values for all user settings.
@@ -80,11 +80,11 @@ function registerSettingsIpc(ipcMain, getSettingsPath) {
   ipcMain.handle("settings:save", (_event, settings) => saveSettings(settingsPath, settings));
 }
 
-module.exports = {
+export {
   DEFAULT_SETTINGS,
-  TRANSITIONS,
   loadSettings,
   normalizeSettings,
   registerSettingsIpc,
   saveSettings,
+  TRANSITIONS,
 };

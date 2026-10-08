@@ -23,15 +23,35 @@
     "zoomInput": "Zoom percentage"
   },
   "menu": {
+    "file": "File",
+    "quit": "Quit",
+    "closeWindow": "Close Window",
     "edit": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All",
     "settings": "Settings",
+    "view": "View",
+    "reload": "Reload",
+    "forceReload": "Force Reload",
+    "toggleDevTools": "Toggle Developer Tools",
+    "resetZoom": "Actual Size",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "toggleFullscreen": "Toggle Full Screen",
+    "window": "Window",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "macZoom": "Zoom",
     "help": "Help",
     "shortcuts": "Keyboard shortcuts",
     "about": "About MeshViewer"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
-    "close": "Close",
     "largeView": "Large view",
     "grid": "File grid",
     "pathField": "Directory field",
@@ -66,7 +86,9 @@
     "title": "About MeshViewer",
     "version": "Version",
     "copyright": "Copyright",
-    "license": "License",
+    "license": "License"
+  },
+  "dialog": {
     "close": "Close"
   },
   "console": {
