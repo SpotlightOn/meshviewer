@@ -118,13 +118,13 @@ async function loadThumb(file, card) {
  * Media grid module: loads a folder into the tile grid, lazily renders the
  * previews and provides the tile-zoom shortcuts.
  * @param {object} deps - Module dependencies.
- * @param {{grid: HTMLElement, emptyState: HTMLElement, contentEl: HTMLElement}} deps.dom - Grid DOM elements.
+ * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement}} deps.dom - Grid DOM elements.
  * @param {(file: object) => void} deps.onOpenFile - Called when a tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
  * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, zoomTiles: (step: number) => void}} Grid module API.
  */
 export function createGrid({ dom, onOpenFile, onFolderChange }) {
-  const { grid, emptyState, contentEl } = dom;
+  const { grid, emptyState, emptyMessage, contentEl } = dom;
   let files = [];
   let path = null;
   let loadToken = 0;
@@ -184,8 +184,8 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
       loaded = await window.api.listMediaFiles(dirPath);
     } catch {
       if (token !== loadToken) return false;
-      emptyState.textContent = t("grid.loadError");
-      emptyState.style.display = "block";
+      emptyMessage.textContent = t("grid.loadError");
+      emptyState.style.display = "flex";
       return false;
     }
 
@@ -196,8 +196,8 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
     onFolderChange(dirPath);
 
     if (files.length === 0) {
-      emptyState.textContent = t("grid.noMedia");
-      emptyState.style.display = "block";
+      emptyMessage.textContent = t("grid.noMedia");
+      emptyState.style.display = "flex";
       return true;
     }
 

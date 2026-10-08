@@ -46,6 +46,8 @@ function registerAppProtocol() {
       root = PROJECT_ROOT;
     } else if (rel.startsWith("locales/")) {
       root = import.meta.dirname;
+    } else if (rel.startsWith("icons/")) {
+      root = PROJECT_ROOT;
     }
 
     const filePath = path.join(root, rel);

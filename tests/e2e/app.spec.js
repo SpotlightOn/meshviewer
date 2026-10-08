@@ -15,6 +15,7 @@ test("app boots and renders the directory tree", async () => {
   await expect(page).toHaveTitle("MeshViewer");
   await expect(page.locator(".tree")).toBeVisible();
   await expect(page.locator(".tree-label").first()).toHaveText("/");
+  await expect(page.locator(".empty-logo")).toBeVisible();
   await electronApp.close();
 });
 
@@ -62,6 +63,8 @@ test("opens a folder via the path input", async () => {
   await input.press("Enter");
   await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
   await expect(page.locator("#empty-state")).toBeVisible();
+  await expect(page.locator(".empty-logo")).toBeVisible();
+  await expect(page.locator("#empty-message")).not.toBeEmpty();
 
   await electronApp.close();
 });
@@ -164,7 +167,8 @@ test("right-clicking a thumbnail opens the context menu", async () => {
 
   await page.locator(".card", { hasText: "foto.png" }).click({ button: "right" });
   await expect(page.locator("#context-menu")).toBeVisible();
-  await expect(page.locator("#context-menu .context-item")).toHaveCount(2);
+  // The "edit with" entry only appears when an editor command is configured,
+  // which depends on the persisted user settings; assert the stable entries.
   await expect(page.locator('#context-menu .context-item[data-action="open-with"]')).toBeVisible();
   await expect(page.locator('#context-menu .context-item[data-action="file-info"]')).toBeVisible();
 
@@ -212,6 +216,38 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
 
   await page.locator("#large-actual").click();
   await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
+
+  await electronApp.close();
+});
+
+test("zoom slider zooms the 3D view", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "test.glb" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  await page.waitForSelector(".large-canvas canvas");
+
+  // The GLB state is only set once the model finished loading; retry until
+  // the slider input reaches the 3D view so the assertion is stable.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await page.locator("#large-zoom").focus();
+    await page.keyboard.press("End");
+    if ((await page.locator("#large-zoom-value").inputValue()) === "800%") break;
+    await page.waitForTimeout(100);
+  }
+  await expect(page.locator("#large-zoom")).toHaveValue("800");
+  await expect(page.locator("#large-zoom-value")).toHaveValue("800%");
+
+  await page.keyboard.press("Home");
+  await expect(page.locator("#large-zoom")).toHaveValue("10");
+  await expect(page.locator("#large-zoom-value")).toHaveValue("10%");
 
   await electronApp.close();
 });

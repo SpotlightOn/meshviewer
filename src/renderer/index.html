@@ -57,8 +57,15 @@
         <div id="tree"></div>
       </aside>
       <section class="content">
-        <div id="empty-state" class="empty-state" data-i18n="emptyState">
-          Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).
+        <div id="empty-state" class="empty-state">
+          <img
+            class="empty-logo"
+            src="app://app/icons/meshviewer.svg"
+            alt="MeshViewer"
+          />
+          <p id="empty-message" class="empty-message" data-i18n="emptyState">
+            Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).
+          </p>
         </div>
         <div id="grid" class="grid"></div>
       </section>

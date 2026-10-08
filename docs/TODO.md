@@ -37,3 +37,14 @@ file information dialog.
   embed would allow pan/zoom but adds a dependency.
 - Open the exact coordinates in the default browser (openstreetmap.org) via a
   small button/link.
+
+## Startscreen
+
+When there are no images, the app currently shows:
+
+No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files were found in this folder.
+
+It would be better to show an SVG logo instead, followed by the text, but somewhat larger:
+
+Done: the empty state shows `icons/meshviewer.svg` above the message, which is
+rendered from the existing locale keys (`grid.noMedia`, `grid.loadError`).

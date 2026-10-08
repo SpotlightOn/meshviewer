@@ -876,6 +876,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
       token,
       file,
       type: "glb",
+      camera,
       renderer,
       controls,
       scene,
