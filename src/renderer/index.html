@@ -51,7 +51,32 @@
       <button id="large-back" type="button" data-i18n="largeView.back">Back</button>
       <button id="large-slideshow" type="button" class="large-slideshow" data-i18n="largeView.slideshow">Slideshow</button>
       <span id="large-title" class="large-title"></span>
-      <span id="large-info" class="large-info"></span>
+      <div class="large-right">
+        <span id="large-info" class="large-info"></span>
+        <div class="zoom-control">
+          <input
+            id="large-zoom"
+            type="range"
+            min="10"
+            max="800"
+            step="5"
+            value="100"
+            data-i18n-aria-label="largeView.zoom"
+            data-i18n-title="largeView.zoom"
+          />
+          <input
+            id="large-zoom-value"
+            class="zoom-value"
+            type="text"
+            inputmode="numeric"
+            value="100%"
+            spellcheck="false"
+            autocomplete="off"
+            data-i18n-aria-label="largeView.zoomInput"
+            data-i18n-title="largeView.zoomInput"
+          />
+        </div>
+      </div>
     </header>
     <div id="large-canvas" class="large-canvas"></div>
   </div>

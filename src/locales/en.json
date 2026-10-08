@@ -18,7 +18,9 @@
   },
   "largeView": {
     "back": "Back",
-    "slideshow": "Slideshow"
+    "slideshow": "Slideshow",
+    "zoom": "Zoom",
+    "zoomInput": "Zoom percentage"
   },
   "menu": {
     "edit": "Edit",

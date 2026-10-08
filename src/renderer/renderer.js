@@ -1,7 +1,21 @@
 import * as THREE from "three";
 import { initI18n, t } from "./i18n.js";
 import { createDirectoryTree } from "./tree.js";
-import { formatSize, mimeFor, retireFrames, toArrayBuffer } from "./utils.js";
+import {
+  clampZoom,
+  clampZoomPercent,
+  formatSize,
+  glbDistanceForPercent,
+  glbPercentForDistance,
+  MAX_ZOOM_PERCENT,
+  MIN_ZOOM_PERCENT,
+  mimeFor,
+  parseZoomPercent,
+  retireFrames,
+  toArrayBuffer,
+  zoomPercent,
+  zoomScale,
+} from "./utils.js";
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { OrbitControls } from "./vendor/OrbitControls.js";
 
@@ -22,6 +36,8 @@ const largeView = document.getElementById("large-view");
 const largeCanvas = document.getElementById("large-canvas");
 const largeTitle = document.getElementById("large-title");
 const largeInfo = document.getElementById("large-info");
+const largeZoom = document.getElementById("large-zoom");
+const largeZoomValue = document.getElementById("large-zoom-value");
 const largeBack = document.getElementById("large-back");
 const largeSlideshow = document.getElementById("large-slideshow");
 const settingsOverlay = document.getElementById("settings-overlay");
@@ -257,6 +273,35 @@ function retireLargeFrames(direction, keep = null) {
   });
 }
 
+/** @type {number} */
+let currentZoomPercent = 100;
+
+/**
+ * Synchronizes the zoom slider and its input field with a scale factor.
+ * @param {number} scale - Scale factor (1 = 100 %).
+ */
+function syncZoomControl(scale) {
+  const percent = zoomPercent(scale);
+  currentZoomPercent = percent;
+  largeZoom.value = String(percent);
+  largeZoomValue.value = `${percent}%`;
+}
+
+/**
+ * Applies a zoom percentage to the active large view and syncs the controls.
+ * @param {number} percent - Zoom in percent.
+ */
+function setLargeZoom(percent) {
+  if (!largeViewState) return;
+  const clamped = clampZoomPercent(percent);
+  if (largeViewState.type === "image" && largeViewState.imageView) {
+    largeViewState.imageView.setZoom(clamped);
+  } else if (largeViewState.type === "glb") {
+    setGlbZoom(largeViewState, clamped);
+  }
+  syncZoomControl(zoomScale(clamped));
+}
+
 /**
  * Closes and hides the large view.
  */
@@ -267,6 +312,7 @@ function closeLargeView() {
   largeView.classList.add("hidden");
   largeTitle.textContent = "";
   largeInfo.textContent = "";
+  syncZoomControl(1);
 }
 
 /**
@@ -372,6 +418,7 @@ async function showLargeView(file, direction = 0) {
   largeView.classList.remove("hidden");
   largeTitle.textContent = file.name;
   largeInfo.textContent = "";
+  syncZoomControl(1);
 
   try {
     if (file.type === "glb") {
@@ -452,7 +499,7 @@ function createImageView(canvas, img, onChange) {
    * Fits the image into the canvas at its natural ratio.
    */
   function fitView() {
-    state.minScale = fitScale();
+    state.minScale = clampZoom(fitScale());
     state.scale = state.minScale;
     clampPan();
     apply();
@@ -465,7 +512,7 @@ function createImageView(canvas, img, onChange) {
    * @param {number} ay - Anchor y in canvas coordinates.
    */
   function zoomAt(factor, ax, ay) {
-    const next = Math.max(state.minScale, Math.min(64, state.scale * factor));
+    const next = clampZoom(state.scale * factor);
     const k = next / state.scale;
     state.tx = ax - (ax - state.tx) * k;
     state.ty = ay - (ay - state.ty) * k;
@@ -488,6 +535,20 @@ function createImageView(canvas, img, onChange) {
    */
   function zoomOut(anchor) {
     zoomAt(1 / 1.25, anchor?.x ?? canvas.clientWidth / 2, anchor?.y ?? canvas.clientHeight / 2);
+  }
+
+  /**
+   * Sets the zoom to an exact percentage around the canvas center.
+   * @param {number} percent - Zoom in percent.
+   */
+  function setZoom(percent) {
+    const next = zoomScale(percent);
+    const k = next / state.scale;
+    state.tx = canvas.clientWidth / 2 - (canvas.clientWidth / 2 - state.tx) * k;
+    state.ty = canvas.clientHeight / 2 - (canvas.clientHeight / 2 - state.ty) * k;
+    state.scale = next;
+    clampPan();
+    apply();
   }
 
   /**
@@ -589,6 +650,7 @@ function createImageView(canvas, img, onChange) {
     zoomIn,
     zoomOut,
     reset,
+    setZoom,
     toggleFit,
     dispose() {
       img.removeEventListener("pointerdown", pointerdown);
@@ -640,7 +702,8 @@ async function showLargeImage(file, token, direction = 0) {
 
   largeCanvas.style.display = "block";
   const imageView = createImageView(largeCanvas, img, (scale) => {
-    largeInfo.textContent = `${img.naturalWidth}x${img.naturalHeight} | ${Math.round(scale * 100)}%`;
+    largeInfo.textContent = `${img.naturalWidth}x${img.naturalHeight}`;
+    syncZoomControl(scale);
   });
   imageView.fitView();
 
@@ -734,6 +797,17 @@ async function showLargeGlb(file, token, direction = 0) {
   controls.target.set(0, 0, 0);
   controls.update();
 
+  const baseDistance = camera.position.distanceTo(controls.target);
+  controls.minDistance = glbDistanceForPercent(baseDistance, MAX_ZOOM_PERCENT);
+  controls.maxDistance = glbDistanceForPercent(baseDistance, MIN_ZOOM_PERCENT);
+  controls.saveState();
+  controls.addEventListener("change", () => {
+    if (largeViewState?.type !== "glb") return;
+    const distance = camera.position.distanceTo(controls.target);
+    syncZoomControl(glbPercentForDistance(baseDistance, distance) / 100);
+  });
+  syncZoomControl(1);
+
   largeCanvas.append(renderer.domElement);
   retireLargeFrames(direction);
 
@@ -742,7 +816,17 @@ async function showLargeGlb(file, token, direction = 0) {
     renderer.render(scene, camera);
   });
 
-  largeViewState = { token, file, type: "glb", renderer, controls, scene, resizeObserver, gltf };
+  largeViewState = {
+    token,
+    file,
+    type: "glb",
+    renderer,
+    controls,
+    scene,
+    resizeObserver,
+    gltf,
+    glbBaseDistance: baseDistance,
+  };
 }
 
 /**
@@ -759,6 +843,10 @@ function handleLargeViewKeydown(event) {
     return;
   }
   if (largeView.classList.contains("hidden") || !largeViewState) return;
+
+  if (event.target instanceof HTMLElement && event.target.closest("input, textarea, select")) {
+    return;
+  }
 
   if (event.key === "Escape") {
     closeLargeView();
@@ -803,6 +891,51 @@ function handleLargeViewKeydown(event) {
 document.addEventListener("keydown", handleLargeViewKeydown);
 largeBack.addEventListener("click", closeLargeView);
 largeSlideshow.addEventListener("click", toggleSlideshow);
+
+/**
+ * Sets the GLB camera zoom to an exact percentage.
+ * @param {{camera: object, controls: object, glbBaseDistance: number}} view - Active GLB large view state.
+ * @param {number} percent - Zoom in percent.
+ */
+function setGlbZoom(view, percent) {
+  const { camera, controls, glbBaseDistance } = view;
+  const direction = camera.position.clone().sub(controls.target).normalize();
+  camera.position
+    .copy(controls.target)
+    .addScaledVector(direction, glbDistanceForPercent(glbBaseDistance, percent));
+  controls.update();
+}
+
+largeZoom.addEventListener("input", () => {
+  setLargeZoom(Number(largeZoom.value));
+});
+
+/**
+ * Reads the zoom input field, applies it and syncs the slider, or reverts the
+ * field when the entered text is not a valid percentage.
+ */
+function commitZoomInput() {
+  const parsed = parseZoomPercent(largeZoomValue.value);
+  if (parsed === null) {
+    syncZoomControl(zoomScale(currentZoomPercent));
+    return;
+  }
+  setLargeZoom(parsed);
+}
+
+largeZoomValue.addEventListener("focus", () => largeZoomValue.select());
+largeZoomValue.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    commitZoomInput();
+    largeZoomValue.blur();
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    syncZoomControl(zoomScale(currentZoomPercent));
+    largeZoomValue.blur();
+  }
+});
+largeZoomValue.addEventListener("blur", commitZoomInput);
 
 /**
  * Toggles the window between normal and fullscreen mode on F11.
