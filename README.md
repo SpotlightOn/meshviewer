@@ -1,12 +1,5 @@
 # Meshviewer
 
-[![CI](https://github.com/SpotlightOn/meshviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/SpotlightOn/meshviewer/actions/workflows/codeql.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/codeql.yml)
-[![Release](https://github.com/SpotlightOn/meshviewer/actions/workflows/release.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/release.yml)
-[![Latest release](https://img.shields.io/github/v/release/SpotlightOn/meshviewer)](https://github.com/SpotlightOn/meshviewer/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/SpotlightOn/meshviewer)](./LICENSE)
-[![Socket.dev: monitored](https://img.shields.io/badge/Socket.dev-monitored-34506b?logo=socketdotdev&logoColor=white)](https://github.com/SpotlightOn/meshviewer/pulls)
-
 Every file manager shows nice thumbnails, so why another app?
 I want something that is really fast and easy for browsing my images.
 There are still lots of things I'd like to improve, but it's already really good.
