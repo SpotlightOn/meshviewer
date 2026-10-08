@@ -18,18 +18,37 @@
 </head>
 <body>
   <header class="toolbar">
-    <button id="btn-up" type="button" data-i18n-title="toolbar.upTitle">..</button>
-    <button id="btn-home" type="button" data-i18n-title="toolbar.homeTitle">&#8962; <span data-i18n="toolbar.home">Home</span></button>
-    <input
-      id="current-dir"
-      class="current-dir"
-      type="text"
-      value=""
-      spellcheck="false"
-      autocomplete="off"
-      data-i18n-aria-label="currentDir.ariaLabel"
-      data-i18n-title="currentDir.ariaLabel"
-    />
+    <button
+      id="btn-up"
+      class="icon-btn"
+      type="button"
+      data-i18n-title="toolbar.upTitle"
+      data-i18n-aria-label="toolbar.upTitle"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L4 12h5v7h6v-7h5z" /></svg>
+    </button>
+    <button
+      id="btn-home"
+      class="icon-btn icon-btn-home"
+      type="button"
+      data-i18n-title="toolbar.homeTitle"
+      data-i18n-aria-label="toolbar.homeTitle"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 12h3v9h6v-6h2v6h6v-9h3z" /></svg>
+    </button>
+    <span class="toolbar-separator" aria-hidden="true"></span>
+    <div id="pathbar-root" class="pathbar" data-i18n-title="toolbar.pathHint">
+      <div id="path-segments" class="path-segments"></div>
+      <input
+        id="path-input"
+        class="path-input"
+        type="text"
+        spellcheck="false"
+        autocomplete="off"
+        data-i18n-aria-label="currentDir.ariaLabel"
+        data-i18n-title="currentDir.ariaLabel"
+      />
+    </div>
   </header>
 
   <main>

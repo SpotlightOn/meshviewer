@@ -37,47 +37,121 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.toolbar button {
-  padding: 6px 14px;
-  font-size: 13px;
+.toolbar button.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   color: var(--text);
-  background: var(--accent);
+  background: transparent;
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
-.toolbar button:hover {
-  filter: brightness(1.1);
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
-.current-dir {
+.icon-btn-home svg {
+  width: 20px;
+  height: 20px;
+}
+
+.toolbar button.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex: none;
+}
+
+.pathbar {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
   font-size: 13px;
-  font-family: inherit;
   color: var(--text-dim);
-  background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 8px;
-  text-align: left;
-  white-space: nowrap;
+  cursor: text;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.current-dir:hover {
+.pathbar:hover {
   border-color: var(--border);
 }
 
-.current-dir:focus {
-  outline: none;
+.pathbar.editing {
   border-color: var(--accent);
   background: var(--bg);
   color: var(--text);
-  text-overflow: clip;
-  text-align: left;
+  cursor: auto;
+}
+
+.path-segments {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.path-segment {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.path-segment:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.path-segment.active {
+  color: var(--accent);
+}
+
+.path-segment + .path-segment::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--text-dim);
+  opacity: 0.45;
+}
+
+.path-input {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.pathbar.editing .path-segments {
+  display: none;
+}
+
+.pathbar.editing .path-input {
+  display: block;
 }
 
 main {

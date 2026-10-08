@@ -174,7 +174,6 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
    */
   async function loadFolder(dirPath) {
     const token = ++loadToken;
-    onFolderChange(dirPath);
     grid.innerHTML = "";
     emptyState.style.display = "none";
 
@@ -192,6 +191,7 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
 
     path = dirPath;
     files = loaded;
+    onFolderChange(dirPath);
 
     if (files.length === 0) {
       emptyState.textContent = t("grid.noMedia");

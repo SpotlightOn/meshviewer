@@ -2,12 +2,12 @@ import { createGrid } from "./grid.js";
 import { initI18n } from "./i18n.js";
 import { createKeyboard } from "./keyboard.js";
 import { createLargeView } from "./large-view.js";
+import { createPathBar } from "./pathbar.js";
 import { createSettings } from "./settings.js";
 import { createDirectoryTree } from "./tree.js";
 
 const upBtn = document.getElementById("btn-up");
 const homeBtn = document.getElementById("btn-home");
-const currentDirEl = document.getElementById("current-dir");
 
 // Late-bound reference to the large view module: it is owned by callbacks
 // that only fire after the whole module graph is constructed.
@@ -49,16 +49,22 @@ grid = createGrid({
     contentEl: document.querySelector(".content"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
-  onFolderChange: (dirPath) => {
-    currentDirEl.value = dirPath;
-  },
+  onFolderChange: (dirPath) => pathBar.setPath(dirPath),
 });
 
 createKeyboard({ settings, largeView, grid });
 
+const pathBar = createPathBar({
+  dom: {
+    root: document.getElementById("pathbar-root"),
+    segments: document.getElementById("path-segments"),
+    input: document.getElementById("path-input"),
+  },
+  navigate: openPath,
+});
+
 /** @type {ReturnType<typeof createDirectoryTree> | null} */
 let tree = null;
-let navInFlight = false;
 
 /**
  * Builds the directory tree for a new root directory.
@@ -89,34 +95,6 @@ async function openPath(dirPath) {
   return ok;
 }
 
-currentDirEl.addEventListener("keydown", async (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    const value = currentDirEl.value.trim();
-    if (!value || value === grid.getPath()) {
-      currentDirEl.value = grid.getPath();
-      currentDirEl.blur();
-      return;
-    }
-    navInFlight = true;
-    const ok = await openPath(value);
-    navInFlight = false;
-    if (!ok) {
-      currentDirEl.value = grid.getPath();
-    }
-    currentDirEl.blur();
-  } else if (event.key === "Escape") {
-    currentDirEl.value = grid.getPath();
-    currentDirEl.blur();
-  }
-});
-
-currentDirEl.addEventListener("blur", () => {
-  if (!navInFlight && grid.getPath() && currentDirEl.value !== grid.getPath()) {
-    currentDirEl.value = grid.getPath();
-  }
-});
-
 upBtn.addEventListener("click", async () => {
   const current = tree.getSelectedPath();
   if (!current) return;
@@ -134,8 +112,9 @@ window.api.getRootDir().then(async (root) => {
   await initI18n();
   await settings.load();
   setTreeRoot(root);
+  pathBar.setRoot(root);
   const [home, cwd] = await Promise.all([window.api.getHomeDir(), window.api.getCwd()]);
-  currentDirEl.value = home;
+  pathBar.setPath(home);
   if (!(await tree.selectPath(cwd))) {
     await tree.selectPath(home);
   }

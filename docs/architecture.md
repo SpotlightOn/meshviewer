@@ -55,8 +55,9 @@ they cannot be ESM.
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
 | `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
-| `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard, directory field, boot |
+| `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard/path bar, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
+| `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
 | `src/renderer/grid.js` | Media grid: folder loading, cards, image/GLB thumbnails |
 | `src/renderer/large-view.js` | Image/GLB large view: zoom, navigation, slideshow |
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
@@ -204,5 +205,7 @@ fall back to defaults instead of failing.
   it first.
 - `console.log` in the main process is stdout-buffered and can be lost on kill;
   probes should use `console.error`.
-- `#current-dir` is editable: Enter navigates to the typed path (the tree expands
-  if possible), Esc or blur restores the current directory.
+- The path bar is a breadcrumb by default: clicking a folder jumps to it;
+  clicking the active folder or the empty space switches to a text field in
+  which Enter opens the typed path (the tree expands if possible) and Esc or
+  blur restores the current directory.

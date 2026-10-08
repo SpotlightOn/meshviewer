@@ -1,3 +1,4 @@
+import { basename } from "node:path";
 import { _electron as electron, expect, test } from "@playwright/test";
 
 /**
@@ -20,9 +21,9 @@ test("app boots and renders the directory tree", async () => {
 test("navigates to a folder and displays media thumbnails", async () => {
   const { electronApp, page } = await launchApp();
 
-  await expect(page.locator("#current-dir")).toHaveValue(process.cwd());
+  await expect(page.locator(".path-segment.active")).toHaveText(basename(process.cwd()));
 
-  const tmpRow = page.locator(".tree-row", { hasText: "tmp" }).first();
+  const tmpRow = page.locator(".tree-row", { has: page.getByText("tmp", { exact: true }) }).first();
   await tmpRow.locator(".tree-twisty").click();
   const opencodeRow = page.locator(".tree-row", { hasText: "opencode" }).first();
   await expect(opencodeRow).toBeVisible();
@@ -31,7 +32,7 @@ test("navigates to a folder and displays media thumbnails", async () => {
   await expect(glbtestRow).toBeVisible();
   await glbtestRow.click();
 
-  await expect(page.locator("#current-dir")).toHaveValue("/tmp/opencode/glbtest");
+  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
   await expect(page.locator(".card")).toHaveCount(4);
   await expect(page.locator(".card", { hasText: "test.glb" })).toBeVisible();
   await expect(page.locator(".card", { hasText: "textured.glb" })).toBeVisible();
@@ -48,16 +49,18 @@ test("navigates to a folder and displays media thumbnails", async () => {
 test("opens a folder via the path input", async () => {
   const { electronApp, page } = await launchApp();
 
-  const input = page.locator("#current-dir");
-  await expect(input).toHaveValue(process.cwd());
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(input).toHaveValue("/tmp/opencode/glbtest");
+  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
   await expect(page.locator(".card")).toHaveCount(4);
 
+  await page.locator(".path-segment.active").click();
   await input.fill("/nonexistent/path/xyz");
   await input.press("Enter");
-  await expect(input).toHaveValue("/tmp/opencode/glbtest");
+  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
   await expect(page.locator("#empty-state")).toBeVisible();
 
   await electronApp.close();

@@ -2,10 +2,9 @@
   "toolbar": {
     "upTitle": "One level up",
     "homeTitle": "Home directory",
-    "home": "Home"
+    "pathHint": "Click a folder in the path to open it, or click here to edit the path"
   },
   "currentDir": {
-    "home": "Home",
     "ariaLabel": "Current directory - press Enter to open it"
   },
   "emptyState": "Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).",
@@ -54,7 +53,7 @@
     "title": "Keyboard shortcuts",
     "largeView": "Large view",
     "grid": "File grid",
-    "pathField": "Directory field",
+    "pathField": "Path bar",
     "previous": "Previous file",
     "next": "Next file",
     "toggleFit": "Toggle fit / 100 % (images)",
