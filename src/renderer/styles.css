@@ -52,14 +52,9 @@ body {
 }
 
 .icon-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
   fill: currentColor;
-}
-
-.icon-btn-home svg {
-  width: 20px;
-  height: 20px;
 }
 
 .toolbar button.icon-btn:hover {
@@ -68,8 +63,9 @@ body {
 
 .toolbar-separator {
   width: 1px;
-  height: 24px;
-  background: var(--border);
+  height: 26px;
+  background: var(--text-dim);
+  opacity: 0.55;
   flex: none;
 }
 
@@ -80,8 +76,8 @@ body {
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: 14px;
+  color: var(--text);
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: text;
@@ -111,8 +107,8 @@ body {
   border: none;
   border-radius: 4px;
   font: inherit;
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: 14px;
+  color: var(--text);
   background: none;
   cursor: pointer;
   white-space: nowrap;
@@ -131,7 +127,7 @@ body {
   content: "/";
   margin-right: 6px;
   color: var(--text-dim);
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
 .path-input {
@@ -139,7 +135,7 @@ body {
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text);
   background: transparent;
   border: none;
