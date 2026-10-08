@@ -4,6 +4,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-08
+
 ### Added
 - Zoom slider (10-800 %) with direct percentage entry for the large view
 - Keyboard shortcuts dialog in the Help menu
