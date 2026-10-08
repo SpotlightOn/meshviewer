@@ -1,8 +1,8 @@
-const { createHash } = require("node:crypto");
-const fsp = require("node:fs/promises");
-const os = require("node:os");
-const path = require("node:path");
-const piexif = require("piexifjs");
+import { createHash } from "node:crypto";
+import fsp from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import piexif from "piexifjs";
 
 const THUMB_SIZE = 256;
 const FREEDESKTOP_MAGIC = Buffer.from([0, 0, 0, 0, 0, 0, 0, 1]);
@@ -11,13 +11,16 @@ const EXIF_PREFIX_SIZE = 1024 * 1024; // embedded thumbnails live near the start
 
 let sharp = null;
 try {
-  sharp = require("sharp");
+  sharp = (await import("sharp")).default;
 } catch {
   // sharp may be unavailable on cross-built platforms (missing native binaries)
 }
 
 /**
  * Returns the freedesktop-compatible file URI for an absolute path.
+ * Freedesktop thumbnail caches exist only on Linux desktops (KDE/GNOME/XFCE);
+ * the lookup is skipped on other platforms. The encoding must match exactly
+ * what the desktop environment produced, so it stays as-is for compatibility.
  * @param {string} absPath - Absolute file path.
  * @returns {string} file:// URI.
  */
@@ -31,6 +34,7 @@ function freedesktopUri(absPath) {
  * @returns {Promise<string|null>} PNG data URL, or null if no usable thumbnail exists.
  */
 async function readFreedesktopThumbnail(file) {
+  if (process.platform !== "linux") return null; // freedesktop caches exist only on Linux
   const base = process.env.XDG_CACHE_HOME || path.join(os.homedir(), ".cache");
   const variants = new Set([file.path]);
   try {
@@ -187,15 +191,15 @@ async function getThumbnail(file, cacheDir) {
   }
 }
 
-module.exports = {
-  THUMB_SIZE,
+export {
   extractEmbeddedThumbnail,
   freedesktopUri,
   generateThumbnail,
   getThumbnail,
   readEmbeddedThumbnail,
-  readFreedesktopThumbnail,
   readFilePrefix,
+  readFreedesktopThumbnail,
+  THUMB_SIZE,
   thumbnailKey,
   toDataUrl,
 };

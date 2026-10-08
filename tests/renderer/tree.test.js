@@ -125,6 +125,31 @@ describe("createDirectoryTree", () => {
     expect(selected).toEqual([]);
   });
 
+  it("selects Windows paths with a drive root and both separators", async () => {
+    const selected = [];
+    const tree = createDirectoryTree({
+      rootPath: "C:\\",
+      rootLabel: "C:\\",
+      getChildren: async (path) => {
+        if (path === "C:\\") return [{ path: "C:\\Users", name: "Users" }];
+        if (path === "C:\\Users") return [{ path: "C:\\Users\\Photos", name: "Photos" }];
+        return [];
+      },
+      onSelect: (path) => selected.push(path),
+    });
+    await flush();
+
+    const ok = await tree.selectPath("C:\\Users\\Photos");
+    expect(ok).toBe(true);
+    expect(tree.getSelectedPath()).toBe("C:\\Users\\Photos");
+    expect(selected).toEqual(["C:\\Users\\Photos"]);
+    expect(tree.el.querySelectorAll("li.expanded").length).toBe(3);
+
+    const okForward = await tree.selectPath("C:/Users/Photos");
+    expect(okForward).toBe(true);
+    expect(tree.getSelectedPath()).toBe("C:\\Users\\Photos");
+  });
+
   it("prefetches grandchildren after a node is expanded", async () => {
     const { tree } = makeTree({
       "/": [{ path: "/a", name: "a" }],

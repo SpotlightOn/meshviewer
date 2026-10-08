@@ -2,10 +2,9 @@
   "toolbar": {
     "upTitle": "One level up",
     "homeTitle": "Home directory",
-    "home": "Home"
+    "pathHint": "Click a folder in the path to open it, or click here to edit the path"
   },
   "currentDir": {
-    "home": "Home",
     "ariaLabel": "Current directory - press Enter to open it"
   },
   "emptyState": "Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).",
@@ -18,13 +17,61 @@
   },
   "largeView": {
     "back": "Back",
-    "slideshow": "Slideshow"
+    "slideshow": "Slideshow",
+    "zoom": "Zoom",
+    "zoomInput": "Zoom percentage",
+    "fitToScreen": "Fit to screen",
+    "fullscreen": "Fullscreen",
+    "fullscreenExit": "Exit fullscreen"
   },
   "menu": {
+    "file": "File",
+    "quit": "Quit",
+    "closeWindow": "Close Window",
     "edit": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All",
     "settings": "Settings",
+    "view": "View",
+    "reload": "Reload",
+    "forceReload": "Force Reload",
+    "toggleDevTools": "Toggle Developer Tools",
+    "resetZoom": "Actual Size",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "toggleFullscreen": "Toggle Full Screen",
+    "window": "Window",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "macZoom": "Zoom",
     "help": "Help",
+    "shortcuts": "Keyboard shortcuts",
     "about": "About MeshViewer"
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "largeView": "Large view",
+    "grid": "File grid",
+    "pathField": "Path bar",
+    "previous": "Previous file",
+    "next": "Next file",
+    "toggleFit": "Toggle fit / 100 % (images)",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Zoom to 100 %",
+    "slideshow": "Start / stop slideshow",
+    "closeLarge": "Close large view",
+    "fullscreen": "Toggle fullscreen",
+    "largerTiles": "Larger tiles",
+    "smallerTiles": "Smaller tiles",
+    "resetTiles": "Reset tile size",
+    "openPath": "Open the entered path",
+    "revertPath": "Revert the field",
+    "zoomFieldNote": "Zoom field: type a percentage (e.g. 120) and press Enter; Esc cancels."
   },
   "settings": {
     "title": "Settings",
@@ -42,6 +89,9 @@
     "version": "Version",
     "copyright": "Copyright",
     "license": "License"
+  },
+  "dialog": {
+    "close": "Close"
   },
   "console": {
     "glbLoadError": "Error loading GLB in the large view:",

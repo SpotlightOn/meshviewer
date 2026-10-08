@@ -16,6 +16,8 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}>} getSettings - Returns the current application settings.
  * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
+ * @property {(flag: boolean) => Promise<void>} setFullScreen - Puts the window into or out of fullscreen mode.
+ * @property {(callback: (value: boolean) => void) => () => void} onFullScreenChanged - Subscribes to fullscreen state changes; returns an unsubscribe function.
  */
 
 /** @type {MeshViewerApi} */
@@ -36,6 +38,12 @@ const api = {
     const listener = () => callback();
     ipcRenderer.on("menu:open-settings", listener);
     return () => ipcRenderer.removeListener("menu:open-settings", listener);
+  },
+  setFullScreen: (flag) => ipcRenderer.invoke("win:setFullScreen", flag),
+  onFullScreenChanged: (callback) => {
+    const listener = (_event, value) => callback(Boolean(value));
+    ipcRenderer.on("win:fullscreen-changed", listener);
+    return () => ipcRenderer.removeListener("win:fullscreen-changed", listener);
   },
 };
 

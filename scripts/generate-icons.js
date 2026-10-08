@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-const path = require("node:path");
-const fsp = require("node:fs/promises");
-const { spawnSync } = require("node:child_process");
+import { spawnSync } from "node:child_process";
+import fsp from "node:fs/promises";
+import path from "node:path";
 
-const ROOT = path.join(__dirname, "..");
+const ROOT = path.join(import.meta.dirname, "..");
 const ICONS_DIR = path.join(ROOT, "icons");
 const SVG = path.join(ICONS_DIR, "meshviewer.svg");
 const PNG = path.join(ICONS_DIR, "meshviewer.png");
@@ -33,7 +33,7 @@ function run(command, args) {
 async function generateIcons() {
   let sharp = null;
   try {
-    sharp = require("sharp");
+    sharp = (await import("sharp")).default;
   } catch {
     console.error("Error: sharp is not available. Run `pnpm install` first.");
     process.exit(1);

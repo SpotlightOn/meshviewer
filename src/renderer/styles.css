@@ -37,47 +37,117 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.toolbar button {
-  padding: 6px 14px;
-  font-size: 13px;
+.toolbar button.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   color: var(--text);
-  background: var(--accent);
+  background: transparent;
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
 
-.toolbar button:hover {
-  filter: brightness(1.1);
+.icon-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
 
-.current-dir {
+.toolbar button.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 26px;
+  background: var(--text-dim);
+  opacity: 0.55;
+  flex: none;
+}
+
+.pathbar {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
-  font-family: inherit;
-  color: var(--text-dim);
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 14px;
+  color: var(--text);
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 8px;
-  text-align: left;
-  white-space: nowrap;
+  cursor: text;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.current-dir:hover {
+.pathbar:hover {
   border-color: var(--border);
 }
 
-.current-dir:focus {
-  outline: none;
+.pathbar.editing {
   border-color: var(--accent);
   background: var(--bg);
   color: var(--text);
-  text-overflow: clip;
-  text-align: left;
+  cursor: auto;
+}
+
+.path-segments {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.path-segment {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.path-segment:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.path-segment.active {
+  color: var(--accent);
+}
+
+.path-segment + .path-segment::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.path-input {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.pathbar.editing .path-segments {
+  display: none;
+}
+
+.pathbar.editing .path-input {
+  display: block;
 }
 
 main {
@@ -282,6 +352,7 @@ main {
 }
 
 .large-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -304,17 +375,136 @@ main {
   filter: brightness(1.1);
 }
 
-.large-header .large-slideshow {
+.large-header button.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--text);
   background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.large-header button.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.large-header button.icon-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.large-header .zoom-fit-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--surface);
   border: 1px solid var(--border);
 }
 
-.large-header .large-slideshow.active {
+.large-header .zoom-fit-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+}
+
+.switch-track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 0.15s ease;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
+}
+
+.switch-input:checked + .switch-track {
   background: var(--accent);
-  border-color: var(--accent);
+}
+
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(16px);
+  background: #ffffff;
+}
+
+.switch-input:focus-visible + .switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.fullscreen-exit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.fullscreen-exit:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.fullscreen-exit.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fullscreen-exit svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
 
 .large-title {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   color: var(--text-dim);
   white-space: nowrap;
@@ -322,12 +512,88 @@ main {
   text-overflow: ellipsis;
 }
 
-.large-info {
+.large-right {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.large-info {
   font-size: 13px;
   color: var(--text-dim);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.large-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 5px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.large-view.fullscreen .large-header,
+.large-view.fullscreen .large-statusbar {
+  display: none;
+}
+
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-control input[type="range"] {
+  width: 180px;
+  accent-color: var(--accent);
+}
+
+.zoom-value {
+  width: 64px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 6px;
+  text-align: right;
+}
+
+.zoom-value:hover {
+  border-color: var(--accent);
+}
+
+.zoom-value:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.slideshow-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@keyframes slideshow-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .large-canvas {

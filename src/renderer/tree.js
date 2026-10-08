@@ -334,19 +334,24 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   async function selectPath(targetPath, options = {}) {
     const { notify = true } = options;
+    // On Windows the tree uses backslash paths; accept forward slashes too so
+    // user-typed paths (e.g. from the directory field) select correctly.
+    const windowsStyle = rootPath.includes("\\");
+    const target = windowsStyle ? targetPath.replaceAll("/", "\\") : targetPath;
     const rootState = states.get(rootPath);
     if (!rootState) return false;
     await ensureLoaded(rootState);
-    if (targetPath === rootPath) {
+    if (target === rootPath) {
       activate(rootState, notify);
       return true;
     }
-    const segments = targetPath.split("/").filter(Boolean);
+    const relative = target.startsWith(rootPath) ? target.slice(rootPath.length) : target;
+    const segments = relative.split(windowsStyle ? /[\\/]/ : "/").filter(Boolean);
     let current = rootState;
     for (const segment of segments) {
       const child = current.childStates.find((c) => c.name === segment);
       if (!child) return false;
-      if (child.path === targetPath) {
+      if (child.path === target) {
         activate(child, notify);
         await expand(child);
         return true;

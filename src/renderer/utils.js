@@ -46,6 +46,101 @@ function toArrayBuffer(data) {
 }
 
 /**
+ * Smallest zoom of the large view as a scale factor (10 %).
+ * @type {number}
+ */
+const MIN_ZOOM = 0.1;
+
+/**
+ * Largest zoom of the large view as a scale factor (800 %).
+ * @type {number}
+ */
+const MAX_ZOOM = 8;
+
+/**
+ * Smallest zoom of the large-view slider in percent.
+ * @type {number}
+ */
+const MIN_ZOOM_PERCENT = MIN_ZOOM * 100;
+
+/**
+ * Largest zoom of the large-view slider in percent.
+ * @type {number}
+ */
+const MAX_ZOOM_PERCENT = MAX_ZOOM * 100;
+
+/**
+ * Clamps a scale factor to the large-view zoom range.
+ * @param {number} scale - Scale factor (1 = 100 %).
+ * @returns {number} Clamped scale factor.
+ */
+function clampZoom(scale) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale));
+}
+
+/**
+ * Clamps a zoom percentage to the large-view slider range.
+ * @param {number} percent - Zoom in percent.
+ * @returns {number} Clamped percentage.
+ */
+function clampZoomPercent(percent) {
+  return Math.min(MAX_ZOOM_PERCENT, Math.max(MIN_ZOOM_PERCENT, percent));
+}
+
+/**
+ * Converts a scale factor to a whole percentage within the slider range.
+ * @param {number} scale - Scale factor (1 = 100 %).
+ * @returns {number} Zoom in percent.
+ */
+function zoomPercent(scale) {
+  return Math.round(clampZoom(scale) * 100);
+}
+
+/**
+ * Converts a zoom percentage to a clamped scale factor.
+ * @param {number} percent - Zoom in percent.
+ * @returns {number} Scale factor.
+ */
+function zoomScale(percent) {
+  return clampZoom(percent / 100);
+}
+
+/**
+ * Converts a zoom percentage to a GLB camera distance, where 100 % equals the
+ * fitted distance and higher percentages move the camera closer.
+ * @param {number} baseDistance - Camera distance at 100 %.
+ * @param {number} percent - Zoom in percent.
+ * @returns {number} Camera distance.
+ */
+function glbDistanceForPercent(baseDistance, percent) {
+  return baseDistance * (100 / clampZoomPercent(percent));
+}
+
+/**
+ * Converts a GLB camera distance to a zoom percentage within the slider range.
+ * @param {number} baseDistance - Camera distance at 100 %.
+ * @param {number} distance - Current camera distance.
+ * @returns {number} Zoom in percent.
+ */
+function glbPercentForDistance(baseDistance, distance) {
+  return clampZoomPercent(Math.round((baseDistance / Math.max(1e-9, distance)) * 100));
+}
+
+/**
+ * Parses a zoom text input ("80", "120 %") into a whole percentage, or null
+ * when the input is not a plain number.
+ * @param {string} value - Raw input value.
+ * @returns {number|null} Zoom percentage or null.
+ */
+function parseZoomPercent(value) {
+  const text = value.trim();
+  const digits = text.endsWith("%") ? text.slice(0, -1) : text;
+  if (digits === "" || !/^[+-]?\d+(\.\d+)?$/.test(digits.trim())) return null;
+  const number = Number(digits);
+  return Number.isFinite(number) ? Math.round(number) : null;
+}
+
+/**
  * Starts the exit animation of the `.large-frame` elements left in a container
  * and removes each of them when its animation ended, or after the configured
  * duration plus a grace period as a safety net. The frame that was just added
@@ -74,4 +169,21 @@ function retireFrames(container, { direction, slide, durationMs, keep = null }) 
   }
 }
 
-export { formatSize, IMAGE_MIME, mimeFor, retireFrames, toArrayBuffer };
+export {
+  clampZoom,
+  clampZoomPercent,
+  formatSize,
+  glbDistanceForPercent,
+  glbPercentForDistance,
+  IMAGE_MIME,
+  MAX_ZOOM,
+  MAX_ZOOM_PERCENT,
+  MIN_ZOOM,
+  MIN_ZOOM_PERCENT,
+  mimeFor,
+  parseZoomPercent,
+  retireFrames,
+  toArrayBuffer,
+  zoomPercent,
+  zoomScale,
+};
