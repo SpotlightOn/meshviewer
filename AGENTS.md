@@ -77,7 +77,7 @@ Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup 
 
 - `app.exit()` hangs while a modal window is open — tests must `destroy()` the About window first.
 - `console.log` from the main process is stdout-buffered and can be lost on kill; use `console.error` in probes.
-- `#current-dir` is an editable path input: Enter navigates to the entered path (tree is expanded if possible), Esc or blur reverts to the current directory.
+- The path bar is a breadcrumb by default: clicking a folder navigates to it, clicking the active folder or empty space switches to a text field (Enter opens the entered path — the tree is expanded if possible — Esc or blur reverts to the current directory).
 
 ## Formats
 

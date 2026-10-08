@@ -9,12 +9,17 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Keyboard shortcuts dialog in the Help menu
 - Close button and Esc to close the About dialog
 - Edit menu with undo, redo, cut, copy, paste and select all
+- Breadcrumb path bar: every folder in the path is clickable, the path is editable as text (click the active folder or empty space)
+
+### Changed
+- Toolbar: up and home become icon buttons with a subtle separator before the path
 
 ### Fixed
 - Arrow keys no longer navigate behind the open settings dialog
 - Selecting a directory in the tree works with Windows paths (drive letters, forward and backslash separators)
 - About and shortcuts dialogs no longer show the application menu bar
 - Menu labels are fully translated (no mixed German/English entries)
+- Entering a non-existent directory in the path bar reverts to the previous path instead of showing it as empty
 
 ## [0.3.0] - 2026-10-07
 

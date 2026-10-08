@@ -32,13 +32,15 @@ async function isDirectory(fullPath) {
  * Subdirectories are not scanned; they are handled by the directory tree.
  * @param {string} dir - Directory to scan.
  * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}>>} List of media files.
+ * @throws {Error} When the directory does not exist (ENOENT).
  */
 async function listMediaFiles(dir) {
   let entries;
   try {
     entries = await fsp.readdir(dir, { withFileTypes: true });
-  } catch {
-    return []; // directory does not exist or is not readable
+  } catch (error) {
+    if (error?.code === "ENOENT") throw error; // a missing folder is not an empty folder
+    return []; // unreadable directory
   }
   const jobs = [];
   for (const entry of entries) {

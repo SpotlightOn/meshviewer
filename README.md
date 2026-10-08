@@ -53,12 +53,17 @@ Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale fo
 | `Ctrl` + `-` | Smaller tiles |
 | `Ctrl` + `0` | Reset tile size |
 
-**Directory field**
+**Path bar**
 
 | Shortcut | Action |
 | --- | --- |
 | `Enter` | Open the entered path |
 | `Esc` | Revert the field |
+
+The path bar shows the current directory as clickable breadcrumbs: clicking a
+folder jumps to it, clicking the current folder or the empty space switches to
+an editable text field (so a path can be typed or pasted, e.g. with
+`Ctrl` + `V`).
 
 ## Supported Formats
 

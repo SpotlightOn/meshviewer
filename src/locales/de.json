@@ -2,10 +2,9 @@
   "toolbar": {
     "upTitle": "Eine Ebene höher",
     "homeTitle": "Home-Verzeichnis",
-    "home": "Home"
+    "pathHint": "Auf einen Ordner im Pfad klicken zum Öffnen oder hier klicken zum Bearbeiten"
   },
   "currentDir": {
-    "home": "Home",
     "ariaLabel": "Aktuelles Verzeichnis - Enter drücken zum Öffnen"
   },
   "emptyState": "Wähle links einen Ordner im Verzeichnisbaum aus, um die darin enthaltenen *.glb Dateien als 3D-Vorschau und Bilddateien (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO) anzuzeigen.",
@@ -54,7 +53,7 @@
     "title": "Tastenkombinationen",
     "largeView": "Großansicht",
     "grid": "Dateiraster",
-    "pathField": "Pfadfeld",
+    "pathField": "Pfadleiste",
     "previous": "Vorherige Datei",
     "next": "Nächste Datei",
     "toggleFit": "Einpassen / 100 % umschalten (Bilder)",
