@@ -36,7 +36,17 @@ describe("normalizeSettings", () => {
       slideshowIntervalSeconds: 7,
       slideshowTransition: "slide",
       animationDurationMs: 800,
+      editorCommand: "",
     });
+  });
+
+  it("keeps the editor command, trims it and ignores non-strings", () => {
+    expect(normalizeSettings({ editorCommand: "  /usr/bin/gimp  " }).editorCommand).toBe(
+      "/usr/bin/gimp",
+    );
+    expect(normalizeSettings({ editorCommand: 42 }).editorCommand).toBe("");
+    expect(normalizeSettings({ editorCommand: null }).editorCommand).toBe("");
+    expect(normalizeSettings({ editorCommand: "" }).editorCommand).toBe("");
   });
 
   it("clamps the interval to the allowed range and rounds it", () => {
@@ -76,22 +86,26 @@ describe("loadSettings / saveSettings", () => {
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
+      editorCommand: "/usr/bin/gimp",
     });
     expect(saved).toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
+      editorCommand: "/usr/bin/gimp",
     });
     await expect(loadSettings(file)).resolves.toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
+      editorCommand: "/usr/bin/gimp",
     });
     const raw = await readFile(file, "utf8");
     expect(JSON.parse(raw)).toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
+      editorCommand: "/usr/bin/gimp",
     });
   });
 });

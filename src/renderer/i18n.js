@@ -57,12 +57,13 @@ function applyTranslations() {
 }
 
 /**
- * Translates a key using the active language.
+ * Translates a key using the active language and optional interpolation options.
  * @param {string} key - Translation key (dot notation).
+ * @param {object} [options] - Options passed to i18next, e.g. { app: "GIMP" }.
  * @returns {string} Translated string.
  */
-function t(key) {
-  return i18next.t(key);
+function t(key, options) {
+  return i18next.t(key, options);
 }
 
 export { applyTranslations, initI18n, t };

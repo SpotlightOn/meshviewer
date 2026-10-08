@@ -21,6 +21,8 @@ const settings = createSettings({
     interval: document.getElementById("settings-interval"),
     transition: document.getElementById("settings-transition"),
     duration: document.getElementById("settings-duration"),
+    editor: document.getElementById("settings-editor"),
+    editorBrowse: document.getElementById("settings-editor-browse"),
     save: document.getElementById("settings-save"),
     cancel: document.getElementById("settings-cancel"),
   },
@@ -81,6 +83,23 @@ contextMenu.register({
   label: () => t("contextMenu.fileInfo"),
   icon: "info",
   action: (file) => infoDialog.open(file),
+});
+contextMenu.register({
+  id: "edit-with",
+  label: () => {
+    const command = settings.get().editorCommand;
+    const app = command ? command.split(/[\\/]/).pop() : "";
+    return t("contextMenu.editWith", { app });
+  },
+  icon: "edit",
+  enabled: () => settings.get().editorCommand !== "",
+  action: (file) => {
+    const command = settings.get().editorCommand;
+    if (!command) return;
+    void window.api.runEditor(command, file.path).then((result) => {
+      if (!result.ok) console.error(t("console.editorLaunchError"), result.error);
+    });
+  },
 });
 
 grid = createGrid({
