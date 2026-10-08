@@ -8,6 +8,7 @@ import {
   formatSize,
   glbDistanceForPercent,
   glbPercentForDistance,
+  imageDataUrl,
   mimeFor,
   parseZoomPercent,
   toArrayBuffer,
@@ -178,6 +179,106 @@ describe("exifToSections", () => {
       { label: "Lens Model", value: "50mm f/1.8" },
       { label: "Raw Number", value: "24" },
     ]);
+  });
+
+  it("renders the embedded preview stored at group level as an image row", () => {
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+    const sections = exifToSections({
+      Thumbnail: {
+        ImageWidth: { value: 120, description: 120 },
+        image: bytes,
+        type: "image/jpeg",
+        base64: "bm90LXVzZWQ=",
+      },
+    });
+    expect(sections).toHaveLength(1);
+    const [preview, width] = sections[0].rows;
+    expect(preview.image).toBe(`data:image/jpeg;base64,${Buffer.from(bytes).toString("base64")}`);
+    expect(preview.labelKey).toBe("info.embeddedThumbnail");
+    expect(width).toEqual({ label: "Image Width", value: "120" });
+  });
+
+  it("renders binary image tags (ThumbnailImage) as image rows", () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
+    const sections = exifToSections({
+      thumbnail: {
+        ThumbnailImage: { value: bytes },
+      },
+    });
+    expect(sections[0].rows).toEqual([
+      {
+        label: "Thumbnail Image",
+        image: `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`,
+      },
+    ]);
+  });
+
+  it("drops unreadable binary blobs and camera junk payloads", () => {
+    const byteObject = {};
+    for (let i = 0; i < 64; i += 1) byteObject[i] = i;
+    const sections = exifToSections({
+      exif: {
+        MakerNote: { value: byteObject, description: "[Raw maker note data]" },
+      },
+      xmp: {
+        hdrp_makernote: { value: "SERSUALvZDVtXnAeLOrjTdkaADX6N".repeat(40) },
+        shot_log_data: { value: "SERSUALvZDVtXnAeLOrjQ5jeJsa4v".repeat(40) },
+        HasExtendedXMP: { value: "C68D43EE9A", description: "C68D43EE9A" },
+      },
+    });
+    expect(sections).toHaveLength(1);
+    expect(sections[0].group).toBe("xmp");
+    expect(sections[0].rows).toEqual([{ label: "Has Extended XMP", value: "C68D43EE9A" }]);
+  });
+});
+
+describe("imageDataUrl", () => {
+  it("detects JPEG, PNG, GIF, WebP and BMP magic bytes", () => {
+    expect(imageDataUrl(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x10, 0x20]))).toMatch(
+      /^data:image\/jpeg;base64,/,
+    );
+    expect(imageDataUrl(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toMatch(
+      /^data:image\/png;base64,/,
+    );
+    expect(imageDataUrl(new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]))).toMatch(
+      /^data:image\/gif;base64,/,
+    );
+    expect(
+      imageDataUrl(new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50])),
+    ).toMatch(/^data:image\/webp;base64,/);
+    expect(imageDataUrl(new Uint8Array([0x42, 0x4d, 0x10, 0x20]))).toMatch(
+      /^data:image\/bmp;base64,/,
+    );
+  });
+
+  it("prefers the parser MIME hint over magic bytes", () => {
+    expect(imageDataUrl(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), "image/png")).toMatch(
+      /^data:image\/png;base64,/,
+    );
+  });
+
+  it("returns null for non-image bytes and empty input", () => {
+    expect(imageDataUrl(new Uint8Array([1, 2, 3, 4, 5, 6]))).toBeNull();
+    expect(imageDataUrl(new Uint8Array(0))).toBeNull();
+    expect(imageDataUrl(new ArrayBuffer(4))).toBeNull();
+  });
+
+  it("encodes blobs larger than one chunk correctly", () => {
+    const bytes = new Uint8Array(100_000);
+    bytes[0] = 0xff;
+    bytes[1] = 0xd8;
+    bytes[2] = 0xff;
+    expect(imageDataUrl(bytes)).toBe(
+      `data:image/jpeg;base64,${Buffer.from(bytes).toString("base64")}`,
+    );
+  });
+
+  it("rejects oversized blobs that would bloat the dialog", () => {
+    const bytes = new Uint8Array(1024 * 1024 + 1);
+    bytes[0] = 0xff;
+    bytes[1] = 0xd8;
+    bytes[2] = 0xff;
+    expect(imageDataUrl(bytes)).toBeNull();
   });
 });
 

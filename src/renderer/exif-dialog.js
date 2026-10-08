@@ -41,10 +41,12 @@ export function createInfoDialog({ dom }) {
   let requestToken = 0;
 
   /**
-   * Renders a section heading with a row list into the content area.
+   * Renders a section heading with a row list into the content area. Rows
+   * with an `image` data URL render an embedded preview image; rows with a
+   * `labelKey` get their label translated.
    * @param {HTMLElement} container - Target container.
    * @param {string} heading - Section heading.
-   * @param {Array<{label: string, value: string}>} rows - Rows to render.
+   * @param {Array<{label?: string, labelKey?: string, value?: string, image?: string}>} rows - Rows to render.
    */
   function renderSection(container, heading, rows) {
     if (rows.length === 0) return;
@@ -56,9 +58,17 @@ export function createInfoDialog({ dom }) {
     list.className = "info-rows";
     for (const row of rows) {
       const term = document.createElement("dt");
-      term.textContent = row.label;
+      term.textContent = row.label ?? t(row.labelKey);
       const detail = document.createElement("dd");
-      detail.textContent = row.value;
+      if (row.image) {
+        const img = document.createElement("img");
+        img.className = "info-image";
+        img.src = row.image;
+        img.alt = row.label;
+        detail.append(img);
+      } else {
+        detail.textContent = row.value;
+      }
       list.append(term, detail);
     }
     section.append(title, list);

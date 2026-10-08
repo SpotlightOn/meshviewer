@@ -25,3 +25,15 @@ The initial context menu is very simple for now, but is planned to grow.
   and find alternative approaches.
 
 - An entry that shows/uses the same dialog as the EXIF info toolbar icon
+
+## Map markers (OpenStreetMap)
+
+When a photo carries GPS coordinates, show the location on a map inside the
+file information dialog.
+
+- Tiles: OpenStreetMap (tile.openstreetmap.org); needs network access, ask
+  about the privacy trade-off later (e.g. load tiles only on demand).
+- Lightest option: a static tile image with a marker overlay; a Leaflet map
+  embed would allow pan/zoom but adds a dependency.
+- Open the exact coordinates in the default browser (openstreetmap.org) via a
+  small button/link.

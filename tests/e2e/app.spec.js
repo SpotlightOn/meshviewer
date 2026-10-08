@@ -100,6 +100,36 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await electronApp.close();
 });
 
+test("file information dialog renders the embedded preview image and hides raw metadata", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/exiftest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(1);
+
+  await page.locator(".card").click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  await page.locator("#large-details").click();
+  await expect(page.locator("#info-overlay")).toBeVisible();
+  await expect(page.locator(".info-loading")).toBeHidden();
+
+  const image = page.locator(".info-image");
+  await expect(image).toBeVisible();
+  const src = (await image.getAttribute("src")) ?? "";
+  expect(src.startsWith("data:image/jpeg;base64,")).toBe(true);
+
+  const text = (await page.locator("#info-content").textContent()) ?? "";
+  expect(text).not.toContain("[Raw maker note data]");
+  expect(text).not.toContain("hdrp_makernote");
+
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#info-overlay")).toBeHidden();
+  await electronApp.close();
+});
+
 /**
  * Waits until the large view transition has fully finished: only the current
  * frame remains and its image is centered in the canvas.
@@ -121,6 +151,47 @@ async function expectImageCentered(page) {
     );
   });
 }
+
+test("right-clicking a thumbnail opens the context menu", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click({ button: "right" });
+  await expect(page.locator("#context-menu")).toBeVisible();
+  await expect(page.locator("#context-menu .context-item")).toHaveCount(2);
+  await expect(page.locator('#context-menu .context-item[data-action="open-with"]')).toBeVisible();
+  await expect(page.locator('#context-menu .context-item[data-action="file-info"]')).toBeVisible();
+
+  // The file information entry reuses the EXIF dialog.
+  await page.locator('#context-menu .context-item[data-action="file-info"]').click();
+  await expect(page.locator("#info-overlay")).toBeVisible();
+  await expect(page.locator("#context-menu")).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#info-overlay")).toBeHidden();
+
+  // Right-click again and close with Escape.
+  await page.locator(".card", { hasText: "foto.png" }).click({ button: "right" });
+  await expect(page.locator("#context-menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#context-menu")).toBeHidden();
+
+  // Right-clicking empty grid space (below the tiles) shows no menu.
+  const lastCard = await page.locator(".card", { hasText: "foto2.png" }).boundingBox();
+  if (lastCard) {
+    await page.mouse.click(lastCard.x + lastCard.width / 2, lastCard.y + lastCard.height + 30, {
+      button: "right",
+    });
+    await expect(page.locator("#context-menu")).toBeHidden();
+  }
+
+  await electronApp.close();
+});
 
 test("actual-size button resets the large view zoom to 100 percent", async () => {
   const { electronApp, page } = await launchApp();
