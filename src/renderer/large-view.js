@@ -4,6 +4,7 @@ import { disposeObject } from "./three-utils.js";
 import {
   clampZoom,
   clampZoomPercent,
+  formatSize,
   glbDistanceForPercent,
   glbPercentForDistance,
   MAX_ZOOM_PERCENT,
@@ -254,7 +255,7 @@ function createImageView(canvas, img, onChange) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
@@ -264,7 +265,6 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   const {
     largeView,
     largeCanvas,
-    largeTitle,
     largeInfo,
     largeZoom,
     largeZoomValue,
@@ -273,6 +273,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeSlideshow,
     largeActual,
     largeFit,
+    largePrev,
+    largeNext,
     largeFullscreen,
     largeFullscreenExit,
     slideshowProgress,
@@ -440,6 +442,28 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   }
 
   /**
+   * Updates the status bar with the file name, pixel size and formatted file
+   * size.
+   * @param {{name: string, size: number}} file - Media file entry.
+   * @param {{width: number, height: number}} [imageSize] - Pixel size when known.
+   */
+  function updateStatusBar(file, imageSize) {
+    const size = formatSize(file.size);
+    const dims = imageSize ? `${imageSize.width}x${imageSize.height}` : null;
+    largeInfo.textContent = [file.name, dims, size].filter(Boolean).join(" | ");
+  }
+
+  /**
+   * Disables the previous/next buttons at the folder boundaries.
+   */
+  function updateNavButtons() {
+    const files = getFiles();
+    const index = files.findIndex((file) => file.path === largeViewState?.file?.path);
+    largePrev.disabled = index <= 0;
+    largeNext.disabled = index < 0 || index >= files.length - 1;
+  }
+
+  /**
    * Closes and hides the large view.
    */
   function close() {
@@ -449,8 +473,9 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     dispose();
     stopSlideshow();
     largeView.classList.add("hidden");
-    largeTitle.textContent = "";
     largeInfo.textContent = "";
+    largePrev.disabled = true;
+    largeNext.disabled = true;
     syncZoomControl(1);
   }
 
@@ -552,8 +577,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     disposeResources();
     largeViewState = { token, file };
     largeView.classList.remove("hidden");
-    largeTitle.textContent = file.name;
-    largeInfo.textContent = "";
+    updateStatusBar(file);
+    updateNavButtons();
     syncZoomControl(1);
 
     try {
@@ -614,10 +639,10 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
 
     largeCanvas.style.display = "block";
     const imageView = createImageView(largeCanvas, img, (scale) => {
-      largeInfo.textContent = `${img.naturalWidth}x${img.naturalHeight}`;
       syncZoomControl(scale);
     });
     imageView.fitView();
+    updateStatusBar(file, { width: img.naturalWidth, height: img.naturalHeight });
 
     frame.classList.add(
       settings.get().slideshowTransition === "slide" ? "enter-slide" : "enter-fade",
@@ -832,6 +857,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   largeSlideshow.addEventListener("change", toggleSlideshow);
   largeActual.addEventListener("click", () => setZoom(100));
   largeFit.addEventListener("click", fitToScreen);
+  largePrev.addEventListener("click", () => navigate(-1));
+  largeNext.addEventListener("click", () => navigate(1));
   largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));
   largeFullscreenExit.addEventListener("click", () => window.api.setFullScreen(false));
   largeView.addEventListener("mousemove", revealFullscreenExit);
