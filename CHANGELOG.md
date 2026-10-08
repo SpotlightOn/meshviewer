@@ -4,6 +4,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- File information dialog in the large view (info icon before fullscreen): all EXIF groups of the image, with basic file information (size, dimensions, modified date, type) as fallback
+
 ## [0.4.0] - 2026-10-08
 
 ### Added

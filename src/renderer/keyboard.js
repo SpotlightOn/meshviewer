@@ -1,13 +1,15 @@
 /**
  * Global keyboard shortcuts: F11 toggles fullscreen, Esc closes the settings
- * dialog, large view shortkeys are delegated to the large view module and
- * Ctrl++/Ctrl+-/Ctrl+0 zoom the tile grid when no other view is active.
+ * or file information dialog, large view shortkeys are delegated to the large
+ * view module and Ctrl++/Ctrl+-/Ctrl+0 zoom the tile grid when no other view
+ * is active.
  * @param {object} deps - Module dependencies.
  * @param {{isOpen: () => boolean, close: () => void}} deps.settings - Settings module API.
+ * @param {{isOpen: () => boolean, close: () => void}} deps.infoDialog - File information dialog API.
  * @param {{onKeydown: (event: KeyboardEvent) => boolean, isActive: () => boolean}} deps.largeView - Large view module API.
  * @param {{zoomTiles: (step: number) => void}} deps.grid - Grid module API.
  */
-export function createKeyboard({ settings, largeView, grid }) {
+export function createKeyboard({ settings, infoDialog, largeView, grid }) {
   /**
    * Toggles the window between normal and fullscreen mode on F11.
    * @param {KeyboardEvent} event - Keyboard event.
@@ -22,8 +24,9 @@ export function createKeyboard({ settings, largeView, grid }) {
   }
 
   /**
-   * Routes key events: F11 for fullscreen, Esc to close the settings dialog,
-   * everything else to the large view while it is active.
+   * Routes key events: F11 for fullscreen, Esc to close the settings dialog
+   * or the file information dialog, everything else to the large view while
+   * it is active.
    * @param {KeyboardEvent} event - Keyboard event.
    */
   function handleKeydown(event) {
@@ -34,6 +37,12 @@ export function createKeyboard({ settings, largeView, grid }) {
     if (settings.isOpen()) {
       if (event.key === "Escape") {
         settings.close();
+      }
+      return;
+    }
+    if (infoDialog.isOpen()) {
+      if (event.key === "Escape") {
+        infoDialog.close();
       }
       return;
     }
