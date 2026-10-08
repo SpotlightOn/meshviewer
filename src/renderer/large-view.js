@@ -254,7 +254,7 @@ function createImageView(canvas, img, onChange) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeFit: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
@@ -271,6 +271,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeBack,
     infoButton,
     largeSlideshow,
+    largeActual,
     largeFit,
     largeFullscreen,
     largeFullscreenExit,
@@ -829,6 +830,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     infoDialog.open(largeViewState.file, largeViewState.imageSize);
   });
   largeSlideshow.addEventListener("change", toggleSlideshow);
+  largeActual.addEventListener("click", () => setZoom(100));
   largeFit.addEventListener("click", fitToScreen);
   largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));
   largeFullscreenExit.addEventListener("click", () => window.api.setFullScreen(false));

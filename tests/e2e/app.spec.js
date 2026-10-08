@@ -99,3 +99,26 @@ test("file information dialog shows basic info and closes with Esc", async () =>
 
   await electronApp.close();
 });
+
+test("actual-size button resets the large view zoom to 100 percent", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+
+  await page.locator("#large-zoom-value").fill("200");
+  await page.locator("#large-zoom-value").press("Enter");
+  await expect(page.locator("#large-zoom-value")).toHaveValue("200%");
+
+  await page.locator("#large-actual").click();
+  await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
+
+  await electronApp.close();
+});

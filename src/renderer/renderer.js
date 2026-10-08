@@ -45,6 +45,7 @@ const largeView = createLargeView({
     largeBack: document.getElementById("large-back"),
     infoButton: document.getElementById("large-details"),
     largeSlideshow: document.getElementById("large-slideshow"),
+    largeActual: document.getElementById("large-actual"),
     largeFit: document.getElementById("large-fit"),
     largeFullscreen: document.getElementById("large-fullscreen"),
     largeFullscreenExit: document.getElementById("large-fullscreen-exit"),
