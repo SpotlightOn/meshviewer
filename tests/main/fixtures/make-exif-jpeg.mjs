@@ -31,6 +31,40 @@ export async function makeExifJpeg(outPath) {
 }
 
 /**
+ * Creates a JPEG with EXIF orientation and an embedded thumbnail.
+ * @param {string} outPath - Destination file.
+ * @param {{mainOrientation?: number, thumbOrientation?: number, mainSize?: [number, number], thumbSize?: [number, number]}} [options] - Orientation values and pixel sizes.
+ * @returns {Promise<{main: Buffer, thumb: Buffer}>} Generated main image and thumbnail buffers.
+ */
+export async function makeOrientedJpeg(outPath, options = {}) {
+  const {
+    mainOrientation,
+    thumbOrientation,
+    mainSize = [320, 240],
+    thumbSize = [160, 120],
+  } = options;
+  const main = await sharp({
+    create: { width: mainSize[0], height: mainSize[1], channels: 3, background: "#c81e1e" },
+  })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  const thumb = await sharp({
+    create: { width: thumbSize[0], height: thumbSize[1], channels: 3, background: "#1ec81e" },
+  })
+    .jpeg({ quality: 60 })
+    .toBuffer();
+
+  const exifBytes = piexifjs.dump({
+    "0th": mainOrientation ? { [piexifjs.ImageIFD.Orientation]: mainOrientation } : {},
+    "1st": thumbOrientation ? { [piexifjs.ImageIFD.Orientation]: thumbOrientation } : {},
+    thumbnail: thumb.toString("binary"),
+  });
+  const data = Buffer.from(piexifjs.insert(exifBytes, main.toString("binary")), "binary");
+  await writeFile(outPath, data);
+  return { main, thumb };
+}
+
+/**
  * Creates a plain JPEG without EXIF data.
  * @param {string} outPath - Destination file.
  * @returns {Promise<void>}
