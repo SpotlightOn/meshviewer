@@ -100,6 +100,28 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await electronApp.close();
 });
 
+/**
+ * Waits until the large view transition has fully finished: only the current
+ * frame remains and its image is centered in the canvas.
+ * @param {import('@playwright/test').Page} page - Page.
+ */
+async function expectImageCentered(page) {
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("#large-canvas");
+    if (!canvas) return false;
+    const frames = canvas.querySelectorAll(".large-frame");
+    if (frames.length !== 1) return false;
+    const img = frames[0].querySelector("img");
+    if (!img) return false;
+    const c = canvas.getBoundingClientRect();
+    const i = img.getBoundingClientRect();
+    return (
+      Math.abs(i.x + i.width / 2 - (c.x + c.width / 2)) < 1 &&
+      Math.abs(i.y + i.height / 2 - (c.y + c.height / 2)) < 1
+    );
+  });
+}
+
 test("actual-size button resets the large view zoom to 100 percent", async () => {
   const { electronApp, page } = await launchApp();
 
@@ -145,6 +167,88 @@ test("status bar shows file info and the arrow buttons navigate", async () => {
     await page.locator("#large-prev").click();
     await expect(page.locator("#large-file-info")).toHaveText(before);
   }
+
+  await electronApp.close();
+});
+
+test("swiping the image navigates to the previous and next image", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  const before = (await page.locator("#large-file-info").textContent()) ?? "";
+
+  const box = (await page.locator("#large-canvas").boundingBox()) ?? { x: 0, y: 0 };
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  // Swiping left goes to the next image, swiping right back to the previous one.
+  // The direction to test first depends on the folder's listing order.
+  const swipeLeftFirst = await page.locator("#large-next").isEnabled();
+  const swipeLeft = { dx: -150, dy: 0 };
+  const swipeRight = { dx: 150, dy: 0 };
+  await expectImageCentered(page);
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + (swipeLeftFirst ? swipeLeft.dx : swipeRight.dx), cy, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.locator("#large-file-info")).not.toHaveText(before);
+
+  await expectImageCentered(page);
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + (swipeLeftFirst ? swipeRight.dx : swipeLeft.dx), cy, { steps: 10 });
+  await page.mouse.up();
+  await expect(page.locator("#large-file-info")).toHaveText(before);
+
+  // A short drag below the threshold snaps back without navigating.
+  await expectImageCentered(page);
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 30, cy, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator("#large-file-info")).toHaveText(before);
+  await expectImageCentered(page);
+
+  await electronApp.close();
+});
+
+test("middle mouse click toggles the image between 100 percent and fit", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+
+  await page.locator("#large-zoom-value").fill("200");
+  await page.locator("#large-zoom-value").press("Enter");
+  await expect(page.locator("#large-zoom-value")).toHaveValue("200%");
+  await expectImageCentered(page);
+
+  const box = (await page.locator("#large-canvas").boundingBox()) ?? { x: 0, y: 0 };
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+
+  // Not at 100%: the middle click resets to 100% (1:1).
+  await page.mouse.click(cx, cy, { button: "middle" });
+  await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
+
+  // At 100%: the middle click fits the image; for a 64x64 fixture fit equals 100%.
+  await page.mouse.click(cx, cy, { button: "middle" });
+  await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
 
   await electronApp.close();
 });

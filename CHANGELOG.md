@@ -8,6 +8,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - File information dialog in the large view (info icon before fullscreen): all EXIF groups of the image, with basic file information (size, dimensions, modified date, type) as fallback
 - Actual-size (1:1) button in the large view zoom controls
 - Previous/next arrow buttons in the large view status bar to step through the files
+- Swiping (drag) horizontally across an image in the large view steps to the previous/next file; the image follows the pointer and snaps back when the drag is too short
+- Middle mouse button on an image in the large view toggles between 100 % zoom and fit-to-screen
 
 ### Changed
 - Large view status bar shows "file name | pixel dimensions | file size" with all text left-aligned
