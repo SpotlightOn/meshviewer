@@ -36,6 +36,7 @@
     "dimensions": "Bildmaße",
     "modified": "Geändert",
     "type": "Typ",
+    "embeddedThumbnail": "Eingebettetes Thumbnail",
     "groups": {
       "image": "Bild",
       "exif": "EXIF",
@@ -46,6 +47,10 @@
       "iptc": "IPTC",
       "xmp": "XMP"
     }
+  },
+  "contextMenu": {
+    "openWith": "Mit Standardanwendung öffnen",
+    "fileInfo": "Dateiinformationen"
   },
   "menu": {
     "file": "Datei",

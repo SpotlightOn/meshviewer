@@ -201,7 +201,11 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
       return true;
     }
 
-    const cards = files.map(createCard);
+    const cards = files.map((file, index) => {
+      const card = createCard(file);
+      card.dataset.index = String(index);
+      return card;
+    });
     const fragment = document.createDocumentFragment();
     for (const card of cards) {
       fragment.append(card);

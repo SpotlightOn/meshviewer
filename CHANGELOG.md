@@ -10,12 +10,14 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Previous/next arrow buttons in the large view status bar to step through the files
 - Swiping (drag) horizontally across an image in the large view steps to the previous/next file; the image follows the pointer and snaps back when the drag is too short
 - Middle mouse button on an image in the large view toggles between 100 % zoom and fit-to-screen
+- Context menu on media thumbnails (right-click): open the file with the default application or show the file information dialog
 
 ### Changed
 - Large view status bar shows "file name | pixel dimensions | file size" with all text left-aligned
 
 ### Fixed
 - Thumbnails of photos with EXIF orientation (e.g. portrait shots) are no longer shown rotated; the embedded-thumbnail path now applies the orientation tag
+- File information dialog: embedded preview images are displayed as images instead of raw bytes; unreadable binary metadata (maker notes, HDR+ payloads) is hidden
 
 ## [0.4.0] - 2026-10-08
 

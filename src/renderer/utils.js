@@ -85,11 +85,149 @@ function exifTagValue(tag) {
 }
 
 /**
+ * Whether a value holds raw bytes: typed arrays, ArrayBuffers, or plain
+ * objects/arrays of numeric byte values (produced by ExifReader for binary
+ * tags like maker notes).
+ * @param {*} value - Tag value.
+ * @returns {boolean} true for byte data.
+ */
+function isByteData(value) {
+  if (value === null || value === undefined) return false;
+  if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return true;
+  if (typeof value !== "object") return false;
+  const keys = Object.keys(value);
+  return keys.length >= 8 && keys.every((key) => /^\d+$/.test(key));
+}
+
+/**
+ * Image magic-byte signatures mapped to their MIME types.
+ * @type {Array<{mime: string, match: (bytes: Uint8Array) => boolean}>}
+ */
+const IMAGE_SIGNATURES = [
+  {
+    mime: "image/jpeg",
+    match: (bytes) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff,
+  },
+  {
+    mime: "image/png",
+    match: (bytes) =>
+      bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47,
+  },
+  {
+    mime: "image/gif",
+    match: (bytes) =>
+      bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38,
+  },
+  {
+    mime: "image/webp",
+    match: (bytes) =>
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[3] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50,
+  },
+  {
+    mime: "image/bmp",
+    match: (bytes) => bytes[0] === 0x42 && bytes[1] === 0x4d,
+  },
+];
+
+/**
+ * Largest embedded preview converted to a data URL, in bytes. Bigger blobs
+ * (e.g. full-size previews) are skipped to keep the dialog lean.
+ * @type {number}
+ */
+const MAX_PREVIEW_BYTES = 1024 * 1024;
+
+/**
+ * Normalizes a byte source into a Uint8Array view over its own data.
+ * @param {*} value - ArrayBuffer, typed array or data view.
+ * @returns {Uint8Array} Byte view.
+ */
+function toUint8Array(value) {
+  if (value instanceof Uint8Array) return value;
+  if (value instanceof ArrayBuffer) return new Uint8Array(value);
+  if (ArrayBuffer.isView(value)) {
+    return new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  }
+  return new Uint8Array(value);
+}
+
+/**
+ * Converts bytes into a base64 image data URL when they look like a supported
+ * image format, or null otherwise (including oversized blobs).
+ * @param {*} bytes - Byte source (ArrayBuffer or typed array).
+ * @param {string} [mimeHint] - MIME type supplied by the parser.
+ * @returns {string|null} Image data URL.
+ */
+function imageDataUrl(bytes, mimeHint = "") {
+  const data = toUint8Array(bytes);
+  if (data.byteLength === 0 || data.byteLength > MAX_PREVIEW_BYTES) return null;
+  const signature = IMAGE_SIGNATURES.find((item) => item.match(data));
+  const mime = mimeHint && mimeHint.startsWith("image/") ? mimeHint : signature?.mime;
+  if (!mime) return null;
+  const CHUNK = 0x8000;
+  let binary = "";
+  for (let offset = 0; offset < data.byteLength; offset += CHUNK) {
+    binary += String.fromCharCode(...data.subarray(offset, offset + CHUNK));
+  }
+  return `data:${mime};base64,${btoa(binary)}`;
+}
+
+/**
+ * Metadata fields that carry camera-internal payloads (HDR+ auxiliary data)
+ * and are never readable as text; dropped by name.
+ * @type {Set<string>}
+ */
+const EXIF_JUNK_TAGS = new Set(["hdrp_makernote", "shot_log_data"]);
+
+/**
+ * Extracts the embedded preview image that ExifReader v4 stores at group level
+ * (Thumbnail.image with Thumbnail.type) and renders it as an image row. The
+ * label is referenced by key so the dialog can translate it.
+ * @param {object} entries - Group entries.
+ * @returns {{labelKey: string, image: string}|null} Image row or null.
+ */
+function embeddedImageRow(entries) {
+  if (!entries || typeof entries !== "object") return null;
+  const raw = entries.image?.value ?? entries.image;
+  if (!isByteData(raw)) return null;
+  const mimeHint = typeof entries.type === "string" ? entries.type : entries.type?.value;
+  const dataUrl = imageDataUrl(raw, mimeHint);
+  if (!dataUrl) return null;
+  return { labelKey: "info.embeddedThumbnail", image: dataUrl };
+}
+
+/**
+ * Builds a display row for a single ExifReader tag: embedded images become
+ * image rows, unreadable binary blobs and junk payloads are dropped, and
+ * everything else is shown as text.
+ * @param {string} name - Tag name.
+ * @param {*} tag - ExifReader tag object or bare value.
+ * @returns {{label: string, value: string}|{label: string, image: string}|null} Row or null when not displayable.
+ */
+function exifTagRow(name, tag) {
+  if (EXIF_JUNK_TAGS.has(name.toLowerCase())) return null;
+  const value = tag?.value;
+  if (isByteData(value)) {
+    const dataUrl = imageDataUrl(value);
+    return dataUrl ? { label: exifTagLabel(name), image: dataUrl } : null;
+  }
+  const text = exifTagValue(tag);
+  if (text === "") return null;
+  return { label: exifTagLabel(name), value: text };
+}
+
+/**
  * Converts expanded ExifReader tags into sections of display rows. Groups
  * that only hold file-format data are dropped, so an empty result means the
  * file carries no EXIF metadata.
  * @param {object|null} tags - Expanded ExifReader result.
- * @returns {Array<{group: string, rows: Array<{label: string, value: string}>}>} Sections with at least one row each.
+ * @returns {Array<{group: string, rows: Array<{label: string, value: string}|{labelKey: string, image: string}>}>} Sections with at least one row each.
  */
 function exifToSections(tags) {
   if (!tags || typeof tags !== "object") return [];
@@ -98,10 +236,12 @@ function exifToSections(tags) {
     if (isExifFormatGroup(group)) continue;
     if (!entries || typeof entries !== "object") continue;
     const rows = [];
+    const embedded = embeddedImageRow(entries);
+    if (embedded) rows.push(embedded);
     for (const [name, tag] of Object.entries(entries)) {
-      const value = exifTagValue(tag);
-      if (value === "") continue;
-      rows.push({ label: exifTagLabel(name), value });
+      if (name === "image" || name === "base64" || name === "type") continue;
+      const row = exifTagRow(name, tag);
+      if (row) rows.push(row);
     }
     if (rows.length > 0) sections.push({ group, rows });
   }
@@ -272,6 +412,7 @@ export {
   glbDistanceForPercent,
   glbPercentForDistance,
   IMAGE_MIME,
+  imageDataUrl,
   MAX_ZOOM,
   MAX_ZOOM_PERCENT,
   MIN_ZOOM,

@@ -1,6 +1,7 @@
+import { createContextMenu } from "./context-menu.js";
 import { createInfoDialog } from "./exif-dialog.js";
 import { createGrid } from "./grid.js";
-import { initI18n } from "./i18n.js";
+import { initI18n, t } from "./i18n.js";
 import { createKeyboard } from "./keyboard.js";
 import { createLargeView } from "./large-view.js";
 import { createPathBar } from "./pathbar.js";
@@ -59,6 +60,29 @@ const largeView = createLargeView({
 });
 largeViewRef.current = largeView;
 
+const contextMenu = createContextMenu({
+  host: document.getElementById("grid"),
+  menuEl: document.getElementById("context-menu"),
+  resolveFile: (target) => {
+    const card = target.closest?.(".card");
+    if (!card || card.dataset.index === undefined) return null;
+    return grid?.getFiles()[Number(card.dataset.index)] ?? null;
+  },
+});
+
+contextMenu.register({
+  id: "open-with",
+  label: () => t("contextMenu.openWith"),
+  icon: "openInNew",
+  action: (file) => void window.api.openPath(file.path),
+});
+contextMenu.register({
+  id: "file-info",
+  label: () => t("contextMenu.fileInfo"),
+  icon: "info",
+  action: (file) => infoDialog.open(file),
+});
+
 grid = createGrid({
   dom: {
     grid: document.getElementById("grid"),
@@ -66,7 +90,10 @@ grid = createGrid({
     contentEl: document.querySelector(".content"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
-  onFolderChange: (dirPath) => pathBar.setPath(dirPath),
+  onFolderChange: (dirPath) => {
+    pathBar.setPath(dirPath);
+    contextMenu.close();
+  },
 });
 
 createKeyboard({ settings, infoDialog, largeView, grid });
