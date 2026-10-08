@@ -10,9 +10,15 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Close button and Esc to close the About dialog
 - Edit menu with undo, redo, cut, copy, paste and select all
 - Breadcrumb path bar: every folder in the path is clickable, the path is editable as text (click the active folder or empty space)
+- Fit-to-screen button next to the zoom field in the large view
+- Slideshow progress line in the large view header (reaches the right edge when the next image appears)
+- Fullscreen mode for the large view (header button, exit icon appears while the mouse moves, Esc leaves fullscreen)
 
 ### Changed
 - Toolbar: Material outline icons for up and home with a clearly visible separator before the path
+- Large view slideshow is a switch control with label instead of a button
+- Large view back button is an arrow icon with the label as tooltip
+- Large view file name and details moved from the header to a status bar at the bottom
 
 ### Fixed
 - Arrow keys no longer navigate behind the open settings dialog

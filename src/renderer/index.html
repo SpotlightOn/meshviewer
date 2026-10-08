@@ -67,11 +67,30 @@
 
   <div id="large-view" class="large-view hidden">
     <header class="large-header">
-      <button id="large-back" type="button" data-i18n="largeView.back">Back</button>
-      <button id="large-slideshow" type="button" class="large-slideshow" data-i18n="largeView.slideshow">Slideshow</button>
-      <span id="large-title" class="large-title"></span>
+      <button
+        id="large-back"
+        type="button"
+        class="icon-btn"
+        data-i18n-title="largeView.back"
+        data-i18n-aria-label="largeView.back"
+      >
+        <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M400-240 160-480l241-241 43 42-169 169h526v60H275l168 168-43 42Z" /></svg>
+      </button>
+      <button
+        id="large-fullscreen"
+        type="button"
+        class="icon-btn"
+        data-i18n-title="largeView.fullscreen"
+        data-i18n-aria-label="largeView.fullscreen"
+      >
+        <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-120v-193h60v133h133v60H120Zm527 0v-60h133v-133h60v193H647ZM120-647v-193h193v60H180v133h-60Zm660 0v-133H647v-60h193v193h-60Z" /></svg>
+      </button>
       <div class="large-right">
-        <span id="large-info" class="large-info"></span>
+        <label class="switch">
+          <input id="large-slideshow" type="checkbox" class="switch-input" />
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-label" data-i18n="largeView.slideshow">Slideshow</span>
+        </label>
         <div class="zoom-control">
           <input
             id="large-zoom"
@@ -94,10 +113,33 @@
             data-i18n-aria-label="largeView.zoomInput"
             data-i18n-title="largeView.zoomInput"
           />
+          <button
+            id="large-fit"
+            type="button"
+            class="icon-btn zoom-fit-btn"
+            data-i18n-title="largeView.fitToScreen"
+            data-i18n-aria-label="largeView.fitToScreen"
+          >
+            <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M820-610v-130H690v-60h130q24 0 42 18t18 42v130h-60Zm-740 0v-130q0-24 18-42t42-18h130v60H140v130H80Zm610 450v-60h130v-130h60v130q0 24-18 42t-42 18H690Zm-550 0q-24 0-42-18t-18-42v-130h60v130h130v60H140Zm60-120v-400h560v400H200Zm60-60h440v-280H260v280Zm0 0v-280 280Z" /></svg>
+          </button>
         </div>
       </div>
+      <div id="slideshow-progress" class="slideshow-progress" aria-hidden="true"></div>
     </header>
     <div id="large-canvas" class="large-canvas"></div>
+    <footer class="large-statusbar">
+      <span id="large-title" class="large-title"></span>
+      <span id="large-info" class="large-info"></span>
+    </footer>
+    <button
+      id="large-fullscreen-exit"
+      type="button"
+      class="fullscreen-exit"
+      data-i18n-title="largeView.fullscreenExit"
+      data-i18n-aria-label="largeView.fullscreenExit"
+    >
+      <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M253-120v-133H120v-60h193v193h-60Zm394 0v-193h193v60H707v133h-60ZM120-647v-60h133v-133h60v193H120Zm527 0v-193h60v133h133v60H647Z" /></svg>
+    </button>
   </div>
 
   <div id="settings-overlay" class="settings-overlay hidden">

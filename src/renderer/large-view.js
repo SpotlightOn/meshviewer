@@ -254,7 +254,7 @@ function createImageView(canvas, img, onChange) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, largeSlideshow: HTMLButtonElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeFit: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @returns {{show: Function, close: () => void, isActive: () => boolean, onKeydown: (event: KeyboardEvent) => boolean, toggleSlideshow: () => void, restartSlideshow: () => void}} Large view module API.
@@ -269,10 +269,17 @@ export function createLargeView({ dom, settings, getFiles }) {
     largeZoomValue,
     largeBack,
     largeSlideshow,
+    largeFit,
+    largeFullscreen,
+    largeFullscreenExit,
+    slideshowProgress,
   } = dom;
   let largeViewState = null;
   let largeToken = 0;
   let slideshowTimer = null;
+  let fullscreen = false;
+  let fullscreenExitVisible = false;
+  let fullscreenIdleTimer = null;
 
   /** @type {number} */
   let currentZoomPercent = 100;
@@ -377,10 +384,64 @@ export function createLargeView({ dom, settings, getFiles }) {
   }
 
   /**
+   * Fits the current file to the screen: resets an image to its fitted size or
+   * restores the GLB camera to the initial fit position.
+   */
+  function fitToScreen() {
+    if (!largeViewState) return;
+    if (largeViewState.type === "image" && largeViewState.imageView) {
+      largeViewState.imageView.fitView();
+    } else if (largeViewState.type === "glb") {
+      largeViewState.controls.reset();
+    }
+  }
+
+  /**
+   * Reveals the fullscreen exit button for a fixed window of time. A later
+   * mouse move shows it again; further moves do not extend the window, so it
+   * always disappears even with continuous pointer events.
+   */
+  function revealFullscreenExit() {
+    if (!fullscreen || fullscreenExitVisible) return;
+    fullscreenExitVisible = true;
+    largeFullscreenExit.classList.add("visible");
+    clearTimeout(fullscreenIdleTimer);
+    fullscreenIdleTimer = setTimeout(() => {
+      fullscreenExitVisible = false;
+      largeFullscreenExit.classList.remove("visible");
+    }, 2500);
+  }
+
+  /**
+   * Hides the fullscreen exit button and cancels its timer.
+   */
+  function hideFullscreenExit() {
+    fullscreenExitVisible = false;
+    clearTimeout(fullscreenIdleTimer);
+    largeFullscreenExit.classList.remove("visible");
+  }
+
+  /**
+   * Applies the window fullscreen state to the large view: the header and
+   * status bar hide and an exit button appears while the mouse is moving.
+   * @param {boolean} active - Whether the window is in fullscreen mode.
+   */
+  function setFullscreen(active) {
+    fullscreen = active;
+    largeView.classList.toggle("fullscreen", active);
+    if (active) {
+      revealFullscreenExit();
+    } else {
+      hideFullscreenExit();
+    }
+  }
+
+  /**
    * Closes and hides the large view.
    */
   function close() {
     largeToken += 1;
+    if (fullscreen) window.api.setFullScreen(false);
     dispose();
     stopSlideshow();
     largeView.classList.add("hidden");
@@ -390,26 +451,49 @@ export function createLargeView({ dom, settings, getFiles }) {
   }
 
   /**
-   * Stops the slideshow timer and resets the toggle button state.
+   * Runs the slideshow progress bar over a full interval. Restarting the
+   * animation each interval keeps it aligned with the timer even if it drifts.
+   * @param {number} intervalMs - Duration of one slideshow interval.
+   */
+  function startProgressBar(intervalMs) {
+    slideshowProgress.style.animation = "none";
+    void slideshowProgress.offsetWidth;
+    slideshowProgress.style.animation = `slideshow-progress ${intervalMs}ms linear forwards`;
+  }
+
+  /**
+   * Hides the slideshow progress bar.
+   */
+  function stopProgressBar() {
+    slideshowProgress.style.animation = "none";
+  }
+
+  /**
+   * Stops the slideshow timer and resets the switch and progress bar.
    */
   function stopSlideshow() {
     if (slideshowTimer) {
       clearInterval(slideshowTimer);
       slideshowTimer = null;
     }
-    largeSlideshow.classList.remove("active");
-    largeSlideshow.setAttribute("aria-pressed", "false");
+    largeSlideshow.checked = false;
+    stopProgressBar();
   }
 
   /**
-   * Starts the slideshow, advancing to the next file every interval.
+   * Starts the slideshow, advancing to the next file every interval. The
+   * progress bar animation runs for exactly one interval so it reaches the
+   * right edge when the next file appears.
    */
   function startSlideshow() {
     if (slideshowTimer) return;
-    largeSlideshow.classList.add("active");
-    largeSlideshow.setAttribute("aria-pressed", "true");
+    largeSlideshow.checked = true;
     const intervalMs = Math.max(1000, settings.get().slideshowIntervalSeconds * 1000);
-    slideshowTimer = setInterval(() => navigate(1, true), intervalMs);
+    startProgressBar(intervalMs);
+    slideshowTimer = setInterval(() => {
+      startProgressBar(intervalMs);
+      navigate(1, true);
+    }, intervalMs);
   }
 
   /**
@@ -666,12 +750,23 @@ export function createLargeView({ dom, settings, getFiles }) {
     if (largeView.classList.contains("hidden") || !largeViewState) return false;
     const target = event.target;
     if (target instanceof HTMLElement) {
-      if (target.closest("input, textarea, select")) return false;
-      if (target.closest("button") && (event.key === " " || event.key === "Enter")) return false;
+      if (
+        target.closest("input, textarea, select") &&
+        !target.matches("input[type='checkbox'], input[type='radio']")
+      ) {
+        return false;
+      }
+      const nativeToggle =
+        target.closest("button") || target.matches("input[type='checkbox'], input[type='radio']");
+      if (nativeToggle && (event.key === " " || event.key === "Enter")) return false;
     }
 
     if (event.key === "Escape") {
-      close();
+      if (fullscreen) {
+        window.api.setFullScreen(false);
+      } else {
+        close();
+      }
       return true;
     }
 
@@ -724,7 +819,12 @@ export function createLargeView({ dom, settings, getFiles }) {
   }
 
   largeBack.addEventListener("click", close);
-  largeSlideshow.addEventListener("click", toggleSlideshow);
+  largeSlideshow.addEventListener("change", toggleSlideshow);
+  largeFit.addEventListener("click", fitToScreen);
+  largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));
+  largeFullscreenExit.addEventListener("click", () => window.api.setFullScreen(false));
+  largeView.addEventListener("mousemove", revealFullscreenExit);
+  window.api.onFullScreenChanged(setFullscreen);
 
   largeZoom.addEventListener("input", () => {
     setZoom(Number(largeZoom.value));

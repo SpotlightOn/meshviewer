@@ -19,7 +19,10 @@
     "back": "Zurück",
     "slideshow": "Diashow",
     "zoom": "Zoom",
-    "zoomInput": "Zoom in Prozent"
+    "zoomInput": "Zoom in Prozent",
+    "fitToScreen": "An Bildschirm anpassen",
+    "fullscreen": "Vollbild",
+    "fullscreenExit": "Vollbild beenden"
   },
   "menu": {
     "file": "Datei",

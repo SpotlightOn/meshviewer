@@ -21,6 +21,10 @@ function createMainWindow() {
   });
 
   win.loadURL(`${PROTOCOL}://app/index.html`);
+
+  win.on("enter-full-screen", () => win.webContents.send("win:fullscreen-changed", true));
+  win.on("leave-full-screen", () => win.webContents.send("win:fullscreen-changed", false));
+
   return win;
 }
 
