@@ -146,6 +146,8 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
     const img = document.createElement("img");
     img.className = "thumb";
     img.alt = file.name;
+    img.decoding = "async";
+    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 
     wrap.append(img);
 

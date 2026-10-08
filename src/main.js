@@ -9,6 +9,7 @@ import { createMainWindow } from "./main-window.js";
 import { createAppMenu } from "./menu.js";
 import { registerAppProtocol } from "./protocol.js";
 import { registerSettingsIpc } from "./settingsStore.js";
+import { registerWindowIpc } from "./window-ipc.js";
 
 /**
  * Initializes i18next based on the system locale.
@@ -41,6 +42,7 @@ app.whenReady().then(() => {
   registerFsIpc(ipcMain, app, shell);
   registerSettingsIpc(ipcMain, (fileName) => path.join(app.getPath("userData"), fileName));
   registerDialogIpc(ipcMain);
+  registerWindowIpc(ipcMain);
   initI18n();
   createAppMenu({
     onSettings: openSettings,
