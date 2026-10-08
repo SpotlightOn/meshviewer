@@ -4,6 +4,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- Zoom slider (10-800 %) with direct percentage entry for the large view
+
 ## [0.3.0] - 2026-10-07
 
 ### Added

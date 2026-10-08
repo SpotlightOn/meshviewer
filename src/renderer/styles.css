@@ -322,12 +322,52 @@ main {
   text-overflow: ellipsis;
 }
 
-.large-info {
+.large-right {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.large-info {
   font-size: 13px;
   color: var(--text-dim);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-control input[type="range"] {
+  width: 180px;
+  accent-color: var(--accent);
+}
+
+.zoom-value {
+  width: 64px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 6px;
+  text-align: right;
+}
+
+.zoom-value:hover {
+  border-color: var(--accent);
+}
+
+.zoom-value:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .large-canvas {
