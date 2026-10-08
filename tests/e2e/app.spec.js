@@ -65,3 +65,37 @@ test("opens a folder via the path input", async () => {
 
   await electronApp.close();
 });
+
+test("file information dialog shows basic info and closes with Esc", async () => {
+  const { electronApp, page } = await launchApp();
+
+  const input = page.locator("#path-input");
+  await page.locator(".path-segment.active").click();
+  await expect(input).toBeVisible();
+  await input.fill("/tmp/opencode/glbtest");
+  await input.press("Enter");
+  await expect(page.locator(".card")).toHaveCount(4);
+
+  await page.locator(".card", { hasText: "foto.png" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  await page.locator("#large-details").click();
+  await expect(page.locator("#info-overlay")).toBeVisible();
+  await expect(page.locator(".info-loading")).toBeHidden();
+  await expect(page.locator(".info-section:first-child .info-rows dd")).toHaveCount(4);
+  const title = (await page.locator("#info-dialog-title").textContent()) ?? "";
+  expect(title.includes("info.title")).toBe(false);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#info-overlay")).toBeHidden();
+  await expect(page.locator("#large-view")).toBeVisible();
+
+  await page.locator("#large-back").click();
+  await page.locator(".card", { hasText: "test.glb" }).click();
+  await expect(page.locator("#large-view")).toBeVisible();
+  await page.locator("#large-details").click();
+  await expect(page.locator("#info-overlay")).toBeVisible();
+  await expect(page.locator(".info-section:first-child .info-rows dd")).toHaveCount(3);
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#info-overlay")).toBeHidden();
+
+  await electronApp.close();
+});

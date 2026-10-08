@@ -21,8 +21,28 @@
     "zoom": "Zoom",
     "zoomInput": "Zoom in Prozent",
     "fitToScreen": "An Bildschirm anpassen",
+    "info": "Dateiinformationen",
     "fullscreen": "Vollbild",
     "fullscreenExit": "Vollbild beenden"
+  },
+  "info": {
+    "title": "Dateiinformationen",
+    "loading": "Wird geladen…",
+    "file": "Datei",
+    "size": "Dateigröße",
+    "dimensions": "Bildmaße",
+    "modified": "Geändert",
+    "type": "Typ",
+    "groups": {
+      "image": "Bild",
+      "exif": "EXIF",
+      "gps": "GPS",
+      "thumbnail": "Vorschaubild",
+      "interoperability": "Interoperabilität",
+      "ifd0": "IFD0",
+      "iptc": "IPTC",
+      "xmp": "XMP"
+    }
   },
   "menu": {
     "file": "Datei",

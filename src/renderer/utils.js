@@ -36,6 +36,99 @@ function mimeFor(filename) {
 }
 
 /**
+ * ExifReader groups that only carry file-format data (file info, PNG chunks,
+ * GIF header data, BMP header data) instead of EXIF metadata.
+ * @type {Set<string>}
+ */
+const EXIF_FORMAT_GROUPS = new Set(["file", "png", "gif", "bmp"]);
+
+/**
+ * Whether an ExifReader group only carries file-format data. Groups named
+ * like "pngFile" or "jpegFile" match by suffix, the rest by name.
+ * @param {string} group - ExifReader group name.
+ * @returns {boolean} true for format-only groups.
+ */
+function isExifFormatGroup(group) {
+  return EXIF_FORMAT_GROUPS.has(group) || /File$/i.test(group);
+}
+
+/**
+ * Splits an ExifReader tag name into a readable label
+ * ("ExposureTime" -> "Exposure Time", "GPSPosition" -> "GPS Position").
+ * @param {string} name - Raw ExifReader tag name.
+ * @returns {string} Human-readable label.
+ */
+function exifTagLabel(name) {
+  return name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2");
+}
+
+/**
+ * Flattens an ExifReader tag into its display value, preferring the formatted
+ * description and falling back to the raw value.
+ * @param {{description?: *, value?: *}|*} tag - ExifReader tag object.
+ * @returns {string} Display value, empty when the tag carries none.
+ */
+function exifTagValue(tag) {
+  const raw = tag?.description ?? tag?.value;
+  if (raw === undefined || raw === null) return "";
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => exifTagValue({ value: item }))
+      .filter(Boolean)
+      .join(", ");
+  }
+  if (typeof raw === "object") {
+    const inner = raw.description ?? raw.value;
+    return inner === undefined || inner === null ? "" : String(inner);
+  }
+  return String(raw);
+}
+
+/**
+ * Converts expanded ExifReader tags into sections of display rows. Groups
+ * that only hold file-format data are dropped, so an empty result means the
+ * file carries no EXIF metadata.
+ * @param {object|null} tags - Expanded ExifReader result.
+ * @returns {Array<{group: string, rows: Array<{label: string, value: string}>}>} Sections with at least one row each.
+ */
+function exifToSections(tags) {
+  if (!tags || typeof tags !== "object") return [];
+  const sections = [];
+  for (const [group, entries] of Object.entries(tags)) {
+    if (isExifFormatGroup(group)) continue;
+    if (!entries || typeof entries !== "object") continue;
+    const rows = [];
+    for (const [name, tag] of Object.entries(entries)) {
+      const value = exifTagValue(tag);
+      if (value === "") continue;
+      rows.push({ label: exifTagLabel(name), value });
+    }
+    if (rows.length > 0) sections.push({ group, rows });
+  }
+  return sections;
+}
+
+/**
+ * Builds the basic file information rows shown when a file has no EXIF data.
+ * The label keys refer to the `info.*` translation namespace.
+ * @param {{name: string, size: number, mtimeMs: number}} file - Media file entry.
+ * @param {{width: number, height: number}} [imageSize] - Pixel size when known.
+ * @returns {Array<{key: string, value: string}>} Rows with i18n label keys.
+ */
+function fileInfoRows(file, imageSize) {
+  const rows = [{ key: "size", value: formatSize(file.size) }];
+  if (imageSize && imageSize.width > 0 && imageSize.height > 0) {
+    rows.push({ key: "dimensions", value: `${imageSize.width}x${imageSize.height}` });
+  }
+  rows.push({ key: "modified", value: new Date(file.mtimeMs).toLocaleString() });
+  const dot = file.name.lastIndexOf(".");
+  if (dot > -1 && dot < file.name.length - 1) {
+    rows.push({ key: "type", value: file.name.slice(dot + 1).toUpperCase() });
+  }
+  return rows;
+}
+
+/**
  * Normalizes IPC data into an ArrayBuffer.
  * @param {ArrayBuffer|{buffer: ArrayBuffer, byteOffset: number, byteLength: number}} data - ArrayBuffer or Buffer-like object.
  * @returns {ArrayBuffer} The underlying ArrayBuffer.
@@ -172,6 +265,9 @@ function retireFrames(container, { direction, slide, durationMs, keep = null }) 
 export {
   clampZoom,
   clampZoomPercent,
+  exifTagLabel,
+  exifToSections,
+  fileInfoRows,
   formatSize,
   glbDistanceForPercent,
   glbPercentForDistance,

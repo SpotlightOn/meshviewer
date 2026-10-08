@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   clampZoom,
   clampZoomPercent,
+  exifTagLabel,
+  exifToSections,
+  fileInfoRows,
   formatSize,
   glbDistanceForPercent,
   glbPercentForDistance,
@@ -112,5 +115,94 @@ describe("zoom helpers", () => {
     expect(parseZoomPercent("abc")).toBe(null);
     expect(parseZoomPercent("80px")).toBe(null);
     expect(parseZoomPercent("%")).toBe(null);
+  });
+});
+
+describe("exifTagLabel", () => {
+  it("splits camel-case tag names into readable labels", () => {
+    expect(exifTagLabel("ExposureTime")).toBe("Exposure Time");
+    expect(exifTagLabel("FNumber")).toBe("F Number");
+    expect(exifTagLabel("GPSPosition")).toBe("GPS Position");
+    expect(exifTagLabel("DateTimeOriginal")).toBe("Date Time Original");
+    expect(exifTagLabel("Make")).toBe("Make");
+    expect(exifTagLabel("ISO")).toBe("ISO");
+  });
+});
+
+describe("exifToSections", () => {
+  it("returns no sections for missing or empty tags", () => {
+    expect(exifToSections(null)).toEqual([]);
+    expect(exifToSections(undefined)).toEqual([]);
+    expect(exifToSections({})).toEqual([]);
+  });
+
+  it("drops groups that only carry file-format data", () => {
+    expect(
+      exifToSections({
+        file: { FileType: { description: "JPEG" }, FileSize: { value: 1024 } },
+        png: { "Image Width": { value: 8 } },
+        pngFile: { "Bit Depth": { value: 8 } },
+        gif: { Width: { value: 8 } },
+        bmpFile: { Width: { value: 8 } },
+      }),
+    ).toEqual([]);
+  });
+
+  it("keeps EXIF groups, prettifies tag names and reads the description", () => {
+    const sections = exifToSections({
+      file: { FileType: { description: "JPEG" } },
+      exif: {
+        ExposureTime: { description: "1/125 s" },
+        Make: { description: "Canon" },
+        EmptyTag: { value: undefined },
+      },
+    });
+    expect(sections).toHaveLength(1);
+    expect(sections[0].group).toBe("exif");
+    expect(sections[0].rows).toEqual([
+      { label: "Exposure Time", value: "1/125 s" },
+      { label: "Make", value: "Canon" },
+    ]);
+  });
+
+  it("joins array values and unwraps nested value objects", () => {
+    const sections = exifToSections({
+      gps: {
+        GPSPosition: { value: ["50.1", "8.6"] },
+        LensModel: { value: { description: "50mm f/1.8" } },
+        RawNumber: { value: 24 },
+      },
+    });
+    expect(sections[0].rows).toEqual([
+      { label: "GPS Position", value: "50.1, 8.6" },
+      { label: "Lens Model", value: "50mm f/1.8" },
+      { label: "Raw Number", value: "24" },
+    ]);
+  });
+});
+
+describe("fileInfoRows", () => {
+  const file = { name: "foto.JPG", size: 2048, mtimeMs: Date.UTC(2026, 0, 15, 12, 0, 0) };
+
+  it("provides size, modified date and type without pixel dimensions", () => {
+    const rows = fileInfoRows(file);
+    expect(rows.map((row) => row.key)).toEqual(["size", "modified", "type"]);
+    const size = rows.find((row) => row.key === "size");
+    expect(size.value).toBe("2.0 KB");
+    const type = rows.find((row) => row.key === "type");
+    expect(type.value).toBe("JPG");
+    const modified = rows.find((row) => row.key === "modified");
+    expect(modified.value).toContain("2026");
+  });
+
+  it("adds the dimensions row when the pixel size is known", () => {
+    const rows = fileInfoRows(file, { width: 800, height: 600 });
+    expect(rows.map((row) => row.key)).toEqual(["size", "dimensions", "modified", "type"]);
+    expect(rows[1].value).toBe("800x600");
+  });
+
+  it("skips the type row for names without an extension", () => {
+    const rows = fileInfoRows({ name: "README", size: 10, mtimeMs: 0 });
+    expect(rows.map((row) => row.key)).toEqual(["size", "modified"]);
   });
 });

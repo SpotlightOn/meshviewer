@@ -1,3 +1,4 @@
+import { createInfoDialog } from "./exif-dialog.js";
 import { createGrid } from "./grid.js";
 import { initI18n } from "./i18n.js";
 import { createKeyboard } from "./keyboard.js";
@@ -26,6 +27,13 @@ const settings = createSettings({
 });
 
 let grid;
+const infoDialog = createInfoDialog({
+  dom: {
+    overlay: document.getElementById("info-overlay"),
+    content: document.getElementById("info-content"),
+    closeBtn: document.getElementById("info-close"),
+  },
+});
 const largeView = createLargeView({
   dom: {
     largeView: document.getElementById("large-view"),
@@ -35,6 +43,7 @@ const largeView = createLargeView({
     largeZoom: document.getElementById("large-zoom"),
     largeZoomValue: document.getElementById("large-zoom-value"),
     largeBack: document.getElementById("large-back"),
+    infoButton: document.getElementById("large-details"),
     largeSlideshow: document.getElementById("large-slideshow"),
     largeFit: document.getElementById("large-fit"),
     largeFullscreen: document.getElementById("large-fullscreen"),
@@ -43,6 +52,7 @@ const largeView = createLargeView({
   },
   settings,
   getFiles: () => grid.getFiles(),
+  infoDialog,
 });
 largeViewRef.current = largeView;
 
@@ -56,7 +66,7 @@ grid = createGrid({
   onFolderChange: (dirPath) => pathBar.setPath(dirPath),
 });
 
-createKeyboard({ settings, largeView, grid });
+createKeyboard({ settings, infoDialog, largeView, grid });
 
 const pathBar = createPathBar({
   dom: {

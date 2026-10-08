@@ -1,2 +1,4 @@
 allowBuilds:
   electron-winstaller: true
+minimumReleaseAgeExclude:
+  - exifreader@4.47.0

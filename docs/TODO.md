@@ -3,8 +3,8 @@
 ## EXIF info
 
 Detail image view toolbar: a new info icon placed before fullscreen.
-Clicking it opens a dialog that shows all EXIF information. A third-party
-library may have to be researched. The decisions must be discussed.
+Clicking it opens a dialog that shows all EXIF information.
+Library chosen: exifreader (researched 2026-10).
 Use this icon: https://fonts.google.com/icons?selected=Material+Symbols+Outlined:info:FILL@0;wght@400;GRAD@0;opsz@24&icon.query=info&icon.size=24&icon.color=%231f1f1f
 
 If there is no EXIF info, only known basic information is shown:

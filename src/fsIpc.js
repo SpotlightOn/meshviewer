@@ -1,5 +1,6 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { readExif } from "./exif.js";
 import { getThumbnail } from "./thumbnails.js";
 
 const IMAGE_EXTENSIONS = new Set([
@@ -145,6 +146,7 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("fs:rootDir", () => path.parse(app.getPath("home")).root);
   ipcMain.handle("fs:parentDir", (_event, dirPath) => parentDir(dirPath));
   ipcMain.handle("fs:readFile", (_event, filePath) => readFileBuffer(filePath));
+  ipcMain.handle("fs:exif", (_event, filePath) => readExif(filePath));
   ipcMain.handle("fs:getThumbnail", (_event, file) => getThumbnail(file, cacheDir));
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
