@@ -12,7 +12,7 @@ directly through a custom `app://` protocol.
 
 ```
 ┌──────────────────────────── Electron main process ────────────────────────────┐
-│ src/main.js        window, menu, About dialog, app:// protocol + CSP          │
+│ src/main.js        menu, About + shortcuts dialogs, app:// protocol + CSP      │
 │ src/fsIpc.js       filesystem IPC handlers (fs:*)                             │
 │ src/thumbnails.js  thumbnail cache (sharp, freedesktop, EXIF)                 │
 │ src/settingsStore.js  settings.json in userData (settings:*)                  │
@@ -35,11 +35,12 @@ directly through a custom `app://` protocol.
 
 | File | Responsibility |
 | --- | --- |
-| `src/main.js` | App lifecycle, `app://` protocol with CSP, application menu, modal About window |
+| `src/main.js` | App lifecycle, `app://` protocol with CSP, application menu, modal About and keyboard shortcuts dialogs |
 | `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file reads, locale, `shell:openPath` |
 | `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
+| `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
 | `src/renderer/renderer.js` | Grid, large view, slideshow, settings dialog, navigation |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
@@ -135,7 +136,8 @@ fall back to defaults instead of failing.
 
 - Locale comes from the system (`app.getLocale()` → `fs:locale`); anything not
   German falls back to English.
-- Main process: i18next drives the menu and the About window.
+- Main process: i18next drives the menu, the About window and the shortcuts
+  dialog.
 - Renderer: `i18n.js` initializes i18next and applies `data-i18n` /
   `data-i18n-title` attributes to static markup.
 - Translations live in `src/locales/en.json` (default) and `src/locales/de.json`.

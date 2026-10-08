@@ -27,6 +27,39 @@ pnpm start
 
 Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Clicking a tile opens the large view in full window size (3D models can be rotated and zoomed with the mouse); "Back" or `ESC` returns to the list view.
 
+## Keyboard shortcuts
+
+**Large view**
+
+| Shortcut | Action |
+| --- | --- |
+| `←` / `Backspace` | Previous file |
+| `→` / `Space` | Next file |
+| `F` | Toggle fit / original size (images) |
+| `Ctrl` + `+` / `=` | Zoom in |
+| `Ctrl` + `-` | Zoom out |
+| `Ctrl` + `0` / `1` | Reset zoom to 100 % |
+| `F5` | Start / stop the slideshow |
+| `Esc` | Close the large view |
+| `F11` | Toggle fullscreen |
+
+Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale for images) and the zoom slider in the header. The percentage field next to the slider accepts a typed value such as `120` — `Enter` or clicking away applies it, `Esc` reverts the field.
+
+**File grid**
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl` + `+` / `=` | Larger tiles |
+| `Ctrl` + `-` | Smaller tiles |
+| `Ctrl` + `0` | Reset tile size |
+
+**Directory field**
+
+| Shortcut | Action |
+| --- | --- |
+| `Enter` | Open the entered path |
+| `Esc` | Revert the field |
+
 ## Supported Formats
 
 - **3D models**: `*.glb` (GLTF Binary), rendered with three.js/GLTFLoader

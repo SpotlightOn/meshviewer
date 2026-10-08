@@ -6,6 +6,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Added
 - Zoom slider (10-800 %) with direct percentage entry for the large view
+- Keyboard shortcuts dialog in the Help menu
+- Close button and Esc to close the About dialog
 
 ## [0.3.0] - 2026-10-07
 

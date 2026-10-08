@@ -26,7 +26,30 @@
     "edit": "Bearbeiten",
     "settings": "Einstellungen",
     "help": "Hilfe",
+    "shortcuts": "Tastenkombinationen",
     "about": "Über MeshViewer"
+  },
+  "shortcuts": {
+    "title": "Tastenkombinationen",
+    "close": "Schließen",
+    "largeView": "Großansicht",
+    "grid": "Dateiraster",
+    "pathField": "Pfadfeld",
+    "previous": "Vorherige Datei",
+    "next": "Nächste Datei",
+    "toggleFit": "Einpassen / 100 % umschalten (Bilder)",
+    "zoomIn": "Hineinzoomen",
+    "zoomOut": "Herauszoomen",
+    "zoomReset": "Zoom auf 100 %",
+    "slideshow": "Diashow starten / stoppen",
+    "closeLarge": "Großansicht schließen",
+    "fullscreen": "Vollbild umschalten",
+    "largerTiles": "Größere Kacheln",
+    "smallerTiles": "Kleinere Kacheln",
+    "resetTiles": "Kachelgröße zurücksetzen",
+    "openPath": "Eingegebenen Pfad öffnen",
+    "revertPath": "Feld zurücksetzen",
+    "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab."
   },
   "settings": {
     "title": "Einstellungen",
@@ -43,7 +66,8 @@
     "title": "Über MeshViewer",
     "version": "Version",
     "copyright": "Copyright",
-    "license": "Lizenz"
+    "license": "Lizenz",
+    "close": "Schließen"
   },
   "console": {
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
