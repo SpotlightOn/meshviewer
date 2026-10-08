@@ -12,7 +12,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Breadcrumb path bar: every folder in the path is clickable, the path is editable as text (click the active folder or empty space)
 
 ### Changed
-- Toolbar: up and home become icon buttons with a subtle separator before the path
+- Toolbar: Material outline icons for up and home with a clearly visible separator before the path
 
 ### Fixed
 - Arrow keys no longer navigate behind the open settings dialog
