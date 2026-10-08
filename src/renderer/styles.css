@@ -246,8 +246,22 @@ main {
 
 .empty-state {
   margin-top: 15vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
   text-align: center;
   color: var(--text-dim);
+}
+
+.empty-logo {
+  width: 96px;
+  height: 96px;
+}
+
+.empty-message {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .grid {

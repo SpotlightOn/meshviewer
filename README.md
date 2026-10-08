@@ -11,7 +11,7 @@ Every file manager shows nice thumbnails, so why another app?
 I want something that is really fast and easy for browsing my images.
 There are still lots of things I'd like to improve, but it's already really good.
 It's fast thanks to advanced caching.
-Enjoy a modern, old-fashioned photo browser that even supports GLTF 3D scenes.
+Enjoy a modern, old-fashioned photo browser with a **real 3D viewer**: GLB models open as interactive three.js scenes you can rotate, pan and zoom from any angle.
 
 Have an idea? Open an issue and let's see what we can do.
 

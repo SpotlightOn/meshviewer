@@ -106,6 +106,7 @@ grid = createGrid({
   dom: {
     grid: document.getElementById("grid"),
     emptyState: document.getElementById("empty-state"),
+    emptyMessage: document.getElementById("empty-message"),
     contentEl: document.querySelector(".content"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),

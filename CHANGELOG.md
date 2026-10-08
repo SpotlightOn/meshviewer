@@ -15,9 +15,11 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Changed
 - Large view status bar shows "file name | pixel dimensions | file size" with all text left-aligned
+- Empty state shows the app logo and a larger message when a folder has no media files or could not be loaded
 
 ### Fixed
 - Thumbnails of photos with EXIF orientation (e.g. portrait shots) are no longer shown rotated; the embedded-thumbnail path now applies the orientation tag
+- The zoom slider and the zoom input field now zoom the 3D view; previously they updated only the display and left the model at its initial distance
 - File information dialog: embedded preview images are displayed as images instead of raw bytes; unreadable binary metadata (maker notes, HDR+ payloads) is hidden
 
 ## [0.4.0] - 2026-10-08
