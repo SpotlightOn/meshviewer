@@ -158,6 +158,10 @@ function showAbout() {
                border: 1px solid #3c3c3c; border-radius: 6px; padding: 10px;
                max-height: 220px; overflow: auto; margin-top: 14px; }
     a { color: #4f9cf9; }
+    button { display: block; margin: 14px 0 0 auto; padding: 6px 16px; font-size: 13px;
+             color: #e0e0e0; background: #3c3c3c; border: 1px solid #4a4a4a;
+             border-radius: 6px; cursor: pointer; }
+    button:hover { background: #4a4a4a; }
   </style>
 </head>
 <body>
@@ -167,6 +171,7 @@ function showAbout() {
   <div class="meta">${escapeHtml(i18next.t("about.license"))}: ${escapeHtml(APP_INFO.license)}</div>
   <div class="license">${escapeHtml(licenseText())}</div>
   <p><a href="https://github.com/SpotlightOn/meshviewer" target="_blank">github.com/SpotlightOn/meshviewer</a></p>
+  <button id="dialog-close">${escapeHtml(i18next.t("about.close"))}</button>
 </body>
 </html>`;
 
@@ -180,6 +185,9 @@ function showAbout() {
     maximizable: false,
     title: i18next.t("about.title"),
     backgroundColor: "#1e1e1e",
+    webPreferences: {
+      preload: path.join(__dirname, "dialogPreload.js"),
+    },
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -198,6 +206,101 @@ function openSettings() {
   if (win) {
     win.webContents.send("menu:open-settings");
   }
+}
+
+/**
+ * Renders a keyboard-shortcut table row.
+ * @param {string} keys - HTML for the key combination.
+ * @param {string} descriptionKey - i18n key for the description text.
+ * @returns {string} Table row HTML.
+ */
+function shortcutRow(keys, descriptionKey) {
+  return `<tr><td>${keys}</td><td>${escapeHtml(i18next.t(descriptionKey))}</td></tr>`;
+}
+
+/**
+ * Opens the modal "Keyboard shortcuts" window.
+ */
+function showShortcuts() {
+  const parent = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  const kbd = (label) => `<kbd>${label}</kbd>`;
+  const rows = [
+    [`${kbd("←")} / ${kbd("Backspace")}`, "shortcuts.previous"],
+    [`${kbd("→")} / ${kbd("Space")}`, "shortcuts.next"],
+    [kbd("F"), "shortcuts.toggleFit"],
+    [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.zoomIn"],
+    [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.zoomOut"],
+    [`${kbd("Ctrl")} + ${kbd("0")} / ${kbd("1")}`, "shortcuts.zoomReset"],
+    [kbd("F5"), "shortcuts.slideshow"],
+    [kbd("Esc"), "shortcuts.closeLarge"],
+    [kbd("F11"), "shortcuts.fullscreen"],
+  ];
+  const gridRows = [
+    [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
+    [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
+    [`${kbd("Ctrl")} + ${kbd("0")}`, "shortcuts.resetTiles"],
+  ];
+  const pathRows = [
+    [kbd("Enter"), "shortcuts.openPath"],
+    [kbd("Esc"), "shortcuts.revertPath"],
+  ];
+  const section = (titleKey, sectionRows) =>
+    `<h3>${escapeHtml(i18next.t(titleKey))}</h3><table><tbody>${sectionRows
+      .map(([keys, key]) => shortcutRow(keys, key))
+      .join("")}</tbody></table>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="${i18next.language}">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+           background: #1e1e1e; color: #e0e0e0; margin: 0; padding: 20px; overflow-y: auto; }
+    h2 { font-size: 16px; margin: 0 0 12px; }
+    h3 { font-size: 13px; color: #9a9a9a; margin: 16px 0 6px; }
+    h3:first-of-type { margin-top: 0; }
+    table { border-collapse: collapse; width: 100%; font-size: 13px; }
+    td { padding: 3px 0; vertical-align: top; }
+    td:first-child { white-space: nowrap; padding-right: 16px; }
+    td:last-child { color: #b5b5b5; }
+    kbd { display: inline-block; padding: 1px 5px; font-size: 11px; background: #2b2b2b;
+          border: 1px solid #3c3c3c; border-bottom-width: 2px; border-radius: 4px; }
+    .note { margin: 12px 0 14px; font-size: 12px; color: #9a9a9a; }
+    button { display: block; margin: 14px 0 0 auto; padding: 6px 16px; font-size: 13px;
+             color: #e0e0e0; background: #3c3c3c; border: 1px solid #4a4a4a;
+             border-radius: 6px; cursor: pointer; }
+    button:hover { background: #4a4a4a; }
+  </style>
+</head>
+<body>
+  <h2>${escapeHtml(i18next.t("shortcuts.title"))}</h2>
+  ${section("shortcuts.largeView", rows)}
+  ${section("shortcuts.grid", gridRows)}
+  ${section("shortcuts.pathField", pathRows)}
+  <p class="note">${escapeHtml(i18next.t("shortcuts.zoomFieldNote"))}</p>
+  <button id="dialog-close">${escapeHtml(i18next.t("shortcuts.close"))}</button>
+</body>
+</html>`;
+
+  const win = new BrowserWindow({
+    width: 480,
+    height: 600,
+    parent,
+    modal: true,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    title: i18next.t("shortcuts.title"),
+    backgroundColor: "#1e1e1e",
+    webPreferences: {
+      preload: path.join(__dirname, "dialogPreload.js"),
+    },
+  });
+
+  win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+
+  win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 }
 
 /**
@@ -225,7 +328,11 @@ function createMenu() {
     { role: "windowMenu" },
     {
       label: i18next.t("menu.help"),
-      submenu: [{ label: i18next.t("menu.about"), click: showAbout }],
+      submenu: [
+        { label: i18next.t("menu.shortcuts"), click: showShortcuts },
+        { type: "separator" },
+        { label: i18next.t("menu.about"), click: showAbout },
+      ],
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -235,6 +342,9 @@ app.whenReady().then(() => {
   registerProtocol();
   registerFsIpc(ipcMain, app, shell);
   registerSettingsIpc(ipcMain, (fileName) => path.join(app.getPath("userData"), fileName));
+  ipcMain.on("dialog:close", (event) => {
+    BrowserWindow.fromWebContents(event.sender)?.close();
+  });
   initI18n();
   createMenu();
   createWindow();
