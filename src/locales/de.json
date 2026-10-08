@@ -50,7 +50,8 @@
   },
   "contextMenu": {
     "openWith": "Mit Standardanwendung öffnen",
-    "fileInfo": "Dateiinformationen"
+    "fileInfo": "Dateiinformationen",
+    "editWith": "Bearbeiten mit {{app}}"
   },
   "menu": {
     "file": "Datei",
@@ -109,6 +110,10 @@
     "transitionFade": "Fade",
     "transitionSlide": "Schieben",
     "animationDuration": "Animationsdauer (ms)",
+    "externalTools": "Externe Werkzeuge",
+    "editor": "Editor-Befehl",
+    "browse": "Durchsuchen…",
+    "editorHint": "Wird für „Bearbeiten mit …“ im Kontextmenü verwendet. Leer lassen, um den Eintrag auszublenden.",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },
@@ -121,9 +126,13 @@
   "dialog": {
     "close": "Schließen"
   },
+  "editor": {
+    "pickTitle": "Editor-Anwendung auswählen"
+  },
   "console": {
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
     "fileOpenError": "Fehler beim Öffnen der Datei in der Großansicht:",
-    "previewFailed": "Vorschau fehlgeschlagen:"
+    "previewFailed": "Vorschau fehlgeschlagen:",
+    "editorLaunchError": "Fehler beim Starten des Editors:"
   }
 }

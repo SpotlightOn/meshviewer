@@ -19,10 +19,10 @@ to individual thumbnails.
 The initial context menu is very simple for now, but is planned to grow.
 
 - Open with application
-  This has to be solved cross-platform. Ideally it would use the OS
-  settings for the image type and show a list of known apps that work
-  with the image. Maybe this is too complicated? Let's discuss it first
-  and find alternative approaches.
+  MVP done: “Open with default application” opens the OS handler, and the
+  settings dialog holds a configurable editor command behind an “Edit with …”
+  menu entry. Showing the OS list of known apps for the image type (via
+  xdg-mime / GNOME chooser) is still open — discuss first.
 
 - An entry that shows/uses the same dialog as the EXIF info toolbar icon
 

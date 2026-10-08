@@ -221,6 +221,21 @@
           <input id="settings-duration" type="number" min="0" max="5000" step="50" />
         </div>
       </fieldset>
+      <fieldset>
+        <legend data-i18n="settings.externalTools">External tools</legend>
+        <div class="settings-row">
+          <label for="settings-editor" data-i18n="settings.editor">Editor command</label>
+          <div class="settings-editor">
+            <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
+            <button id="settings-editor-browse" type="button" data-i18n="settings.browse">
+              Browse…
+            </button>
+          </div>
+        </div>
+        <p class="settings-hint" data-i18n="settings.editorHint">
+          Used for “Edit with…” in the context menu. Leave empty to hide the entry.
+        </p>
+      </fieldset>
       <div class="settings-actions">
         <button id="settings-cancel" type="button" data-i18n="settings.cancel">Cancel</button>
         <button id="settings-save" type="button" data-i18n="settings.save">Save</button>
