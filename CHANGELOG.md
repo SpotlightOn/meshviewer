@@ -8,6 +8,13 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Zoom slider (10-800 %) with direct percentage entry for the large view
 - Keyboard shortcuts dialog in the Help menu
 - Close button and Esc to close the About dialog
+- Edit menu with undo, redo, cut, copy, paste and select all
+
+### Fixed
+- Arrow keys no longer navigate behind the open settings dialog
+- Selecting a directory in the tree works with Windows paths (drive letters, forward and backslash separators)
+- About and shortcuts dialogs no longer show the application menu bar
+- Menu labels are fully translated (no mixed German/English entries)
 
 ## [0.3.0] - 2026-10-07
 
