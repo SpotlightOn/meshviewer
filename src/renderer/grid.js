@@ -137,9 +137,10 @@ async function loadThumb(file, card) {
  * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement, selectionInfo?: HTMLElement}} deps.dom - Grid DOM elements.
  * @param {(file: object) => void} deps.onOpenFile - Called when a tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>}} Grid module API.
+ * @param {() => object} [deps.getSettings] - Returns the current settings (used for the move checksum option).
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
  */
-export function createGrid({ dom, onOpenFile, onFolderChange }) {
+export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   const { grid, emptyState, emptyMessage, contentEl, selectionInfo } = dom;
   let files = [];
   let path = null;
@@ -336,6 +337,17 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
   }
 
   /**
+   * Cuts the selected files into the in-app clipboard: a later paste moves
+   * them instead of copying them.
+   */
+  function cutSelection() {
+    const selected = getSelectionFiles();
+    if (selected.length === 0) return;
+    copyBuffer = selected.map((file) => ({ path: file.path, name: file.name, cut: true }));
+    flashMessage(t("grid.cutBuffer", { count: selected.length }));
+  }
+
+  /**
    * Returns whether the clipboard holds copied files.
    * @returns {boolean} true when copied files are available.
    */
@@ -344,24 +356,30 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
   }
 
   /**
-   * Copies the clipboard files into a directory and reloads the grid when that
-   * directory is the currently shown folder.
+   * Pastes the clipboard into a directory and reloads the grid when the shown
+   * folder is affected. Cut files are moved: each source is removed after its
+   * copy succeeded and the cut clipboard is consumed. Files that already live
+   * in the target directory stay unchanged.
    * @param {string} [targetDir] - Destination directory; defaults to the current folder.
-   * @returns {Promise<boolean>} true when at least one file was copied.
+   * @returns {Promise<boolean>} true when at least one file was pasted.
    */
   async function paste(targetDir = path) {
     if (copyBuffer.length === 0 || !targetDir) return false;
-    const results = await window.api.copyFiles(
-      copyBuffer.map((file) => file.path),
-      targetDir,
-    );
+    const moved = copyBuffer.some((file) => file.cut);
+    const paths = copyBuffer.map((file) => file.path);
+    const results = moved
+      ? await window.api.moveFiles(paths, targetDir, {
+          checksum: getSettings?.()?.verifyMoveChecksum === true,
+        })
+      : await window.api.copyFiles(paths, targetDir);
     const ok = results.filter((result) => result.ok);
     const failed = results.filter((result) => !result.ok);
-    if (targetDir === path) await loadFolder(path);
+    if (targetDir === path || (moved && path)) await loadFolder(path);
     if (failed.length > 0) {
       console.error(t("console.pasteFailed"), failed);
     }
     flashMessage(t("grid.pasteDone", { count: ok.length }));
+    if (moved) copyBuffer = [];
     return ok.length > 0;
   }
 
@@ -538,7 +556,9 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
   return {
     clearSelection,
     copySelection,
+    cutSelection,
     ensureInSelection,
+    flash: flashMessage,
     getFiles,
     getPath,
     getSelectionFiles,

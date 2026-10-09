@@ -401,7 +401,7 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   await electronApp.close();
 });
 
-test("selects, copies, pastes and trashes files", async () => {
+test("selects, copies, pastes, cuts and trashes files", async () => {
   const { electronApp, page } = await launchApp();
   // The fixture must live on the home filesystem: the OS trash cannot handle
   // files on /tmp (tmpfs).
@@ -440,6 +440,65 @@ test("selects, copies, pastes and trashes files", async () => {
     await page.keyboard.press("Delete");
     await expect(page.locator(".card")).toHaveCount(4);
     await expect(copy).toHaveCount(0);
+
+    // Cut c.png, then move it into a subfolder by pasting there.
+    await mkdir(join(dir, "sub"));
+    const c = page.locator(".card", { hasText: "c.png" });
+    await c.click({ modifiers: ["Control"] });
+    await page.keyboard.press("Control+x");
+    await expect(page.locator(".card.selected")).toHaveCount(1);
+
+    await page.locator(".path-segment.active").click();
+    await input.fill(join(dir, "sub"));
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(0);
+    // The path field keeps focus until navigation completes; only then do
+    // selection shortkeys apply instead of being typed into the input.
+    await expect(input).toBeHidden();
+    await page.keyboard.press("Control+v");
+    await expect(page.locator(".card")).toHaveCount(1);
+    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(1);
+
+    // Back in the source folder, c.png is gone.
+    await page.locator(".path-segment.active").click();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(0);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("trashes a folder from the tree context menu after confirmation", async () => {
+  const { electronApp, page } = await launchApp();
+  // The directory tree hides dot-directories, so the fixture has to live
+  // directly in a visible folder for its row to appear.
+  const dir = await mkdtemp(join(homedir(), "meshviewer-e2e-"));
+  const victim = join(dir, "trashme");
+  await mkdir(victim);
+  await writeFile(join(victim, "inner.png"), "inner");
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(input).toBeHidden();
+
+    const row = page.locator(".tree-row", { hasText: "trashme" });
+    await expect(row).toHaveCount(1);
+    await row.click({ button: "right" });
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await page.locator('#context-menu .context-item[data-action="trash"]').click();
+
+    // The folder is only removed after the confirmation is accepted.
+    await expect(page.locator("#confirm-overlay")).toBeVisible();
+    await page.locator("#confirm-accept").click();
+    await expect(page.locator("#confirm-overlay")).toBeHidden();
+    await expect.poll(() => existsSync(victim)).toBe(false);
+    await expect(row).toHaveCount(0);
   } finally {
     await electronApp.close();
     await rm(dir, { recursive: true, force: true });

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { readExif } from "./exif.js";
@@ -221,6 +223,109 @@ async function createDirectory(parentDir, name) {
   }
 }
 
+/** Permission bits preserved when a file is copied as part of a move. */
+const MODE_MASK = 0o7777;
+
+/**
+ * Computes the SHA-256 checksum of a file.
+ * @param {string} filePath - Absolute file path.
+ * @returns {Promise<string>} Lowercase hex digest.
+ */
+function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash("sha256");
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", reject);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex")));
+  });
+}
+
+/**
+ * Copies a single file and keeps the copy only once it is verified to be
+ * complete: the target size always has to match the source and, when
+ * `options.checksum` is set, both files are compared by their SHA-256 digest.
+ * The source permission bits and timestamps are applied to the copy. When
+ * anything fails the partial target is removed so the source stays intact.
+ * The copy is created exclusively (`COPYFILE_EXCL`) so an existing target is
+ * never overwritten.
+ * @param {string} source - Absolute source file path.
+ * @param {string} target - Absolute destination file path.
+ * @param {import("node:fs").Stats} stat - Stat of the source file.
+ * @param {{checksum?: boolean}} [options] - Verification options.
+ * @returns {Promise<void>} Resolves when a verified copy exists.
+ */
+async function copyFileVerified(source, target, stat, options = {}) {
+  await fsp.copyFile(source, target, fs.constants.COPYFILE_EXCL);
+  try {
+    const [sourceStat, targetStat] = await Promise.all([fsp.stat(source), fsp.stat(target)]);
+    if (sourceStat.size !== targetStat.size) throw new Error("size mismatch");
+    if (options.checksum) {
+      const [sourceHash, targetHash] = await Promise.all([sha256File(source), sha256File(target)]);
+      if (sourceHash !== targetHash) throw new Error("checksum mismatch");
+    }
+    await fsp.chmod(target, stat.mode & MODE_MASK);
+    await fsp.utimes(target, stat.atime, stat.mtime);
+  } catch (error) {
+    await fsp.rm(target, { force: true }).catch(() => {});
+    throw error;
+  }
+}
+
+/**
+ * Moves a single file into a target directory. When the target is on the same
+ * filesystem the file is renamed: this is atomic, never copies data and
+ * preserves every attribute. Crossing a filesystem boundary (EXDEV) falls
+ * back to a verified copy with attribute preservation; only after the copy is
+ * confirmed is the source removed. Files already inside the target directory
+ * are reported as unchanged.
+ * @param {string} source - Absolute source file path.
+ * @param {string} targetDir - Destination directory.
+ * @param {{checksum?: boolean}} [options] - Move options.
+ * @returns {Promise<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>} Result for the file.
+ */
+async function moveFile(source, targetDir, options = {}) {
+  const fallbackTarget = path.join(targetDir, path.basename(source));
+  try {
+    const stat = await fsp.stat(source);
+    if (!stat.isFile()) throw new Error("not a file");
+    if (path.dirname(source) === path.normalize(targetDir)) {
+      return { source, target: source, ok: true, unchanged: true };
+    }
+    const target = await uniqueTargetPath(targetDir, path.basename(source));
+    try {
+      await fsp.rename(source, target);
+    } catch (error) {
+      if (error?.code !== "EXDEV") throw error;
+      await copyFileVerified(source, target, stat, options);
+      await fsp.unlink(source);
+    }
+    return { source, target, ok: true };
+  } catch (error) {
+    return { source, target: fallbackTarget, ok: false, error: error?.message ?? String(error) };
+  }
+}
+
+/**
+ * Moves files into a target directory. Same-filesystem moves use an atomic
+ * rename; cross-filesystem moves copy the file first and remove the source
+ * only after the copy was verified (see {@link moveFile}). Files that already
+ * live in the target directory are reported as unchanged. Existing names in
+ * the target get a " (1)", " (2)" suffix; each failed file is reported
+ * individually.
+ * @param {Array<string>} sources - Absolute source file paths.
+ * @param {string} targetDir - Destination directory.
+ * @param {{checksum?: boolean}} [options] - Move options; `checksum` compares SHA-256 digests on cross-filesystem copies.
+ * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>>} Per-file results.
+ */
+async function moveFiles(sources, targetDir, options = {}) {
+  const results = [];
+  for (const source of sources) {
+    results.push(await moveFile(source, targetDir, options));
+  }
+  return results;
+}
+
 /**
  * Moves files to the operating system trash.
  * @param {Array<string>} paths - Absolute file paths.
@@ -263,16 +368,21 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("fs:createDirectory", (_event, parentDir, name) =>
     createDirectory(parentDir, name),
   );
+  ipcMain.handle("fs:moveFiles", (_event, sources, targetDir, options) =>
+    moveFiles(sources, targetDir, options),
+  );
   ipcMain.handle("fs:trashFiles", (_event, paths) => trashFiles(paths, shell));
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
 
 export {
   copyFiles,
+  copyFileVerified,
   createDirectory,
   IMAGE_EXTENSIONS,
   listDirectories,
   listMediaFiles,
+  moveFiles,
   parentDir,
   readFileBuffer,
   registerFsIpc,

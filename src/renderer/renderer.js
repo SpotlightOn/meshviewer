@@ -1,3 +1,4 @@
+import { createConfirmDialog } from "./confirm-dialog.js";
 import { createContextMenu } from "./context-menu.js";
 import { createInfoDialog } from "./exif-dialog.js";
 import { createGrid } from "./grid.js";
@@ -25,6 +26,7 @@ const settings = createSettings({
     duration: document.getElementById("settings-duration"),
     editor: document.getElementById("settings-editor"),
     editorBrowse: document.getElementById("settings-editor-browse"),
+    verify: document.getElementById("settings-verify-checksum"),
     thumbnailFit: document.getElementById("settings-thumbnail-fit"),
     transparency: document.getElementById("settings-transparency"),
     transparencyColor: document.getElementById("settings-transparency-color"),
@@ -60,6 +62,15 @@ const newFolderDialog = createNewFolderDialog({
     cancel: document.getElementById("new-folder-cancel"),
   },
   onCreated: (parentPath) => void tree?.refresh(parentPath),
+});
+const confirmDialog = createConfirmDialog({
+  dom: {
+    overlay: document.getElementById("confirm-overlay"),
+    title: document.getElementById("confirm-title"),
+    message: document.getElementById("confirm-message"),
+    accept: document.getElementById("confirm-accept"),
+    cancel: document.getElementById("confirm-cancel"),
+  },
 });
 const largeView = createLargeView({
   dom: {
@@ -98,11 +109,11 @@ const contextMenu = createContextMenu({
     const row = target.closest?.(".tree-row");
     if (row) {
       const dirPath = row.closest("li")?.dataset.path;
-      if (dirPath) return { kind: "folder", path: dirPath };
+      if (dirPath) return { kind: "folder", path: dirPath, origin: "tree" };
     }
     if (target.closest?.(".content")) {
       const dirPath = grid?.getPath();
-      if (dirPath) return { kind: "folder", path: dirPath };
+      if (dirPath) return { kind: "folder", path: dirPath, origin: "content" };
     }
     return null;
   },
@@ -151,6 +162,14 @@ contextMenu.register({
   },
 });
 contextMenu.register({
+  id: "cut",
+  order: 9,
+  label: () => t("contextMenu.cut"),
+  icon: "cut",
+  enabled: (context) => context.kind === "file",
+  action: () => grid.cutSelection(),
+});
+contextMenu.register({
   id: "copy",
   order: 10,
   label: () => t("contextMenu.copy"),
@@ -172,8 +191,12 @@ contextMenu.register({
   order: 12,
   label: () => t("contextMenu.moveToTrash"),
   icon: "delete",
-  enabled: (context) => context.kind === "file",
-  action: () => void grid.trashSelection(),
+  enabled: (context) =>
+    context.kind === "file" || (context.kind === "folder" && context.origin === "tree"),
+  action: (context) => {
+    if (context.kind === "folder") void deleteFolder(context.path);
+    else void grid.trashSelection();
+  },
 });
 
 grid = createGrid({
@@ -189,9 +212,17 @@ grid = createGrid({
     pathBar.setPath(dirPath);
     contextMenu.close();
   },
+  getSettings: () => settings.get(),
 });
 
-createKeyboard({ settings, infoDialog, folderDialog: newFolderDialog, largeView, grid });
+createKeyboard({
+  settings,
+  infoDialog,
+  folderDialog: newFolderDialog,
+  confirmDialog,
+  largeView,
+  grid,
+});
 
 const pathBar = createPathBar({
   dom: {
@@ -232,6 +263,48 @@ async function openPath(dirPath) {
     await tree.selectPath(dirPath, { notify: false });
   }
   return ok;
+}
+
+/**
+ * Returns whether a path is the given directory or lives inside it.
+ * @param {string|null} candidate - Path to test.
+ * @param {string} dir - Directory path.
+ * @returns {boolean} true when candidate is dir or below it.
+ */
+function isPathInside(candidate, dir) {
+  if (!candidate || !dir) return false;
+  if (candidate === dir) return true;
+  const separator = dir.includes("\\") ? "\\" : "/";
+  const prefix = dir.endsWith(separator) ? dir : `${dir}${separator}`;
+  return candidate.startsWith(prefix);
+}
+
+/**
+ * Asks for confirmation, then moves a folder and all of its contents to the
+ * OS trash. The tree is refreshed and the grid navigates to the parent folder
+ * when the removed folder (or one of its descendants) was being displayed.
+ * @param {string} folderPath - Absolute path of the folder to remove.
+ * @returns {Promise<void>}
+ */
+async function deleteFolder(folderPath) {
+  const name = folderPath.split(/[\\/]/).filter(Boolean).pop() ?? folderPath;
+  const accepted = await confirmDialog.open({
+    title: t("confirm.deleteFolder.title"),
+    message: t("confirm.deleteFolder.message", { name }),
+    acceptLabel: t("contextMenu.moveToTrash"),
+  });
+  if (!accepted) return;
+  const result = await window.api.trashFiles([folderPath]);
+  if (result.failed.length > 0) {
+    console.error(t("console.trashFailed"), result.failed);
+    return;
+  }
+  grid.flash(t("grid.trashed", { count: result.trashed.length }));
+  const parent = await window.api.getParentDir(folderPath);
+  await tree?.refresh(parent);
+  if (isPathInside(grid.getPath(), folderPath)) {
+    await openPath(parent === folderPath ? await window.api.getHomeDir() : parent);
+  }
 }
 
 upBtn.addEventListener("click", async () => {

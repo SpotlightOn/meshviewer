@@ -13,14 +13,15 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {(filePath: string) => Promise<ArrayBuffer>} readFile - Reads a file as an ArrayBuffer.
  * @property {(sources: Array<string>, targetDir: string) => Promise<Array<{source: string, target: string, ok: boolean, error?: string}>>} copyFiles - Copies files into a directory, renaming files that already exist in the target.
  * @property {(parentDir: string, name: string) => Promise<{ok: true, path: string} | {ok: false, code: string}>} createDirectory - Creates a new directory inside a parent directory.
+ * @property {(sources: Array<string>, targetDir: string, options?: {checksum?: boolean}) => Promise<Array<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>>} moveFiles - Moves files into a directory: same-filesystem moves use an atomic rename, cross-filesystem moves copy and verify before removing the source; files already in the target are reported as unchanged. `options.checksum` compares SHA-256 digests on cross-filesystem copies.
  * @property {(paths: Array<string>) => Promise<{trashed: Array<string>, failed: Array<{path: string, error: string}>}>} trashFiles - Moves files to the operating system trash.
  * @property {(filePath: string) => Promise<object|null>} exif - Reads the EXIF tag groups of an image, or null when none can be read.
  * @property {(file: {path: string, size: number, mtimeMs: number}) => Promise<string|null>} getThumbnail - Returns a JPEG data URL thumbnail for an image, or null if it could not be generated.
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
  * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
  * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
- * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}>} getSettings - Returns the current application settings.
- * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}>} saveSettings - Persists and returns the normalized settings.
+ * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}>} getSettings - Returns the current application settings.
+ * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
  * @property {(flag: boolean) => Promise<void>} setFullScreen - Puts the window into or out of fullscreen mode.
  * @property {(callback: (value: boolean) => void) => () => void} onFullScreenChanged - Subscribes to fullscreen state changes; returns an unsubscribe function.
@@ -38,6 +39,8 @@ const api = {
   readFile: (filePath) => ipcRenderer.invoke("fs:readFile", filePath),
   copyFiles: (sources, targetDir) => ipcRenderer.invoke("fs:copyFiles", sources, targetDir),
   createDirectory: (parentDir, name) => ipcRenderer.invoke("fs:createDirectory", parentDir, name),
+  moveFiles: (sources, targetDir, options) =>
+    ipcRenderer.invoke("fs:moveFiles", sources, targetDir, options),
   trashFiles: (paths) => ipcRenderer.invoke("fs:trashFiles", paths),
   exif: (filePath) => ipcRenderer.invoke("fs:exif", filePath),
   getThumbnail: (file) => ipcRenderer.invoke("fs:getThumbnail", file),

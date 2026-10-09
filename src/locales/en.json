@@ -19,6 +19,7 @@
     "previewFailed": "Preview failed",
     "nSelected": "{{count}} selected",
     "copyBuffer": "{{count}} copied to clipboard",
+    "cutBuffer": "{{count}} cut to clipboard",
     "pasteDone": "{{count}} pasted",
     "trashed": "{{count}} moved to trash"
   },
@@ -59,6 +60,7 @@
     "openWith": "Open with default application",
     "fileInfo": "File information",
     "editWith": "Edit with {{app}}",
+    "cut": "Cut",
     "copy": "Copy",
     "paste": "Paste",
     "newFolder": "New folder",
@@ -158,6 +160,9 @@
     "transparencyCustom": "Custom color",
     "transparencyColor": "Background color",
     "transparencyHint": "Fills the tile behind transparent thumbnails; in the large view it is drawn at image size on a black stage.",
+    "fileOperations": "File operations",
+    "verifyMoveChecksum": "Verify checksums when moving files",
+    "verifyMoveHint": "When a move crosses filesystems, the SHA-256 checksum is compared before the source file is deleted. Disable to verify by size only (faster).",
     "save": "Save",
     "cancel": "Cancel"
   },
@@ -169,7 +174,14 @@
   },
   "dialog": {
     "close": "Close",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "confirm": {
+    "deleteFolder": {
+      "title": "Move folder to trash",
+      "message": "Move “{{name}}” and all of its contents to the trash?"
+    }
   },
   "newFolder": {
     "title": "New folder",
