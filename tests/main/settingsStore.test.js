@@ -37,6 +37,10 @@ describe("normalizeSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 800,
       editorCommand: "",
+      transparencyBackground: "checkerboard",
+      transparencyColor: "#ffffff",
+      thumbnailFit: "cover",
+      sidebarWidth: 280,
     });
   });
 
@@ -58,14 +62,45 @@ describe("normalizeSettings", () => {
   });
 
   it("rejects unknown transitions", () => {
-    expect(normalizeSettings({ slideshowTransition: "zoom" }).slideshowTransition).toBe("fade");
+    expect(normalizeSettings({ slideshowTransition: "zoom" }).slideshowTransition).toBe("slide");
   });
 
   it("clamps the animation duration to the allowed range and rounds it", () => {
     expect(normalizeSettings({ animationDurationMs: -100 }).animationDurationMs).toBe(0);
     expect(normalizeSettings({ animationDurationMs: 99999 }).animationDurationMs).toBe(5000);
     expect(normalizeSettings({ animationDurationMs: 150.4 }).animationDurationMs).toBe(150);
-    expect(normalizeSettings({ animationDurationMs: "fast" }).animationDurationMs).toBe(1000);
+    expect(normalizeSettings({ animationDurationMs: "fast" }).animationDurationMs).toBe(300);
+  });
+
+  it("keeps a known transparency background and rejects unknown ones", () => {
+    expect(normalizeSettings({ transparencyBackground: "white" }).transparencyBackground).toBe(
+      "white",
+    );
+    expect(normalizeSettings({ transparencyBackground: "custom" }).transparencyBackground).toBe(
+      "custom",
+    );
+    expect(normalizeSettings({ transparencyBackground: "rainbow" }).transparencyBackground).toBe(
+      "checkerboard",
+    );
+  });
+
+  it("keeps a known thumbnail fit and rejects unknown ones", () => {
+    expect(normalizeSettings({ thumbnailFit: "contain" }).thumbnailFit).toBe("contain");
+    expect(normalizeSettings({ thumbnailFit: "cover" }).thumbnailFit).toBe("cover");
+    expect(normalizeSettings({ thumbnailFit: "stretch" }).thumbnailFit).toBe("cover");
+  });
+
+  it("clamps the sidebar width to the allowed range and rounds it", () => {
+    expect(normalizeSettings({ sidebarWidth: 10 }).sidebarWidth).toBe(160);
+    expect(normalizeSettings({ sidebarWidth: 9999 }).sidebarWidth).toBe(720);
+    expect(normalizeSettings({ sidebarWidth: 300.6 }).sidebarWidth).toBe(301);
+    expect(normalizeSettings({ sidebarWidth: "wide" }).sidebarWidth).toBe(280);
+  });
+
+  it("keeps a valid hex transparency color and lowercases it, ignoring invalid ones", () => {
+    expect(normalizeSettings({ transparencyColor: "#AABBCC" }).transparencyColor).toBe("#aabbcc");
+    expect(normalizeSettings({ transparencyColor: "red" }).transparencyColor).toBe("#ffffff");
+    expect(normalizeSettings({ transparencyColor: "#fff" }).transparencyColor).toBe("#ffffff");
   });
 });
 
@@ -93,12 +128,20 @@ describe("loadSettings / saveSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      transparencyBackground: "checkerboard",
+      transparencyColor: "#ffffff",
+      thumbnailFit: "cover",
+      sidebarWidth: 280,
     });
     await expect(loadSettings(file)).resolves.toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      transparencyBackground: "checkerboard",
+      transparencyColor: "#ffffff",
+      thumbnailFit: "cover",
+      sidebarWidth: 280,
     });
     const raw = await readFile(file, "utf8");
     expect(JSON.parse(raw)).toEqual({
@@ -106,6 +149,10 @@ describe("loadSettings / saveSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      transparencyBackground: "checkerboard",
+      transparencyColor: "#ffffff",
+      thumbnailFit: "cover",
+      sidebarWidth: 280,
     });
   });
 });

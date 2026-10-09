@@ -53,14 +53,24 @@
 
   <main>
     <div class="layout">
-      <aside class="sidebar">
+      <aside class="sidebar" id="sidebar">
         <div id="tree"></div>
       </aside>
+      <hr
+        id="sidebar-resizer"
+        class="resizer"
+        aria-orientation="vertical"
+        aria-valuemin="160"
+        aria-valuemax="720"
+        aria-valuenow="280"
+        tabindex="0"
+        data-i18n-aria-label="sidebar.resize"
+      />
       <section class="content">
         <div id="empty-state" class="empty-state">
           <img
             class="empty-logo"
-            src="app://app/icons/meshviewer.svg"
+            src="app://app/icons/meshviewer-transparent.svg"
             alt="MeshViewer"
           />
           <p id="empty-message" class="empty-message" data-i18n="emptyState">
@@ -268,6 +278,43 @@
         </div>
         <p class="settings-hint" data-i18n="settings.editorHint">
           Used for “Edit with…” in the context menu. Leave empty to hide the entry.
+        </p>
+      </fieldset>
+      <fieldset>
+        <legend data-i18n="settings.appearance">Appearance</legend>
+        <div class="settings-row">
+          <label for="settings-thumbnail-fit" data-i18n="settings.thumbnailFit"
+            >Thumbnail fit</label
+          >
+          <select id="settings-thumbnail-fit">
+            <option value="cover" data-i18n="settings.thumbnailFitCover">
+              Cover (fill the tile)
+            </option>
+            <option value="contain" data-i18n="settings.thumbnailFitContain">
+              Contain (show the whole image)
+            </option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label for="settings-transparency" data-i18n="settings.transparency"
+            >Transparency background</label
+          >
+          <select id="settings-transparency">
+            <option value="checkerboard" data-i18n="settings.transparencyCheckerboard">
+              Checkerboard
+            </option>
+            <option value="white" data-i18n="settings.transparencyWhite">White</option>
+            <option value="custom" data-i18n="settings.transparencyCustom">Custom color</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label for="settings-transparency-color" data-i18n="settings.transparencyColor"
+            >Background color</label
+          >
+          <input id="settings-transparency-color" type="color" value="#ffffff" />
+        </div>
+        <p class="settings-hint" data-i18n="settings.transparencyHint">
+          Shown behind transparent images in the grid and the large view.
         </p>
       </fieldset>
       <div class="settings-actions">

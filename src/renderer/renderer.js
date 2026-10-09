@@ -7,6 +7,7 @@ import { createLargeView } from "./large-view.js";
 import { createNewFolderDialog } from "./new-folder-dialog.js";
 import { createPathBar } from "./pathbar.js";
 import { createSettings } from "./settings.js";
+import { createSidebarResizer } from "./sidebar-resizer.js";
 import { createDirectoryTree } from "./tree.js";
 
 const upBtn = document.getElementById("btn-up");
@@ -24,10 +25,22 @@ const settings = createSettings({
     duration: document.getElementById("settings-duration"),
     editor: document.getElementById("settings-editor"),
     editorBrowse: document.getElementById("settings-editor-browse"),
+    thumbnailFit: document.getElementById("settings-thumbnail-fit"),
+    transparency: document.getElementById("settings-transparency"),
+    transparencyColor: document.getElementById("settings-transparency-color"),
     save: document.getElementById("settings-save"),
     cancel: document.getElementById("settings-cancel"),
   },
   onSaved: () => largeViewRef.current?.restartSlideshow(),
+});
+
+createSidebarResizer({
+  handle: document.getElementById("sidebar-resizer"),
+  getWidth: () => settings.get().sidebarWidth,
+  onResize: (width) => settings.applySidebarWidth(width),
+  onCommit: (width) => {
+    settings.saveSidebarWidth(width);
+  },
 });
 
 let grid;

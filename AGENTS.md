@@ -69,7 +69,7 @@ Guidance for AI coding agents working in this repository.
 
 Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup whenever it runs inside Electron on Linux (see `node_modules/sharp/dist/sharp.cjs`, `process.emitWarning` with code `SharpElectronLinux`). It warns that Electron's Linux binaries dynamically link a globally-installed glib whose symbols leak into the process, which can collide with the glib bundled in sharp's libvips and in rare cases cause `GLib-GObject: g_object_ref/g_object_unref: assertion 'G_IS_OBJECT (object)' failed` crashes (see https://sharp.pixelplumbing.com/install#electron-and-linux, tracking issue electron/electron#46323). It is informational and expected; sharp works fine unless the app actually crashes with a GLib assertion.
 - `src/preload.js` – `contextBridge` API exposed as `window.api` (typed via `@typedef {MeshViewerApi}`)
-- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), thumbnail grid (`renderer.js`) with lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, GLB rendering via three.js (GLTFLoader), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (size/MIME helpers)
+- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), resizable sidebar (`sidebar-resizer.js`, drag or arrow keys, width persisted as `sidebarWidth`), thumbnail grid (`renderer.js`) with lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, GLB rendering via three.js (GLTFLoader), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (size/MIME helpers)
 - `src/locales/` – `en.json` (default) and `de.json` (translation) for i18next
 - `package.json` holds the electron-builder config (Linux AppImage+tar.gz, Windows nsis+portable+zip). macOS cannot be built from Linux (needs a macOS CI runner).
 
@@ -81,4 +81,4 @@ Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup 
 
 ## Formats
 
-- 3D: `.glb` only. Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails of images smaller than the tile are shown at natural size, centered (`.thumb.natural`).
+- 3D: `.glb` only. Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails fill the tile with `object-fit` set from the “Thumbnail fit” setting (`cover` by default, `contain` optional); transparent areas show the configured transparency background.
