@@ -1,16 +1,8 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join } from "node:path";
-import { _electron as electron, expect, test } from "@playwright/test";
-
-/**
- * Launches the Electron app and returns the first window.
- * @returns {Promise<import('@playwright/test').Page>} Main window.
- */
-async function launchApp() {
-  const electronApp = await electron.launch({ args: ["."] });
-  return { electronApp, page: await electronApp.firstWindow() };
-}
+import { expect, test } from "@playwright/test";
+import { launchApp } from "./launch.js";
 
 test("app boots and renders the directory tree", async () => {
   const { electronApp, page } = await launchApp();
@@ -211,6 +203,9 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
 
   await page.locator(".card", { hasText: "foto.png" }).click();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   await page.locator("#large-zoom-value").fill("200");
   await page.locator("#large-zoom-value").press("Enter");
@@ -266,8 +261,9 @@ test("status bar shows file info and the arrow buttons navigate", async () => {
 
   await page.locator(".card", { hasText: "foto.png" }).click();
   await expect(page.locator("#large-view")).toBeVisible();
-  const info = (await page.locator("#large-file-info").textContent()) ?? "";
-  expect(info).toMatch(/^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/);
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   const before = (await page.locator("#large-file-info").textContent()) ?? "";
   if (await page.locator("#large-next").isEnabled()) {
@@ -292,6 +288,9 @@ test("swiping the image navigates to the previous and next image", async () => {
 
   await page.locator(".card", { hasText: "foto.png" }).click();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
   const before = (await page.locator("#large-file-info").textContent()) ?? "";
 
   const box = (await page.locator("#large-canvas").boundingBox()) ?? { x: 0, y: 0 };
@@ -341,6 +340,9 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
 
   await page.locator(".card", { hasText: "foto.png" }).click();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   await page.locator("#large-zoom-value").fill("200");
   await page.locator("#large-zoom-value").press("Enter");
