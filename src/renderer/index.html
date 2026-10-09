@@ -206,6 +206,32 @@
     </div>
   </div>
 
+  <div id="new-folder-overlay" class="settings-overlay hidden">
+    <div
+      class="settings-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-folder-title"
+    >
+      <h2 id="new-folder-title" data-i18n="newFolder.title">New folder</h2>
+      <div class="settings-row">
+        <label for="new-folder-input" data-i18n="newFolder.name">Folder name</label>
+        <input
+          id="new-folder-input"
+          class="dialog-input"
+          type="text"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </div>
+      <p id="new-folder-error" class="settings-hint dialog-error" hidden></p>
+      <div class="settings-actions">
+        <button id="new-folder-cancel" type="button" data-i18n="dialog.cancel">Cancel</button>
+        <button id="new-folder-create" type="button" data-i18n="newFolder.create">Create</button>
+      </div>
+    </div>
+  </div>
+
   <div id="settings-overlay" class="settings-overlay hidden">
     <div class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
       <h2 id="settings-title" data-i18n="settings.title">Settings</h2>

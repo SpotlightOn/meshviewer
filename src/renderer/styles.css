@@ -836,6 +836,14 @@ main {
   color: var(--text-dim);
 }
 
+.settings-row input.dialog-input {
+  width: 190px;
+}
+
+.settings-hint.dialog-error {
+  color: #e06c75;
+}
+
 .settings-actions {
   display: flex;
   justify-content: flex-end;

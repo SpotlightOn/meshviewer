@@ -193,6 +193,35 @@ async function copyFiles(sources, targetDir) {
 }
 
 /**
+ * Creates a new directory inside a parent directory. Names containing path
+ * separators, empty names and the special names "." and ".." are rejected.
+ * @param {string} parentDir - Parent directory.
+ * @param {string} name - Name of the new directory.
+ * @returns {Promise<{ok: true, path: string} | {ok: false, code: 'invalid'|'exists'|'failed'}>} Creation result.
+ */
+async function createDirectory(parentDir, name) {
+  if (
+    typeof name !== "string" ||
+    name === "" ||
+    name === "." ||
+    name === ".." ||
+    name.includes("/") ||
+    name.includes("\\") ||
+    name.includes("\0")
+  ) {
+    return { ok: false, code: "invalid" };
+  }
+  const target = path.join(parentDir, name);
+  try {
+    await fsp.mkdir(target);
+    return { ok: true, path: target };
+  } catch (error) {
+    if (error?.code === "EEXIST") return { ok: false, code: "exists" };
+    return { ok: false, code: "failed" };
+  }
+}
+
+/**
  * Moves files to the operating system trash.
  * @param {Array<string>} paths - Absolute file paths.
  * @param {{trashItem: (path: string) => Promise<void>}} shell - Electron shell module.
@@ -231,12 +260,16 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("fs:exif", (_event, filePath) => readExif(filePath));
   ipcMain.handle("fs:getThumbnail", (_event, file) => getThumbnail(file, cacheDir));
   ipcMain.handle("fs:copyFiles", (_event, sources, targetDir) => copyFiles(sources, targetDir));
+  ipcMain.handle("fs:createDirectory", (_event, parentDir, name) =>
+    createDirectory(parentDir, name),
+  );
   ipcMain.handle("fs:trashFiles", (_event, paths) => trashFiles(paths, shell));
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
 
 export {
   copyFiles,
+  createDirectory,
   IMAGE_EXTENSIONS,
   listDirectories,
   listMediaFiles,

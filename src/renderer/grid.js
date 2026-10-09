@@ -143,7 +143,7 @@ async function loadThumb(file, card) {
  * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement, selectionInfo?: HTMLElement}} deps.dom - Grid DOM elements.
  * @param {(file: object) => void} deps.onOpenFile - Called when a tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, hasCopyBuffer: () => boolean, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} Grid module API.
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>}} Grid module API.
  */
 export function createGrid({ dom, onOpenFile, onFolderChange }) {
   const { grid, emptyState, emptyMessage, contentEl, selectionInfo } = dom;
@@ -350,18 +350,20 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
   }
 
   /**
-   * Copies the clipboard files into the current folder and reloads the grid.
+   * Copies the clipboard files into a directory and reloads the grid when that
+   * directory is the currently shown folder.
+   * @param {string} [targetDir] - Destination directory; defaults to the current folder.
    * @returns {Promise<boolean>} true when at least one file was copied.
    */
-  async function paste() {
-    if (copyBuffer.length === 0 || !path) return false;
+  async function paste(targetDir = path) {
+    if (copyBuffer.length === 0 || !targetDir) return false;
     const results = await window.api.copyFiles(
       copyBuffer.map((file) => file.path),
-      path,
+      targetDir,
     );
     const ok = results.filter((result) => result.ok);
     const failed = results.filter((result) => !result.ok);
-    await loadFolder(path);
+    if (targetDir === path) await loadFolder(path);
     if (failed.length > 0) {
       console.error(t("console.pasteFailed"), failed);
     }

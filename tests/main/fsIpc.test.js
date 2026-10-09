@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   copyFiles,
+  createDirectory,
   listDirectories,
   listMediaFiles,
   parentDir,
@@ -211,6 +212,39 @@ describe("copyFiles", () => {
   });
 });
 
+describe("createDirectory", () => {
+  it("creates a new directory inside the parent", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-mkdir-"));
+    try {
+      const result = await createDirectory(dir, "Neu");
+      expect(result.ok).toBe(true);
+      expect(result.path).toBe(join(dir, "Neu"));
+      const stat = await import("node:fs/promises").then(({ stat }) => stat(result.path));
+      expect(stat.isDirectory()).toBe(true);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an existing name with the exists code", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-mkdir-"));
+    try {
+      await mkdir(join(dir, "sub"));
+      const result = await createDirectory(dir, "sub");
+      expect(result).toEqual({ ok: false, code: "exists" });
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid names", async () => {
+    for (const name of ["", ".", "..", "a/b", "a\\b", "a\0b", null, 42]) {
+      const result = await createDirectory("/tmp", name);
+      expect(result).toEqual({ ok: false, code: "invalid" });
+    }
+  });
+});
+
 describe("trashFiles", () => {
   it("collects successful and failed paths", async () => {
     const shell = {
@@ -260,6 +294,7 @@ describe("registerFsIpc", () => {
       "fs:exif",
       "fs:getThumbnail",
       "fs:copyFiles",
+      "fs:createDirectory",
       "fs:trashFiles",
       "shell:openPath",
     ];

@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { launchApp } from "./launch.js";
@@ -179,16 +180,52 @@ test("right-clicking a thumbnail opens the context menu", async () => {
   await page.keyboard.press("Escape");
   await expect(page.locator("#context-menu")).toBeHidden();
 
-  // Right-clicking empty grid space (below the tiles) shows no menu.
+  // Right-clicking empty grid space (below the tiles) opens the folder menu.
   const lastCard = await page.locator(".card", { hasText: "foto2.png" }).boundingBox();
   if (lastCard) {
     await page.mouse.click(lastCard.x + lastCard.width / 2, lastCard.y + lastCard.height + 30, {
       button: "right",
     });
-    await expect(page.locator("#context-menu")).toBeHidden();
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await expect(
+      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+    ).toBeVisible();
+    // The paste entry stays hidden while the clipboard is empty.
+    await expect(page.locator('#context-menu .context-item[data-action="paste"]')).toHaveCount(0);
   }
 
   await electronApp.close();
+});
+
+test("creates a new folder from the content context menu", async () => {
+  const { electronApp, page } = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-"));
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator("#empty-state")).toBeVisible();
+
+    // Right-click the empty content area of the current folder.
+    await page.locator("#empty-state").click({ button: "right" });
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await expect(
+      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+    ).toBeVisible();
+    await page.locator('#context-menu .context-item[data-action="new-folder"]').click();
+
+    const nameInput = page.locator("#new-folder-input");
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill("created");
+    await nameInput.press("Enter");
+    await expect(page.locator("#new-folder-overlay")).toBeHidden();
+    await expect.poll(() => existsSync(join(dir, "created"))).toBe(true);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("actual-size button resets the large view zoom to 100 percent", async () => {
