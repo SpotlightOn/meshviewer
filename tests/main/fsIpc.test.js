@@ -166,6 +166,7 @@ describe("registerFsIpc", () => {
       "fs:rootDir",
       "fs:parentDir",
       "fs:readFile",
+      "fs:exif",
       "fs:getThumbnail",
       "shell:openPath",
     ];

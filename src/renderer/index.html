@@ -57,8 +57,15 @@
         <div id="tree"></div>
       </aside>
       <section class="content">
-        <div id="empty-state" class="empty-state" data-i18n="emptyState">
-          Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).
+        <div id="empty-state" class="empty-state">
+          <img
+            class="empty-logo"
+            src="app://app/icons/meshviewer.svg"
+            alt="MeshViewer"
+          />
+          <p id="empty-message" class="empty-message" data-i18n="emptyState">
+            Select a folder in the directory tree on the left to display its *.glb files as 3D previews and image files (PNG, JPG, WebP, GIF, AVIF, BMP, SVG, ICO).
+          </p>
         </div>
         <div id="grid" class="grid"></div>
       </section>
@@ -75,6 +82,15 @@
         data-i18n-aria-label="largeView.back"
       >
         <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M400-240 160-480l241-241 43 42-169 169h526v60H275l168 168-43 42Z" /></svg>
+      </button>
+      <button
+        id="large-details"
+        type="button"
+        class="icon-btn"
+        data-i18n-title="largeView.info"
+        data-i18n-aria-label="largeView.info"
+      >
+        <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" /></svg>
       </button>
       <button
         id="large-fullscreen"
@@ -114,6 +130,15 @@
             data-i18n-title="largeView.zoomInput"
           />
           <button
+            id="large-actual"
+            type="button"
+            class="icon-btn zoom-fit-btn"
+            data-i18n-title="largeView.actualSize"
+            data-i18n-aria-label="largeView.actualSize"
+          >
+            <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M280-280v-320h-80v-80h160v400h-80Zm160 0v-80h80v80h-80Zm200 0v-320h-80v-80h160v400h-80ZM440-440v-80h80v80h-80Z" /></svg>
+          </button>
+          <button
             id="large-fit"
             type="button"
             class="icon-btn zoom-fit-btn"
@@ -128,8 +153,29 @@
     </header>
     <div id="large-canvas" class="large-canvas"></div>
     <footer class="large-statusbar">
-      <span id="large-title" class="large-title"></span>
-      <span id="large-info" class="large-info"></span>
+      <span id="large-file-info" class="large-file-info"></span>
+      <div class="large-nav">
+        <button
+          id="large-prev"
+          type="button"
+          class="icon-btn"
+          data-i18n-title="largeView.previous"
+          data-i18n-aria-label="largeView.previous"
+          disabled
+        >
+          <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z" /></svg>
+        </button>
+        <button
+          id="large-next"
+          type="button"
+          class="icon-btn"
+          data-i18n-title="largeView.next"
+          data-i18n-aria-label="largeView.next"
+          disabled
+        >
+          <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" /></svg>
+        </button>
+      </div>
     </footer>
     <button
       id="large-fullscreen-exit"
@@ -140,6 +186,23 @@
     >
       <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M253-120v-133H120v-60h193v193h-60Zm394 0v-193h193v60H707v133h-60ZM120-647v-60h133v-133h60v193H120Zm527 0v-193h60v133h133v60H647Z" /></svg>
     </button>
+  </div>
+
+  <div id="context-menu" class="context-menu" role="menu" hidden></div>
+
+  <div id="info-overlay" class="settings-overlay hidden">
+    <div
+      class="settings-dialog info-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="info-dialog-title"
+    >
+      <h2 id="info-dialog-title" data-i18n="info.title">File information</h2>
+      <div id="info-content" class="info-content"></div>
+      <div class="settings-actions">
+        <button id="info-close" type="button" data-i18n="dialog.close">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="settings-overlay" class="settings-overlay hidden">
@@ -164,6 +227,21 @@
           >
           <input id="settings-duration" type="number" min="0" max="5000" step="50" />
         </div>
+      </fieldset>
+      <fieldset>
+        <legend data-i18n="settings.externalTools">External tools</legend>
+        <div class="settings-row">
+          <label for="settings-editor" data-i18n="settings.editor">Editor command</label>
+          <div class="settings-editor">
+            <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
+            <button id="settings-editor-browse" type="button" data-i18n="settings.browse">
+              Browse…
+            </button>
+          </div>
+        </div>
+        <p class="settings-hint" data-i18n="settings.editorHint">
+          Used for “Edit with…” in the context menu. Leave empty to hide the entry.
+        </p>
       </fieldset>
       <div class="settings-actions">
         <button id="settings-cancel" type="button" data-i18n="settings.cancel">Cancel</button>

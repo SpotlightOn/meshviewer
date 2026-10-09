@@ -1,7 +1,8 @@
 import path from "node:path";
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import i18next from "i18next";
 import { registerDialogIpc, showAbout, showShortcuts } from "./dialogs.js";
+import { registerEditorIpc } from "./editorIpc.js";
 import { registerFsIpc } from "./fsIpc.js";
 import i18nDe from "./locales/de.json" with { type: "json" };
 import i18nEn from "./locales/en.json" with { type: "json" };
@@ -41,6 +42,7 @@ app.whenReady().then(() => {
   registerAppProtocol();
   registerFsIpc(ipcMain, app, shell);
   registerSettingsIpc(ipcMain, (fileName) => path.join(app.getPath("userData"), fileName));
+  registerEditorIpc(ipcMain, dialog);
   registerDialogIpc(ipcMain);
   registerWindowIpc(ipcMain);
   initI18n();

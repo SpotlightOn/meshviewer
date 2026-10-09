@@ -4,6 +4,24 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- File information dialog in the large view (info icon before fullscreen): all EXIF groups of the image, with basic file information (size, dimensions, modified date, type) as fallback
+- Actual-size (1:1) button in the large view zoom controls
+- Previous/next arrow buttons in the large view status bar to step through the files
+- Swiping (drag) horizontally across an image in the large view steps to the previous/next file; the image follows the pointer and snaps back when the drag is too short
+- Middle mouse button on an image in the large view toggles between 100 % zoom and fit-to-screen
+- Context menu on media thumbnails (right-click): open the file with the default application or show the file information dialog
+- Configurable editor command in the settings dialog: the thumbnail context menu gains an “Edit with …” entry that opens the file in the configured application
+
+### Changed
+- Large view status bar shows "file name | pixel dimensions | file size" with all text left-aligned
+- Empty state shows the app logo and a larger message when a folder has no media files or could not be loaded
+
+### Fixed
+- Thumbnails of photos with EXIF orientation (e.g. portrait shots) are no longer shown rotated; the embedded-thumbnail path now applies the orientation tag
+- The zoom slider and the zoom input field now zoom the 3D view; previously they updated only the display and left the model at its initial distance
+- File information dialog: embedded preview images are displayed as images instead of raw bytes; unreadable binary metadata (maker notes, HDR+ payloads) is hidden
+
 ## [0.4.0] - 2026-10-08
 
 ### Added

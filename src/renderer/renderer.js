@@ -1,5 +1,7 @@
+import { createContextMenu } from "./context-menu.js";
+import { createInfoDialog } from "./exif-dialog.js";
 import { createGrid } from "./grid.js";
-import { initI18n } from "./i18n.js";
+import { initI18n, t } from "./i18n.js";
 import { createKeyboard } from "./keyboard.js";
 import { createLargeView } from "./large-view.js";
 import { createPathBar } from "./pathbar.js";
@@ -19,6 +21,8 @@ const settings = createSettings({
     interval: document.getElementById("settings-interval"),
     transition: document.getElementById("settings-transition"),
     duration: document.getElementById("settings-duration"),
+    editor: document.getElementById("settings-editor"),
+    editorBrowse: document.getElementById("settings-editor-browse"),
     save: document.getElementById("settings-save"),
     cancel: document.getElementById("settings-cancel"),
   },
@@ -26,37 +30,93 @@ const settings = createSettings({
 });
 
 let grid;
+const infoDialog = createInfoDialog({
+  dom: {
+    overlay: document.getElementById("info-overlay"),
+    content: document.getElementById("info-content"),
+    closeBtn: document.getElementById("info-close"),
+  },
+});
 const largeView = createLargeView({
   dom: {
     largeView: document.getElementById("large-view"),
     largeCanvas: document.getElementById("large-canvas"),
     largeTitle: document.getElementById("large-title"),
-    largeInfo: document.getElementById("large-info"),
+    largeInfo: document.getElementById("large-file-info"),
     largeZoom: document.getElementById("large-zoom"),
     largeZoomValue: document.getElementById("large-zoom-value"),
     largeBack: document.getElementById("large-back"),
+    infoButton: document.getElementById("large-details"),
     largeSlideshow: document.getElementById("large-slideshow"),
+    largeActual: document.getElementById("large-actual"),
     largeFit: document.getElementById("large-fit"),
+    largePrev: document.getElementById("large-prev"),
+    largeNext: document.getElementById("large-next"),
     largeFullscreen: document.getElementById("large-fullscreen"),
     largeFullscreenExit: document.getElementById("large-fullscreen-exit"),
     slideshowProgress: document.getElementById("slideshow-progress"),
   },
   settings,
   getFiles: () => grid.getFiles(),
+  infoDialog,
 });
 largeViewRef.current = largeView;
+
+const contextMenu = createContextMenu({
+  host: document.getElementById("grid"),
+  menuEl: document.getElementById("context-menu"),
+  resolveFile: (target) => {
+    const card = target.closest?.(".card");
+    if (!card || card.dataset.index === undefined) return null;
+    return grid?.getFiles()[Number(card.dataset.index)] ?? null;
+  },
+});
+
+contextMenu.register({
+  id: "open-with",
+  label: () => t("contextMenu.openWith"),
+  icon: "openInNew",
+  action: (file) => void window.api.openPath(file.path),
+});
+contextMenu.register({
+  id: "file-info",
+  label: () => t("contextMenu.fileInfo"),
+  icon: "info",
+  action: (file) => infoDialog.open(file),
+});
+contextMenu.register({
+  id: "edit-with",
+  label: () => {
+    const command = settings.get().editorCommand;
+    const app = command ? command.split(/[\\/]/).pop() : "";
+    return t("contextMenu.editWith", { app });
+  },
+  icon: "edit",
+  enabled: () => settings.get().editorCommand !== "",
+  action: (file) => {
+    const command = settings.get().editorCommand;
+    if (!command) return;
+    void window.api.runEditor(command, file.path).then((result) => {
+      if (!result.ok) console.error(t("console.editorLaunchError"), result.error);
+    });
+  },
+});
 
 grid = createGrid({
   dom: {
     grid: document.getElementById("grid"),
     emptyState: document.getElementById("empty-state"),
+    emptyMessage: document.getElementById("empty-message"),
     contentEl: document.querySelector(".content"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
-  onFolderChange: (dirPath) => pathBar.setPath(dirPath),
+  onFolderChange: (dirPath) => {
+    pathBar.setPath(dirPath);
+    contextMenu.close();
+  },
 });
 
-createKeyboard({ settings, largeView, grid });
+createKeyboard({ settings, infoDialog, largeView, grid });
 
 const pathBar = createPathBar({
   dom: {

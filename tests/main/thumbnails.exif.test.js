@@ -1,15 +1,19 @@
 import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import piexif from "piexifjs";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  embeddedThumbnailAngle,
   extractEmbeddedThumbnail,
+  extractExifTags,
   generateThumbnail,
   getThumbnail,
   readEmbeddedThumbnail,
+  thumbnailKey,
 } from "../../src/thumbnails.js";
-import { makeExifJpeg, makePlainJpeg } from "./fixtures/make-exif-jpeg.mjs";
+import { makeExifJpeg, makeOrientedJpeg, makePlainJpeg } from "./fixtures/make-exif-jpeg.mjs";
 
 let dir;
 let exifPath;
@@ -97,5 +101,103 @@ describe("getThumbnail with embedded EXIF thumbnail", () => {
     const result = await getThumbnail(file, cacheDir);
     expect(result).toMatch(/^data:image\/jpeg;base64,/);
     expect(await readdir(cacheDir)).toHaveLength(1);
+  });
+});
+
+describe("extractExifTags", () => {
+  it("reads the orientation of the main image and the thumbnail", async () => {
+    const filePath = join(dir, "tags.jpg");
+    await makeOrientedJpeg(filePath, { mainOrientation: 6, thumbOrientation: 8 });
+    const data = await readFile(filePath);
+    expect(extractExifTags(data)).toEqual({ main: 6, thumbnail: 8 });
+  });
+
+  it("returns null for data without EXIF", () => {
+    expect(extractExifTags(Buffer.from("not an image"))).toBeNull();
+  });
+});
+
+describe("embeddedThumbnailAngle", () => {
+  let thumb;
+
+  beforeAll(async () => {
+    thumb = await sharp({
+      create: { width: 32, height: 32, channels: 3, background: "#1ec81e" },
+    })
+      .jpeg()
+      .toBuffer();
+  });
+
+  it("returns 0 when the outer file has no orientation", () => {
+    expect(embeddedThumbnailAngle(null, thumb)).toBe(0);
+    expect(embeddedThumbnailAngle({}, thumb)).toBe(0);
+  });
+
+  it("maps the common rotation orientations to angles", () => {
+    expect(embeddedThumbnailAngle({ main: 3 }, thumb)).toBe(180);
+    expect(embeddedThumbnailAngle({ main: 6 }, thumb)).toBe(90);
+    expect(embeddedThumbnailAngle({ main: 8 }, thumb)).toBe(270);
+  });
+
+  it("returns null for mirrored orientations", () => {
+    for (const orientation of [2, 4, 5, 7]) {
+      expect(embeddedThumbnailAngle({ main: orientation }, thumb)).toBeNull();
+    }
+  });
+
+  it("prefers the thumbnail's own orientation", () => {
+    expect(embeddedThumbnailAngle({ main: 6, thumbnail: 8 }, thumb)).toBe(270);
+  });
+
+  it("returns null when the embedded bytes carry their own orientation", () => {
+    const nested = Buffer.from(
+      piexif.insert(
+        piexif.dump({ "0th": { [piexif.ImageIFD.Orientation]: 6 } }),
+        thumb.toString("binary"),
+      ),
+      "binary",
+    );
+    expect(embeddedThumbnailAngle({ main: 6 }, nested)).toBeNull();
+  });
+});
+
+describe("getThumbnail with EXIF orientation", () => {
+  async function generatedThumbnail(filePath, cacheDirName) {
+    const fileState = await stat(filePath);
+    const file = { path: filePath, size: fileState.size, mtimeMs: fileState.mtimeMs };
+    await getThumbnail(file, join(dir, cacheDirName));
+    return join(dir, cacheDirName, thumbnailKey(file));
+  }
+
+  it("rotates the embedded thumbnail by the main orientation", async () => {
+    const filePath = join(dir, "orient6.jpg");
+    await makeOrientedJpeg(filePath, { mainOrientation: 6 });
+    const meta = await sharp(await generatedThumbnail(filePath, "cache-orient6")).metadata();
+    expect(meta.width).toBe(120);
+    expect(meta.height).toBe(160);
+  });
+
+  it("rotates by 270 degrees for orientation 8", async () => {
+    const filePath = join(dir, "orient8.jpg");
+    await makeOrientedJpeg(filePath, { mainOrientation: 8 });
+    const meta = await sharp(await generatedThumbnail(filePath, "cache-orient8")).metadata();
+    expect(meta.width).toBe(120);
+    expect(meta.height).toBe(160);
+  });
+
+  it("uses the thumbnail's own orientation when present", async () => {
+    const filePath = join(dir, "orient-both.jpg");
+    await makeOrientedJpeg(filePath, { mainOrientation: 6, thumbOrientation: 6 });
+    const meta = await sharp(await generatedThumbnail(filePath, "cache-orient-both")).metadata();
+    expect(meta.width).toBe(120);
+    expect(meta.height).toBe(160);
+  });
+
+  it("falls back to the full decode for mirrored orientations", async () => {
+    const filePath = join(dir, "orient5.jpg");
+    await makeOrientedJpeg(filePath, { mainOrientation: 5 });
+    const meta = await sharp(await generatedThumbnail(filePath, "cache-orient5")).metadata();
+    expect(meta.width).toBe(192);
+    expect(meta.height).toBe(256);
   });
 });

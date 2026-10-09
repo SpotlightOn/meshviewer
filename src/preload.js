@@ -11,10 +11,13 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {() => Promise<string>} getRootDir - Returns the filesystem root directory.
  * @property {(dirPath: string) => Promise<string>} getParentDir - Returns the parent directory.
  * @property {(filePath: string) => Promise<ArrayBuffer>} readFile - Reads a file as an ArrayBuffer.
+ * @property {(filePath: string) => Promise<object|null>} exif - Reads the EXIF tag groups of an image, or null when none can be read.
  * @property {(file: {path: string, size: number, mtimeMs: number}) => Promise<string|null>} getThumbnail - Returns a JPEG data URL thumbnail for an image, or null if it could not be generated.
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
- * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}>} getSettings - Returns the current application settings.
- * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number}>} saveSettings - Persists and returns the normalized settings.
+ * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
+ * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
+ * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}>} getSettings - Returns the current application settings.
+ * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string}>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
  * @property {(flag: boolean) => Promise<void>} setFullScreen - Puts the window into or out of fullscreen mode.
  * @property {(callback: (value: boolean) => void) => () => void} onFullScreenChanged - Subscribes to fullscreen state changes; returns an unsubscribe function.
@@ -30,8 +33,11 @@ const api = {
   getRootDir: () => ipcRenderer.invoke("fs:rootDir"),
   getParentDir: (dirPath) => ipcRenderer.invoke("fs:parentDir", dirPath),
   readFile: (filePath) => ipcRenderer.invoke("fs:readFile", filePath),
+  exif: (filePath) => ipcRenderer.invoke("fs:exif", filePath),
   getThumbnail: (file) => ipcRenderer.invoke("fs:getThumbnail", file),
   openPath: (filePath) => ipcRenderer.invoke("shell:openPath", filePath),
+  pickExecutable: () => ipcRenderer.invoke("editor:pick"),
+  runEditor: (command, filePath) => ipcRenderer.invoke("editor:run", command, filePath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
   onOpenSettings: (callback) => {

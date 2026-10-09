@@ -246,8 +246,22 @@ main {
 
 .empty-state {
   margin-top: 15vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
   text-align: center;
   color: var(--text-dim);
+}
+
+.empty-logo {
+  width: 96px;
+  height: 96px;
+}
+
+.empty-message {
+  margin: 0;
+  font-size: 1.2rem;
 }
 
 .grid {
@@ -502,7 +516,7 @@ main {
   fill: currentColor;
 }
 
-.large-title {
+.large-file-info {
   flex: 1;
   min-width: 0;
   font-size: 13px;
@@ -510,6 +524,7 @@ main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 
 .large-right {
@@ -520,13 +535,6 @@ main {
   min-width: 0;
 }
 
-.large-info {
-  font-size: 13px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
 .large-statusbar {
   display: flex;
   align-items: center;
@@ -534,6 +542,39 @@ main {
   padding: 5px 16px;
   background: var(--surface);
   border-top: 1px solid var(--border);
+}
+
+.large-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.large-statusbar button.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-dim);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.large-statusbar button.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.large-statusbar button.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.large-statusbar button.icon-btn:hover:disabled {
+  background: transparent;
 }
 
 .large-view.fullscreen .large-header,
@@ -730,6 +771,40 @@ main {
   width: 90px;
 }
 
+.settings-row .settings-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  max-width: 240px;
+}
+
+.settings-row .settings-editor input {
+  width: 150px;
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-row .settings-editor button {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.settings-row .settings-editor button:hover {
+  filter: brightness(1.1);
+}
+
+.settings-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .settings-actions {
   display: flex;
   justify-content: flex-end;
@@ -751,6 +826,118 @@ main {
 }
 
 .settings-actions #settings-cancel {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.settings-dialog.info-dialog {
+  width: 440px;
+}
+
+.info-content {
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  margin-bottom: 14px;
+  padding-right: 4px;
+}
+
+.info-section h3 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.info-section:first-child h3 {
+  margin-top: 0;
+}
+
+.info-rows {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.info-rows dt {
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.info-rows dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.info-rows .info-image {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin-top: 2px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #000;
+}
+
+.info-loading {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.context-menu[hidden] {
+  display: none;
+}
+
+.context-menu .context-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-menu .context-item:hover,
+.context-menu .context-item:focus-visible {
+  background: var(--surface-hover);
+  outline: none;
+}
+
+.context-menu .context-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.context-menu .context-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--text-dim);
+}
+
+.settings-actions #info-close {
   background: transparent;
   border: 1px solid var(--border);
 }

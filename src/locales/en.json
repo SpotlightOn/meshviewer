@@ -17,12 +17,41 @@
   },
   "largeView": {
     "back": "Back",
+    "previous": "Previous file",
+    "next": "Next file",
     "slideshow": "Slideshow",
     "zoom": "Zoom",
     "zoomInput": "Zoom percentage",
+    "actualSize": "Actual size",
     "fitToScreen": "Fit to screen",
+    "info": "File information",
     "fullscreen": "Fullscreen",
     "fullscreenExit": "Exit fullscreen"
+  },
+  "info": {
+    "title": "File information",
+    "loading": "Loading…",
+    "file": "File",
+    "size": "File size",
+    "dimensions": "Image size",
+    "modified": "Modified",
+    "type": "Type",
+    "embeddedThumbnail": "Embedded thumbnail",
+    "groups": {
+      "image": "Image",
+      "exif": "EXIF",
+      "gps": "GPS",
+      "thumbnail": "Thumbnail",
+      "interoperability": "Interoperability",
+      "ifd0": "IFD0",
+      "iptc": "IPTC",
+      "xmp": "XMP"
+    }
+  },
+  "contextMenu": {
+    "openWith": "Open with default application",
+    "fileInfo": "File information",
+    "editWith": "Edit with {{app}}"
   },
   "menu": {
     "file": "File",
@@ -81,6 +110,10 @@
     "transitionFade": "Fade",
     "transitionSlide": "Slide",
     "animationDuration": "Animation duration (ms)",
+    "externalTools": "External tools",
+    "editor": "Editor command",
+    "browse": "Browse…",
+    "editorHint": "Used for “Edit with…” in the context menu. Leave empty to hide the entry.",
     "save": "Save",
     "cancel": "Cancel"
   },
@@ -93,9 +126,13 @@
   "dialog": {
     "close": "Close"
   },
+  "editor": {
+    "pickTitle": "Choose an editor application"
+  },
   "console": {
     "glbLoadError": "Error loading GLB in the large view:",
     "fileOpenError": "Error opening the file in the large view:",
-    "previewFailed": "Preview failed:"
+    "previewFailed": "Preview failed:",
+    "editorLaunchError": "Error launching the editor:"
   }
 }
