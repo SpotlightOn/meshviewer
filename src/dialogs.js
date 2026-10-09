@@ -6,7 +6,7 @@ import i18next from "i18next";
 const PROJECT_ROOT = path.join(import.meta.dirname, "..");
 const APP_INFO = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf8"));
 
-/** Shared base styles for the modal About and shortcuts windows. */
+/** Shared base styles for the modal About and usage windows. */
 const DIALOG_BASE_CSS = `
     body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
            background: #1e1e1e; color: #e0e0e0; margin: 0; padding: 20px; overflow-y: auto; }
@@ -149,10 +149,11 @@ function shortcutRow(keys, descriptionKey) {
 }
 
 /**
- * Opens the modal "Keyboard shortcuts" window.
+ * Opens the modal "Usage" window. It documents the keyboard shortcuts grouped
+ * by context and the mouse gestures that are not obvious from the interface.
  * @returns {Promise<void>}
  */
-function showShortcuts() {
+function showUsage() {
   const kbd = (label) => `<kbd>${label}</kbd>`;
   const rows = [
     [`${kbd("←")} / ${kbd("Backspace")}`, "shortcuts.previous"],
@@ -170,13 +171,26 @@ function showShortcuts() {
     [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
     [`${kbd("Ctrl")} + ${kbd("0")}`, "shortcuts.resetTiles"],
     [`${kbd("Ctrl")} + ${kbd("A")}`, "shortcuts.selectAllFiles"],
-    [`${kbd("Ctrl")} + ${kbd("C")} / ${kbd("Ctrl")} + ${kbd("V")}`, "shortcuts.copyPasteFiles"],
+    [
+      `${kbd("Ctrl")} + ${kbd("X")} / ${kbd("Ctrl")} + ${kbd("C")} / ${kbd("Ctrl")} + ${kbd("V")}`,
+      "shortcuts.copyPasteFiles",
+    ],
     [kbd("Delete"), "shortcuts.moveToTrash"],
     [kbd("Esc"), "shortcuts.clearSelection"],
   ];
   const pathRows = [
     [kbd("Enter"), "shortcuts.openPath"],
     [kbd("Esc"), "shortcuts.revertPath"],
+  ];
+  const mouseRows = [
+    [escapeHtml(i18next.t("mouse.leftClick")), "mouse.open"],
+    [escapeHtml(i18next.t("mouse.ctrlClick")), "mouse.toggle"],
+    [escapeHtml(i18next.t("mouse.shiftClick")), "mouse.range"],
+    [escapeHtml(i18next.t("mouse.dragEmpty")), "mouse.marquee"],
+    [escapeHtml(i18next.t("mouse.rightClick")), "mouse.menu"],
+    [escapeHtml(i18next.t("mouse.wheel")), "mouse.zoom"],
+    [escapeHtml(i18next.t("mouse.middleClick")), "mouse.toggleFit"],
+    [escapeHtml(i18next.t("mouse.dragLarge")), "mouse.panSwipe"],
   ];
   const section = (titleKey, sectionRows) =>
     `<h3>${escapeHtml(i18next.t(titleKey))}</h3><table><tbody>${sectionRows
@@ -192,6 +206,7 @@ function showShortcuts() {
   ${section("shortcuts.largeView", rows)}
   ${section("shortcuts.grid", gridRows)}
   ${section("shortcuts.pathField", pathRows)}
+  ${section("shortcuts.mouse", mouseRows)}
   <p class="note">${escapeHtml(i18next.t("shortcuts.zoomFieldNote"))}</p>
 `,
   });
@@ -207,4 +222,4 @@ function registerDialogIpc(ipcMain) {
   });
 }
 
-export { registerDialogIpc, showAbout, showShortcuts };
+export { registerDialogIpc, showAbout, showUsage };
