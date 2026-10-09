@@ -4,6 +4,11 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, dragging on empty space draws a rubber-band selection, Ctrl+A selects all and Esc clears the selection
+- Copy and paste of files inside the app (Ctrl+C / Ctrl+V or the context menu); a pasted file whose name already exists gets a “(1)” suffix
+- Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
+
 ## [0.5.0] - 2026-10-09
 
 ### Added

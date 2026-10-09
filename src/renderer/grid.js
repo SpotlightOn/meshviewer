@@ -11,6 +11,27 @@ const MAX_TILE = 600;
 const DEFAULT_TILE = 200;
 const TILE_STEP = 1.1;
 
+/**
+ * Returns the indices of cards whose bounding rect intersects the given rect.
+ * @param {ArrayLike<HTMLElement>} cards - Grid cards.
+ * @param {DOMRect} rect - Rectangle in viewport coordinates.
+ * @returns {Array<number>} Matching card indices.
+ */
+export function cardIndexesInRect(cards, rect) {
+  const indices = [];
+  for (const card of cards) {
+    const cardRect = card.getBoundingClientRect();
+    const intersects = !(
+      rect.right < cardRect.left ||
+      rect.left > cardRect.right ||
+      rect.bottom < cardRect.top ||
+      rect.top > cardRect.bottom
+    );
+    if (intersects) indices.push(Number(card.dataset.index));
+  }
+  return indices;
+}
+
 // Singleton renderer for GLB thumbnails.
 const thumbnailRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 thumbnailRenderer.setSize(THUMB_SIZE, THUMB_SIZE);
@@ -116,19 +137,24 @@ async function loadThumb(file, card) {
 
 /**
  * Media grid module: loads a folder into the tile grid, lazily renders the
- * previews and provides the tile-zoom shortcuts.
+ * previews, provides the tile-zoom shortcuts and manages multi-selection with
+ * copy/paste and move-to-trash of the selected files.
  * @param {object} deps - Module dependencies.
- * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement}} deps.dom - Grid DOM elements.
+ * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement, selectionInfo?: HTMLElement}} deps.dom - Grid DOM elements.
  * @param {(file: object) => void} deps.onOpenFile - Called when a tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, zoomTiles: (step: number) => void}} Grid module API.
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, hasCopyBuffer: () => boolean, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} Grid module API.
  */
 export function createGrid({ dom, onOpenFile, onFolderChange }) {
-  const { grid, emptyState, emptyMessage, contentEl } = dom;
+  const { grid, emptyState, emptyMessage, contentEl, selectionInfo } = dom;
   let files = [];
   let path = null;
   let loadToken = 0;
   let thumbnailObserver = null;
+  let selectedIndices = new Set();
+  let anchorIndex = null;
+  let copyBuffer = [];
+  let flashTimer = null;
 
   /**
    * Creates a grid tile for a file.
@@ -165,8 +191,242 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
     meta.append(name, size);
     card.append(wrap, meta);
 
-    card.addEventListener("click", () => onOpenFile(file));
+    card.addEventListener("click", (event) => {
+      const index = Number(card.dataset.index);
+      if (event.ctrlKey || event.metaKey) {
+        toggleSelect(index);
+        return;
+      }
+      if (event.shiftKey) {
+        rangeSelect(index);
+        return;
+      }
+      selectOnly(index);
+      onOpenFile(file);
+    });
     return card;
+  }
+
+  /**
+   * Applies the selection class to the cards and updates the selection badge.
+   */
+  function renderSelection() {
+    for (const card of grid.children) {
+      const index = Number(card.dataset.index);
+      card.classList.toggle("selected", Number.isFinite(index) && selectedIndices.has(index));
+    }
+    updateSelectionInfo();
+  }
+
+  /**
+   * Updates the persistent selection count badge in the content area.
+   */
+  function updateSelectionInfo() {
+    if (!selectionInfo) return;
+    const count = selectedIndices.size;
+    if (count === 0) {
+      selectionInfo.hidden = true;
+      return;
+    }
+    selectionInfo.hidden = false;
+    selectionInfo.textContent = t("grid.nSelected", { count });
+  }
+
+  /**
+   * Shows a transient status message in the selection badge area.
+   * @param {string} message - Message text.
+   */
+  function flashMessage(message) {
+    if (!selectionInfo) return;
+    selectionInfo.hidden = false;
+    selectionInfo.textContent = message;
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      flashTimer = null;
+      updateSelectionInfo();
+    }, 1600);
+  }
+
+  /**
+   * Replaces the selection with a single card and sets the anchor.
+   * @param {number} index - Card index.
+   */
+  function selectOnly(index) {
+    selectedIndices = new Set([index]);
+    anchorIndex = index;
+    renderSelection();
+  }
+
+  /**
+   * Replaces the selection with the range from the anchor to the given card.
+   * @param {number} index - Card index.
+   */
+  function rangeSelect(index) {
+    const from = anchorIndex ?? index;
+    const lo = Math.min(from, index);
+    const hi = Math.max(from, index);
+    const next = new Set();
+    for (let i = lo; i <= hi; i += 1) next.add(i);
+    selectedIndices = next;
+    anchorIndex = index;
+    renderSelection();
+  }
+
+  /**
+   * Toggles a card in the selection and sets the anchor.
+   * @param {number} index - Card index.
+   */
+  function toggleSelect(index) {
+    const next = new Set(selectedIndices);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    selectedIndices = next;
+    anchorIndex = index;
+    renderSelection();
+  }
+
+  /**
+   * Selects every file in the current folder.
+   */
+  function selectAll() {
+    selectedIndices = new Set(files.map((_, index) => index));
+    anchorIndex = files.length > 0 ? 0 : null;
+    renderSelection();
+  }
+
+  /**
+   * Clears the selection and hides the badge.
+   */
+  function clearSelection() {
+    selectedIndices = new Set();
+    anchorIndex = null;
+    renderSelection();
+  }
+
+  /**
+   * Ensures a card is part of the selection (used on right-click).
+   * @param {number} index - Card index.
+   */
+  function ensureInSelection(index) {
+    if (selectedIndices.has(index)) return;
+    selectOnly(index);
+  }
+
+  /**
+   * Returns the files of the selected cards in grid order.
+   * @returns {Array} Selected file objects.
+   */
+  function getSelectionFiles() {
+    return [...selectedIndices]
+      .sort((a, b) => a - b)
+      .map((index) => files[index])
+      .filter(Boolean);
+  }
+
+  /**
+   * Returns whether any card is selected.
+   * @returns {boolean} true when a selection exists.
+   */
+  function hasSelection() {
+    return selectedIndices.size > 0;
+  }
+
+  /**
+   * Copies the selected files into the in-app clipboard.
+   */
+  function copySelection() {
+    const selected = getSelectionFiles();
+    if (selected.length === 0) return;
+    copyBuffer = selected.map((file) => ({ path: file.path, name: file.name }));
+    flashMessage(t("grid.copyBuffer", { count: selected.length }));
+  }
+
+  /**
+   * Returns whether the clipboard holds copied files.
+   * @returns {boolean} true when copied files are available.
+   */
+  function hasCopyBuffer() {
+    return copyBuffer.length > 0;
+  }
+
+  /**
+   * Copies the clipboard files into the current folder and reloads the grid.
+   * @returns {Promise<boolean>} true when at least one file was copied.
+   */
+  async function paste() {
+    if (copyBuffer.length === 0 || !path) return false;
+    const results = await window.api.copyFiles(
+      copyBuffer.map((file) => file.path),
+      path,
+    );
+    const ok = results.filter((result) => result.ok);
+    const failed = results.filter((result) => !result.ok);
+    await loadFolder(path);
+    if (failed.length > 0) {
+      console.error(t("console.pasteFailed"), failed);
+    }
+    flashMessage(t("grid.pasteDone", { count: ok.length }));
+    return ok.length > 0;
+  }
+
+  /**
+   * Moves the selected files to the OS trash and reloads the grid.
+   * @returns {Promise<boolean>} true when at least one file was trashed.
+   */
+  async function trashSelection() {
+    const selected = getSelectionFiles();
+    if (selected.length === 0) return false;
+    const result = await window.api.trashFiles(selected.map((file) => file.path));
+    await loadFolder(path);
+    if (result.failed.length > 0) {
+      console.error(t("console.trashFailed"), result.failed);
+    }
+    flashMessage(t("grid.trashed", { count: result.trashed.length }));
+    return result.trashed.length > 0;
+  }
+
+  /**
+   * Starts a rubber-band selection drag on the empty grid background.
+   * @param {PointerEvent} event - Pointer down event.
+   */
+  function startMarquee(event) {
+    const baseRect = grid.getBoundingClientRect();
+    const overlay = document.createElement("div");
+    overlay.className = "marquee";
+    grid.append(overlay);
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startSelection = new Set(selectedIndices);
+    const apply = (moveEvent) => {
+      const left = Math.min(startX, moveEvent.clientX);
+      const top = Math.min(startY, moveEvent.clientY);
+      overlay.style.left = `${left - baseRect.left}px`;
+      overlay.style.top = `${top - baseRect.top}px`;
+      overlay.style.width = `${Math.abs(moveEvent.clientX - startX)}px`;
+      overlay.style.height = `${Math.abs(moveEvent.clientY - startY)}px`;
+      const rect = new DOMRect(
+        left,
+        top,
+        Math.abs(moveEvent.clientX - startX),
+        Math.abs(moveEvent.clientY - startY),
+      );
+      const indices = cardIndexesInRect(grid.querySelectorAll(".card"), rect);
+      if (moveEvent.ctrlKey || moveEvent.metaKey) {
+        selectedIndices = new Set(startSelection);
+        for (const index of indices) selectedIndices.add(index);
+      } else {
+        selectedIndices = new Set(indices);
+      }
+      anchorIndex = indices.length > 0 ? indices[0] : null;
+      renderSelection();
+    };
+    const finish = () => {
+      document.removeEventListener("pointermove", apply);
+      document.removeEventListener("pointerup", finish);
+      overlay.remove();
+    };
+    document.addEventListener("pointermove", apply);
+    document.addEventListener("pointerup", finish);
   }
 
   /**
@@ -193,6 +453,9 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
 
     path = dirPath;
     files = loaded;
+    selectedIndices = new Set();
+    anchorIndex = null;
+    renderSelection();
     onFolderChange(dirPath);
 
     if (files.length === 0) {
@@ -262,5 +525,33 @@ export function createGrid({ dom, onOpenFile, onFolderChange }) {
     root.style.setProperty("--tile-size", `${next}px`);
   }
 
-  return { loadFolder, getFiles, getPath, zoomTiles };
+  grid.addEventListener("contextmenu", (event) => {
+    const card = event.target.closest?.(".card");
+    if (!card || card.dataset.index === undefined) return;
+    const index = Number(card.dataset.index);
+    if (!selectedIndices.has(index)) selectOnly(index);
+  });
+
+  grid.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    if (event.target.closest?.(".card")) return;
+    if (emptyState.style.display !== "none") return;
+    startMarquee(event);
+  });
+
+  return {
+    clearSelection,
+    copySelection,
+    ensureInSelection,
+    getFiles,
+    getPath,
+    getSelectionFiles,
+    hasCopyBuffer,
+    hasSelection,
+    loadFolder,
+    paste,
+    selectAll,
+    trashSelection,
+    zoomTiles,
+  };
 }

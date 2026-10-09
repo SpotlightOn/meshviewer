@@ -169,6 +169,10 @@ function showShortcuts() {
     [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
     [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
     [`${kbd("Ctrl")} + ${kbd("0")}`, "shortcuts.resetTiles"],
+    [`${kbd("Ctrl")} + ${kbd("A")}`, "shortcuts.selectAllFiles"],
+    [`${kbd("Ctrl")} + ${kbd("C")} / ${kbd("Ctrl")} + ${kbd("V")}`, "shortcuts.copyPasteFiles"],
+    [kbd("Delete"), "shortcuts.moveToTrash"],
+    [kbd("Esc"), "shortcuts.clearSelection"],
   ];
   const pathRows = [
     [kbd("Enter"), "shortcuts.openPath"],

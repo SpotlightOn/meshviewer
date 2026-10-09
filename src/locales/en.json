@@ -13,7 +13,11 @@
     "typeImage": "Image",
     "loadError": "Error reading folder",
     "noMedia": "No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files found in this folder.",
-    "previewFailed": "Preview failed"
+    "previewFailed": "Preview failed",
+    "nSelected": "{{count}} selected",
+    "copyBuffer": "{{count}} copied to clipboard",
+    "pasteDone": "{{count}} copied into this folder",
+    "trashed": "{{count}} moved to trash"
   },
   "largeView": {
     "back": "Back",
@@ -51,7 +55,10 @@
   "contextMenu": {
     "openWith": "Open with default application",
     "fileInfo": "File information",
-    "editWith": "Edit with {{app}}"
+    "editWith": "Edit with {{app}}",
+    "copy": "Copy",
+    "paste": "Paste",
+    "moveToTrash": "Move to trash"
   },
   "menu": {
     "file": "File",
@@ -98,6 +105,10 @@
     "largerTiles": "Larger tiles",
     "smallerTiles": "Smaller tiles",
     "resetTiles": "Reset tile size",
+    "selectAllFiles": "Select all files",
+    "copyPasteFiles": "Copy / paste files",
+    "moveToTrash": "Move selected files to trash",
+    "clearSelection": "Clear selection",
     "openPath": "Open the entered path",
     "revertPath": "Revert the field",
     "zoomFieldNote": "Zoom field: type a percentage (e.g. 120) and press Enter; Esc cancels."
@@ -133,6 +144,8 @@
     "glbLoadError": "Error loading GLB in the large view:",
     "fileOpenError": "Error opening the file in the large view:",
     "previewFailed": "Preview failed:",
-    "editorLaunchError": "Error launching the editor:"
+    "editorLaunchError": "Error launching the editor:",
+    "pasteFailed": "Some files could not be copied:",
+    "trashFailed": "Some files could not be moved to trash:"
   }
 }
