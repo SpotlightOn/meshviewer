@@ -9,6 +9,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Copy and paste of files inside the app (Ctrl+C / Ctrl+V or the context menu); a pasted file whose name already exists gets a “(1)” suffix
 - Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
 
+### Changed
+- Thumbnail context menu: the file information entry is listed first
+
 ## [0.5.0] - 2026-10-09
 
 ### Added
