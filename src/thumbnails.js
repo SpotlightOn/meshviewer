@@ -9,6 +9,22 @@ const FREEDESKTOP_MAGIC = Buffer.from([0, 0, 0, 0, 0, 0, 0, 1]);
 const FREEDESKTOP_SIZES = ["large", "x-large", "normal", "xx-large"];
 const EXIF_PREFIX_SIZE = 1024 * 1024; // embedded thumbnails live near the start of the file
 
+/**
+ * Version of the thumbnail layout; bumped whenever a thumbnail may change
+ * without the source file changing (e.g. EXIF orientation handling), so stale
+ * cache entries are regenerated after an update.
+ * @type {number}
+ */
+const THUMBNAIL_CACHE_VERSION = 2;
+
+/**
+ * EXIF orientation values that need a rotation without a mirror and the angle
+ * that displays them correctly. Mirroring orientations (2, 4, 5, 7) cannot be
+ * expressed by an angle and fall back to the full decode.
+ * @type {Record<number, number>}
+ */
+const ORIENTATION_ANGLES = { 3: 180, 6: 90, 8: 270 };
+
 let sharp = null;
 try {
   sharp = (await import("sharp")).default;
@@ -82,6 +98,44 @@ function extractEmbeddedThumbnail(buffer) {
 }
 
 /**
+ * Extracts the EXIF orientation tags of a JPEG file buffer.
+ * @param {Buffer} buffer - JPEG file data.
+ * @returns {{main?: number, thumbnail?: number}|null} Orientation of the main
+ *   image (IFD0) and of the embedded thumbnail (IFD1), or null when the file
+ *   has no EXIF data.
+ */
+function extractExifTags(buffer) {
+  try {
+    const exif = piexif.load(buffer.toString("binary"));
+    const main = exif["0th"]?.[piexif.ImageIFD.Orientation];
+    const thumbnail = exif["1st"]?.[piexif.ImageIFD.Orientation];
+    if (typeof main !== "number" && typeof thumbnail !== "number") return null;
+    return { main, thumbnail };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolves the rotation angle that displays an embedded JPEG thumbnail
+ * correctly. Embedded thumbnail bytes usually carry no EXIF of their own, so
+ * the orientation of the outer file decides; some files store an orientation
+ * inside the embedded JPEG itself, which then wins.
+ * @param {{main?: number, thumbnail?: number}|null} outer - Orientation tags of the outer file.
+ * @param {Buffer} embedded - Embedded thumbnail bytes.
+ * @returns {number|null} Rotation angle in degrees, or null when the bytes
+ *   carry their own non-identity orientation or a mirror is needed (the caller
+ *   falls back to decoding the full file in that case).
+ */
+function embeddedThumbnailAngle(outer, embedded) {
+  const nested = extractExifTags(embedded);
+  if (nested?.main && nested.main !== 1) return null;
+  const orientation = outer?.thumbnail ?? outer?.main;
+  if (orientation == null || orientation === 1) return 0;
+  return ORIENTATION_ANGLES[orientation] ?? null;
+}
+
+/**
  * Reads a prefix of a file into a buffer.
  * @param {string} filePath - Absolute file path.
  * @param {number} bytes - Maximum number of bytes to read.
@@ -119,7 +173,7 @@ async function readEmbeddedThumbnail(filePath) {
  */
 function thumbnailKey(file) {
   const hash = createHash("sha1")
-    .update(`${file.path}\0${file.size}\0${file.mtimeMs}`)
+    .update(`${file.path}\0${file.size}\0${file.mtimeMs}\0${THUMBNAIL_CACHE_VERSION}`)
     .digest("hex");
   return `${hash}.jpg`;
 }
@@ -137,12 +191,20 @@ function toDataUrl(data) {
  * Generates a thumbnail from an image file or buffer and stores it in the cache.
  * @param {string|Buffer} input - Image file path or image buffer.
  * @param {string} cacheFile - Target cache file.
+ * @param {number|null} [rotation] - Explicit rotation angle in degrees. Null
+ *   rotates automatically by the input's own EXIF orientation, 0 keeps the
+ *   pixels as they are.
  * @returns {Promise<void>}
  */
-async function generateThumbnail(input, cacheFile) {
+async function generateThumbnail(input, cacheFile, rotation = null) {
   await fsp.mkdir(path.dirname(cacheFile), { recursive: true });
-  await sharp(input, { failOn: "none", limitInputPixels: 100_000_000 })
-    .rotate()
+  let pipeline = sharp(input, { failOn: "none", limitInputPixels: 100_000_000 });
+  if (rotation === null) {
+    pipeline = pipeline.rotate();
+  } else if (rotation !== 0) {
+    pipeline = pipeline.rotate(rotation);
+  }
+  await pipeline
     .resize(THUMB_SIZE, THUMB_SIZE, { fit: "inside", withoutEnlargement: true })
     .flatten({ background: "#3a3a3a" })
     .jpeg({ quality: 80, progressive: true })
@@ -174,13 +236,17 @@ async function getThumbnail(file, cacheDir) {
       path.extname(file.path).toLowerCase() === ".jpg" ||
       path.extname(file.path).toLowerCase() === ".jpeg";
     if (isJpeg) {
-      const embedded = await readEmbeddedThumbnail(file.path);
+      const prefix = await readFilePrefix(file.path, EXIF_PREFIX_SIZE);
+      const embedded = prefix.length > 0 ? extractEmbeddedThumbnail(prefix) : null;
       if (embedded != null) {
-        try {
-          await generateThumbnail(embedded, cacheFile);
-          return toDataUrl(await fsp.readFile(cacheFile));
-        } catch {
-          // embedded thumbnail unusable, fall through to full decode
+        const rotation = embeddedThumbnailAngle(extractExifTags(prefix), embedded);
+        if (rotation !== null) {
+          try {
+            await generateThumbnail(embedded, cacheFile, rotation);
+            return toDataUrl(await fsp.readFile(cacheFile));
+          } catch {
+            // embedded thumbnail unusable, fall through to full decode
+          }
         }
       }
     }
@@ -192,7 +258,9 @@ async function getThumbnail(file, cacheDir) {
 }
 
 export {
+  embeddedThumbnailAngle,
   extractEmbeddedThumbnail,
+  extractExifTags,
   freedesktopUri,
   generateThumbnail,
   getThumbnail,

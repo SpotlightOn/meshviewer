@@ -17,12 +17,41 @@
   },
   "largeView": {
     "back": "Zurück",
+    "previous": "Vorherige Datei",
+    "next": "Nächste Datei",
     "slideshow": "Diashow",
     "zoom": "Zoom",
     "zoomInput": "Zoom in Prozent",
+    "actualSize": "Originalgröße",
     "fitToScreen": "An Bildschirm anpassen",
+    "info": "Dateiinformationen",
     "fullscreen": "Vollbild",
     "fullscreenExit": "Vollbild beenden"
+  },
+  "info": {
+    "title": "Dateiinformationen",
+    "loading": "Wird geladen…",
+    "file": "Datei",
+    "size": "Dateigröße",
+    "dimensions": "Bildmaße",
+    "modified": "Geändert",
+    "type": "Typ",
+    "embeddedThumbnail": "Eingebettetes Thumbnail",
+    "groups": {
+      "image": "Bild",
+      "exif": "EXIF",
+      "gps": "GPS",
+      "thumbnail": "Vorschaubild",
+      "interoperability": "Interoperabilität",
+      "ifd0": "IFD0",
+      "iptc": "IPTC",
+      "xmp": "XMP"
+    }
+  },
+  "contextMenu": {
+    "openWith": "Mit Standardanwendung öffnen",
+    "fileInfo": "Dateiinformationen",
+    "editWith": "Bearbeiten mit {{app}}"
   },
   "menu": {
     "file": "Datei",
@@ -81,6 +110,10 @@
     "transitionFade": "Fade",
     "transitionSlide": "Schieben",
     "animationDuration": "Animationsdauer (ms)",
+    "externalTools": "Externe Werkzeuge",
+    "editor": "Editor-Befehl",
+    "browse": "Durchsuchen…",
+    "editorHint": "Wird für „Bearbeiten mit …“ im Kontextmenü verwendet. Leer lassen, um den Eintrag auszublenden.",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },
@@ -93,9 +126,13 @@
   "dialog": {
     "close": "Schließen"
   },
+  "editor": {
+    "pickTitle": "Editor-Anwendung auswählen"
+  },
   "console": {
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
     "fileOpenError": "Fehler beim Öffnen der Datei in der Großansicht:",
-    "previewFailed": "Vorschau fehlgeschlagen:"
+    "previewFailed": "Vorschau fehlgeschlagen:",
+    "editorLaunchError": "Fehler beim Starten des Editors:"
   }
 }

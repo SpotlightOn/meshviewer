@@ -4,6 +4,7 @@ import { disposeObject } from "./three-utils.js";
 import {
   clampZoom,
   clampZoomPercent,
+  formatSize,
   glbDistanceForPercent,
   glbPercentForDistance,
   MAX_ZOOM_PERCENT,
@@ -18,15 +19,21 @@ import {
 import { GLTFLoader } from "./vendor/GLTFLoader.js";
 import { OrbitControls } from "./vendor/OrbitControls.js";
 
+const SWIPE_THRESHOLD = 60;
+const MIDDLE_CLICK_TOLERANCE = 8;
+
 /**
  * Creates an interactive zoom/pan controller for an image in the large view.
- * Supports mouse-wheel zoom, drag-to-pan, and fit/100% resets.
+ * Supports mouse-wheel zoom, drag-to-pan, drag-to-throw navigation
+ * (the image follows the pointer and snaps back when the drag is too short or
+ * not horizontal), fit/100% resets, and a middle-click toggle between fit and 100%.
  * @param {HTMLElement} canvas - The container element.
  * @param {HTMLImageElement} img - The image element (must be loaded).
  * @param {(scale: number) => void} [onChange] - Called after every zoom change with the current scale factor.
+ * @param {(delta: number) => void} [onSwipe] - Called when a drag gesture navigates (1 forward, -1 backward).
  * @returns {{fitView: () => void, zoomIn: (anchor?: {x: number, y: number}) => void, zoomOut: (anchor?: {x: number, y: number}) => void, reset: () => void, setZoom: (percent: number) => void, toggleFit: () => void, dispose: () => void}} Image view controller.
  */
-function createImageView(canvas, img, onChange) {
+function createImageView(canvas, img, onChange, onSwipe) {
   const nw = img.naturalWidth;
   const nh = img.naturalHeight;
   const state = {
@@ -37,6 +44,8 @@ function createImageView(canvas, img, onChange) {
     panning: false,
     lastX: 0,
     lastY: 0,
+    swipe: null,
+    middleStart: null,
   };
 
   img.style.position = "absolute";
@@ -52,10 +61,19 @@ function createImageView(canvas, img, onChange) {
   img.draggable = false;
 
   /**
+   * Renders the image transform, plus the horizontal swipe offset while a
+   * fit-view drag is in progress.
+   */
+  function render() {
+    const dx = state.swipe?.dx ?? 0;
+    img.style.transform = `translate(${state.tx + dx}px, ${state.ty}px) scale(${state.scale})`;
+  }
+
+  /**
    * Applies the current transform to the image element.
    */
   function apply() {
-    img.style.transform = `translate(${state.tx}px, ${state.ty}px) scale(${state.scale})`;
+    render();
     onChange?.(state.scale);
   }
 
@@ -160,16 +178,36 @@ function createImageView(canvas, img, onChange) {
   }
 
   /**
-   * Starts a pan drag.
+   * Starts a pan, swipe or middle-click gesture.
    * @param {PointerEvent} event - Pointer event.
    */
   function pointerdown(event) {
     event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+    if (event.button === 1) {
+      // Middle button: remember the start position and toggle fit/100% on release.
+      state.middleStart = { x: event.clientX, y: event.clientY };
+      return;
+    }
+    if (event.button !== 0) return;
     state.panning = true;
     state.lastX = event.clientX;
     state.lastY = event.clientY;
-    img.setPointerCapture(event.pointerId);
+    img.style.transition = "";
+    if (state.scale === state.minScale) {
+      // The image fits the canvas, so panning is a no-op: track a swipe instead.
+      state.swipe = { startX: event.clientX, startY: event.clientY, dx: 0 };
+    }
     img.style.cursor = "grabbing";
+    canvas.style.cursor = "grabbing";
+  }
+
+  /**
+   * Prevents the browser's native middle-click autoscroll.
+   * @param {MouseEvent} event - Mouse event.
+   */
+  function onMouseDown(event) {
+    if (event.button === 1) event.preventDefault();
   }
 
   /**
@@ -181,11 +219,17 @@ function createImageView(canvas, img, onChange) {
   }
 
   /**
-   * Updates the pan offset while dragging.
+   * Updates the pan offset while dragging, or slides the image sideways with
+   * the pointer during a fit-view swipe drag.
    * @param {PointerEvent} event - Pointer event.
    */
   function pointermove(event) {
     if (!state.panning) return;
+    if (state.scale === state.minScale && state.swipe) {
+      state.swipe.dx = event.clientX - state.swipe.startX;
+      render();
+      return;
+    }
     state.tx += event.clientX - state.lastX;
     state.ty += event.clientY - state.lastY;
     state.lastX = event.clientX;
@@ -195,13 +239,79 @@ function createImageView(canvas, img, onChange) {
   }
 
   /**
-   * Ends a pan drag.
+   * Resets the pan drag state (cursor, pointer capture).
+   * @param {PointerEvent} event - Pointer event.
+   */
+  function endPanGesture(event) {
+    state.panning = false;
+    img.style.cursor = "grab";
+    canvas.style.cursor = "";
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+  }
+
+  /**
+   * Animates the image back to its centered fit position after a swipe drag
+   * that did not pass the navigation threshold.
+   */
+  function snapBack() {
+    img.style.transition = "transform 180ms ease-out";
+    render();
+    const onEnd = () => {
+      img.style.transition = "";
+      img.removeEventListener("transitionend", onEnd);
+    };
+    img.addEventListener("transitionend", onEnd);
+    window.setTimeout(onEnd, 260);
+  }
+
+  /**
+   * Ends a drag and triggers swipe navigation or the middle-click toggle.
    * @param {PointerEvent} event - Pointer event.
    */
   function pointerup(event) {
-    state.panning = false;
-    img.style.cursor = "grab";
-    if (img.hasPointerCapture(event.pointerId)) img.releasePointerCapture(event.pointerId);
+    endPanGesture(event);
+    if (state.middleStart) {
+      const dx = event.clientX - state.middleStart.x;
+      const dy = event.clientY - state.middleStart.y;
+      state.middleStart = null;
+      if (Math.abs(dx) + Math.abs(dy) <= MIDDLE_CLICK_TOLERANCE) toggleActualFit();
+      return;
+    }
+    if (state.swipe) {
+      const dx = state.swipe.dx;
+      const dy = event.clientY - state.swipe.startY;
+      state.swipe = null;
+      if (Math.abs(dx) >= SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        // Pushing the image left goes to the next file, right to the previous one.
+        onSwipe?.(dx < 0 ? 1 : -1);
+      } else {
+        snapBack();
+      }
+    }
+  }
+
+  /**
+   * Cancels an interrupted drag: the image snaps back instead of navigating.
+   * @param {PointerEvent} event - Pointer event.
+   */
+  function pointercancel(event) {
+    endPanGesture(event);
+    state.middleStart = null;
+    if (state.swipe) {
+      state.swipe = null;
+      snapBack();
+    }
+  }
+
+  /**
+   * Toggles the image between 100% and fit-to-screen (middle mouse button).
+   */
+  function toggleActualFit() {
+    if (state.scale === 1) {
+      fitView();
+    } else {
+      reset();
+    }
   }
 
   /**
@@ -214,11 +324,12 @@ function createImageView(canvas, img, onChange) {
     zoomAt(event.deltaY < 0 ? 1.1 : 1 / 1.1, event.clientX - rect.left, event.clientY - rect.top);
   }
 
-  img.addEventListener("pointerdown", pointerdown);
-  img.addEventListener("pointermove", pointermove);
-  img.addEventListener("pointerup", pointerup);
-  img.addEventListener("pointercancel", pointerup);
-  img.addEventListener("dragstart", onDragStart);
+  canvas.addEventListener("pointerdown", pointerdown);
+  canvas.addEventListener("pointermove", pointermove);
+  canvas.addEventListener("pointerup", pointerup);
+  canvas.addEventListener("pointercancel", pointercancel);
+  canvas.addEventListener("mousedown", onMouseDown);
+  canvas.addEventListener("dragstart", onDragStart);
   canvas.addEventListener("wheel", onWheel, { passive: false });
 
   const resizeObserver = new ResizeObserver(() => {
@@ -239,11 +350,12 @@ function createImageView(canvas, img, onChange) {
     setZoom,
     toggleFit,
     dispose() {
-      img.removeEventListener("pointerdown", pointerdown);
-      img.removeEventListener("pointermove", pointermove);
-      img.removeEventListener("pointerup", pointerup);
-      img.removeEventListener("pointercancel", pointerup);
-      img.removeEventListener("dragstart", onDragStart);
+      canvas.removeEventListener("pointerdown", pointerdown);
+      canvas.removeEventListener("pointermove", pointermove);
+      canvas.removeEventListener("pointerup", pointerup);
+      canvas.removeEventListener("pointercancel", pointercancel);
+      canvas.removeEventListener("mousedown", onMouseDown);
+      canvas.removeEventListener("dragstart", onDragStart);
       canvas.removeEventListener("wheel", onWheel);
       resizeObserver.disconnect();
     },
@@ -254,22 +366,26 @@ function createImageView(canvas, img, onChange) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeTitle: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeFit: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
+ * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
  * @returns {{show: Function, close: () => void, isActive: () => boolean, onKeydown: (event: KeyboardEvent) => boolean, toggleSlideshow: () => void, restartSlideshow: () => void}} Large view module API.
  */
-export function createLargeView({ dom, settings, getFiles }) {
+export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   const {
     largeView,
     largeCanvas,
-    largeTitle,
     largeInfo,
     largeZoom,
     largeZoomValue,
     largeBack,
+    infoButton,
     largeSlideshow,
+    largeActual,
     largeFit,
+    largePrev,
+    largeNext,
     largeFullscreen,
     largeFullscreenExit,
     slideshowProgress,
@@ -437,16 +553,40 @@ export function createLargeView({ dom, settings, getFiles }) {
   }
 
   /**
+   * Updates the status bar with the file name, pixel size and formatted file
+   * size.
+   * @param {{name: string, size: number}} file - Media file entry.
+   * @param {{width: number, height: number}} [imageSize] - Pixel size when known.
+   */
+  function updateStatusBar(file, imageSize) {
+    const size = formatSize(file.size);
+    const dims = imageSize ? `${imageSize.width}x${imageSize.height}` : null;
+    largeInfo.textContent = [file.name, dims, size].filter(Boolean).join(" | ");
+  }
+
+  /**
+   * Disables the previous/next buttons at the folder boundaries.
+   */
+  function updateNavButtons() {
+    const files = getFiles();
+    const index = files.findIndex((file) => file.path === largeViewState?.file?.path);
+    largePrev.disabled = index <= 0;
+    largeNext.disabled = index < 0 || index >= files.length - 1;
+  }
+
+  /**
    * Closes and hides the large view.
    */
   function close() {
     largeToken += 1;
+    infoDialog.close();
     if (fullscreen) window.api.setFullScreen(false);
     dispose();
     stopSlideshow();
     largeView.classList.add("hidden");
-    largeTitle.textContent = "";
     largeInfo.textContent = "";
+    largePrev.disabled = true;
+    largeNext.disabled = true;
     syncZoomControl(1);
   }
 
@@ -544,11 +684,12 @@ export function createLargeView({ dom, settings, getFiles }) {
    */
   async function show(file, direction = 0) {
     const token = ++largeToken;
+    infoDialog.close();
     disposeResources();
     largeViewState = { token, file };
     largeView.classList.remove("hidden");
-    largeTitle.textContent = file.name;
-    largeInfo.textContent = "";
+    updateStatusBar(file);
+    updateNavButtons();
     syncZoomControl(1);
 
     try {
@@ -608,11 +749,16 @@ export function createLargeView({ dom, settings, getFiles }) {
     }
 
     largeCanvas.style.display = "block";
-    const imageView = createImageView(largeCanvas, img, (scale) => {
-      largeInfo.textContent = `${img.naturalWidth}x${img.naturalHeight}`;
-      syncZoomControl(scale);
-    });
+    const imageView = createImageView(
+      largeCanvas,
+      img,
+      (scale) => {
+        syncZoomControl(scale);
+      },
+      (delta) => navigate(delta),
+    );
     imageView.fitView();
+    updateStatusBar(file, { width: img.naturalWidth, height: img.naturalHeight });
 
     frame.classList.add(
       settings.get().slideshowTransition === "slide" ? "enter-slide" : "enter-fade",
@@ -620,7 +766,8 @@ export function createLargeView({ dom, settings, getFiles }) {
     largeCanvas.append(frame);
     retireLargeFrames(direction, frame);
 
-    largeViewState = { token, file, type: "image", objectUrl: url, imageView };
+    const imageSize = { width: img.naturalWidth, height: img.naturalHeight };
+    largeViewState = { token, file, type: "image", objectUrl: url, imageView, imageSize };
   }
 
   /**
@@ -729,6 +876,7 @@ export function createLargeView({ dom, settings, getFiles }) {
       token,
       file,
       type: "glb",
+      camera,
       renderer,
       controls,
       scene,
@@ -819,8 +967,15 @@ export function createLargeView({ dom, settings, getFiles }) {
   }
 
   largeBack.addEventListener("click", close);
+  infoButton.addEventListener("click", () => {
+    if (!largeViewState?.file) return;
+    infoDialog.open(largeViewState.file, largeViewState.imageSize);
+  });
   largeSlideshow.addEventListener("change", toggleSlideshow);
+  largeActual.addEventListener("click", () => setZoom(100));
   largeFit.addEventListener("click", fitToScreen);
+  largePrev.addEventListener("click", () => navigate(-1));
+  largeNext.addEventListener("click", () => navigate(1));
   largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));
   largeFullscreenExit.addEventListener("click", () => window.api.setFullScreen(false));
   largeView.addEventListener("mousemove", revealFullscreenExit);
