@@ -887,6 +887,15 @@ html.resizing * {
   color: #e06c75;
 }
 
+/* The confirmation message is the dialog's main text, so it reads at the
+   normal size and leaves room before the action buttons. */
+#confirm-message {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
 .settings-actions {
   display: flex;
   justify-content: flex-end;
@@ -907,9 +916,14 @@ html.resizing * {
   filter: brightness(1.1);
 }
 
-.settings-actions #settings-cancel {
+.settings-actions #settings-cancel,
+.settings-actions #confirm-cancel {
   background: transparent;
   border: 1px solid var(--border);
+}
+
+.settings-actions #confirm-accept {
+  background: #b23b3b;
 }
 
 .settings-dialog.info-dialog {

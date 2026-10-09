@@ -13,12 +13,16 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
 - Create a new folder from the context menu of the directory tree or the empty grid area
 - Paste the in-app clipboard into the folder chosen in the directory tree or the empty grid area context menu
+- Cut files (Ctrl+X or the context menu): pasting a cut selection moves the files into the chosen folder instead of copying them
+- Delete a folder (and its contents) from the directory tree context menu: a confirmation dialog appears first and the folder moves to the OS trash
+- Setting “Verify checksums when moving files” (SHA-256) for moves across filesystems
 
 ### Changed
 - Default slideshow transition changed to “slide” with a 300 ms animation duration
 - Empty state: larger logo without its dark background
 - Thumbnail context menu: the file information entry is listed first
 - The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
+- Cut moves rename the file atomically on the same filesystem and otherwise copy, preserve mode and timestamps and remove the source only after the copy is verified
 - Help menu: “Keyboard shortcuts” is now “Usage” and also documents the mouse gestures such as the middle-click fit toggle and the wheel zoom
 
 ### Fixed

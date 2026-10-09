@@ -19,6 +19,7 @@
     "previewFailed": "Vorschau fehlgeschlagen",
     "nSelected": "{{count}} ausgewählt",
     "copyBuffer": "{{count}} in die Zwischenablage kopiert",
+    "cutBuffer": "{{count}} in die Zwischenablage ausgeschnitten",
     "pasteDone": "{{count}} eingefügt",
     "trashed": "{{count}} in den Papierkorb verschoben"
   },
@@ -59,6 +60,7 @@
     "openWith": "Mit Standardanwendung öffnen",
     "fileInfo": "Dateiinformationen",
     "editWith": "Bearbeiten mit {{app}}",
+    "cut": "Ausschneiden",
     "copy": "Kopieren",
     "paste": "Einfügen",
     "newFolder": "Neuer Ordner",
@@ -158,6 +160,9 @@
     "transparencyCustom": "Eigene Farbe",
     "transparencyColor": "Hintergrundfarbe",
     "transparencyHint": "Füllt die Kachel hinter transparenten Vorschaubildern; in der Großansicht bildgroß auf einer schwarzen Bühne.",
+    "fileOperations": "Dateioperationen",
+    "verifyMoveChecksum": "Prüfsummen beim Verschieben prüfen",
+    "verifyMoveHint": "Beim Verschieben über Dateisystemgrenzen wird die SHA-256-Prüfsumme verglichen, bevor die Quelldatei gelöscht wird. Deaktivieren, um nur die Größe zu prüfen (schneller).",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },
@@ -169,7 +174,14 @@
   },
   "dialog": {
     "close": "Schließen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen"
+  },
+  "confirm": {
+    "deleteFolder": {
+      "title": "Ordner in den Papierkorb",
+      "message": "„{{name}}“ mit dem gesamten Inhalt in den Papierkorb verschieben?"
+    }
   },
   "newFolder": {
     "title": "Neuer Ordner",

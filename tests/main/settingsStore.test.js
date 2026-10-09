@@ -37,11 +37,19 @@ describe("normalizeSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 800,
       editorCommand: "",
+      verifyMoveChecksum: true,
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
       sidebarWidth: 280,
     });
+  });
+
+  it("keeps a valid verifyMoveChecksum flag and ignores non-booleans", () => {
+    expect(normalizeSettings({ verifyMoveChecksum: false }).verifyMoveChecksum).toBe(false);
+    expect(normalizeSettings({ verifyMoveChecksum: true }).verifyMoveChecksum).toBe(true);
+    expect(normalizeSettings({ verifyMoveChecksum: "no" }).verifyMoveChecksum).toBe(true);
+    expect(normalizeSettings({ verifyMoveChecksum: 0 }).verifyMoveChecksum).toBe(true);
   });
 
   it("keeps the editor command, trims it and ignores non-strings", () => {
@@ -122,12 +130,14 @@ describe("loadSettings / saveSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      verifyMoveChecksum: false,
     });
     expect(saved).toEqual({
       slideshowIntervalSeconds: 10,
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      verifyMoveChecksum: false,
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
@@ -138,6 +148,7 @@ describe("loadSettings / saveSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      verifyMoveChecksum: false,
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
@@ -149,6 +160,7 @@ describe("loadSettings / saveSettings", () => {
       slideshowTransition: "slide",
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
+      verifyMoveChecksum: false,
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",

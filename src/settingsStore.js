@@ -8,6 +8,7 @@ import path from "node:path";
  * @property {"fade"|"slide"} slideshowTransition - Slideshow image transition.
  * @property {number} animationDurationMs - Duration of the transition animation in milliseconds.
  * @property {string} editorCommand - External editor command used by the context menu "edit with" entry; empty disables the entry.
+ * @property {boolean} verifyMoveChecksum - Whether cross-filesystem moves compare SHA-256 checksums before removing the source.
  * @property {"checkerboard"|"white"|"custom"} transparencyBackground - Background shown behind transparent images.
  * @property {string} transparencyColor - Hex color used when transparencyBackground is "custom".
  * @property {"cover"|"contain"} thumbnailFit - How image thumbnails are fitted into their tile.
@@ -20,6 +21,7 @@ const DEFAULT_SETTINGS = Object.freeze({
   slideshowTransition: "slide",
   animationDurationMs: 300,
   editorCommand: "",
+  verifyMoveChecksum: true,
   transparencyBackground: "checkerboard",
   transparencyColor: "#ffffff",
   thumbnailFit: "cover",
@@ -63,6 +65,9 @@ function normalizeSettings(value) {
     }
     if (typeof value.editorCommand === "string") {
       settings.editorCommand = value.editorCommand.trim();
+    }
+    if (typeof value.verifyMoveChecksum === "boolean") {
+      settings.verifyMoveChecksum = value.verifyMoveChecksum;
     }
     if (TRANSPARENCY_BACKGROUNDS.includes(value.transparencyBackground)) {
       settings.transparencyBackground = value.transparencyBackground;

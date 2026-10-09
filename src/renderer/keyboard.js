@@ -1,17 +1,25 @@
 /**
  * Global keyboard shortcuts: F11 toggles fullscreen, Esc closes the settings,
- * file information or new folder dialog, large view shortkeys are delegated
- * to the large view module and Ctrl++/Ctrl+-/Ctrl+0 zoom the tile grid when
- * no other view is active. Selection shortcuts (Ctrl+A/C/V, Delete, Esc)
- * apply to the file grid.
+ * file information, new folder or confirmation dialog, large view shortkeys
+ * are delegated to the large view module and Ctrl++/Ctrl+-/Ctrl+0 zoom the
+ * tile grid when no other view is active. Selection shortcuts (Ctrl+A/C/V,
+ * Delete, Esc) apply to the file grid.
  * @param {object} deps - Module dependencies.
  * @param {{isOpen: () => boolean, close: () => void}} deps.settings - Settings module API.
  * @param {{isOpen: () => boolean, close: () => void}} deps.infoDialog - File information dialog API.
  * @param {{isOpen: () => boolean, close: () => void}} deps.folderDialog - New folder dialog API.
+ * @param {{isOpen: () => boolean, close: () => void}} deps.confirmDialog - Confirmation dialog API.
  * @param {{onKeydown: (event: KeyboardEvent) => boolean, isActive: () => boolean}} deps.largeView - Large view module API.
- * @param {{zoomTiles: (step: number) => void, selectAll: () => void, clearSelection: () => void, hasSelection: () => boolean, hasCopyBuffer: () => boolean, copySelection: () => void, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} deps.grid - Grid module API.
+ * @param {{zoomTiles: (step: number) => void, selectAll: () => void, clearSelection: () => void, hasSelection: () => boolean, hasCopyBuffer: () => boolean, copySelection: () => void, cutSelection: () => void, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} deps.grid - Grid module API.
  */
-export function createKeyboard({ settings, infoDialog, folderDialog, largeView, grid }) {
+export function createKeyboard({
+  settings,
+  infoDialog,
+  folderDialog,
+  confirmDialog,
+  largeView,
+  grid,
+}) {
   /**
    * Toggles the window between normal and fullscreen mode on F11.
    * @param {KeyboardEvent} event - Keyboard event.
@@ -54,6 +62,12 @@ export function createKeyboard({ settings, infoDialog, folderDialog, largeView, 
       }
       return;
     }
+    if (confirmDialog.isOpen()) {
+      if (event.key === "Escape") {
+        confirmDialog.close();
+      }
+      return;
+    }
     largeView.onKeydown(event);
   }
 
@@ -78,6 +92,7 @@ export function createKeyboard({ settings, infoDialog, folderDialog, largeView, 
     if (settings.isOpen()) return;
     if (infoDialog.isOpen()) return;
     if (folderDialog.isOpen()) return;
+    if (confirmDialog.isOpen()) return;
     if (largeView.isActive()) return;
     if (isTypingTarget(event)) return;
 
@@ -92,6 +107,12 @@ export function createKeyboard({ settings, infoDialog, folderDialog, largeView, 
       if (!grid.hasSelection()) return;
       event.preventDefault();
       grid.copySelection();
+      return;
+    }
+    if (mod && key === "x") {
+      if (!grid.hasSelection()) return;
+      event.preventDefault();
+      grid.cutSelection();
       return;
     }
     if (mod && key === "v") {
@@ -118,6 +139,7 @@ export function createKeyboard({ settings, infoDialog, folderDialog, largeView, 
   function handleGridZoom(event) {
     if (settings.isOpen()) return;
     if (folderDialog.isOpen()) return;
+    if (confirmDialog.isOpen()) return;
     if (largeView.isActive()) return;
     if (!event.ctrlKey || isTypingTarget(event)) return;
 

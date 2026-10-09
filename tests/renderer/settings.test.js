@@ -39,6 +39,7 @@ function makeSettings({ initial = {}, pick = null } = {}) {
         <input id="settings-duration" type="number" />
         <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
         <button id="settings-editor-browse" type="button">Browse…</button>
+        <input id="settings-verify-checksum" type="checkbox" class="switch-input" />
         <select id="settings-thumbnail-fit">
           <option value="cover">cover</option>
           <option value="contain">contain</option>
@@ -63,6 +64,7 @@ function makeSettings({ initial = {}, pick = null } = {}) {
       duration: document.getElementById("settings-duration"),
       editor: document.getElementById("settings-editor"),
       editorBrowse: document.getElementById("settings-editor-browse"),
+      verify: document.getElementById("settings-verify-checksum"),
       thumbnailFit: document.getElementById("settings-thumbnail-fit"),
       transparency: document.getElementById("settings-transparency"),
       transparencyColor: document.getElementById("settings-transparency-color"),
@@ -73,6 +75,7 @@ function makeSettings({ initial = {}, pick = null } = {}) {
   return {
     settings,
     editor: document.getElementById("settings-editor"),
+    verify: document.getElementById("settings-verify-checksum"),
     transparency: document.getElementById("settings-transparency"),
     transparencyColor: document.getElementById("settings-transparency-color"),
     thumbnailFit: document.getElementById("settings-thumbnail-fit"),
@@ -120,6 +123,35 @@ describe("createSettings editor command", () => {
     await flush();
     expect(calls.picked).toBe(1);
     expect(editor.value).toBe("/usr/bin/mypaint");
+  });
+});
+
+describe("createSettings file operations", () => {
+  beforeEach(() => {
+    window.api = undefined;
+    document.body.innerHTML = "";
+  });
+
+  it("pre-fills the checksum switch from the loaded settings", async () => {
+    const { settings, verify } = makeSettings({ initial: { verifyMoveChecksum: false } });
+    await settings.load();
+    settings.open();
+    expect(verify.checked).toBe(false);
+  });
+
+  it("persists the checksum switch state on save", async () => {
+    const { settings, verify, save, calls } = makeSettings({
+      initial: { verifyMoveChecksum: true },
+    });
+    await settings.load();
+    settings.open();
+    expect(verify.checked).toBe(true);
+
+    verify.checked = false;
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).verifyMoveChecksum).toBe(false);
+    expect(settings.get().verifyMoveChecksum).toBe(false);
   });
 });
 

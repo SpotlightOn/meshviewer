@@ -33,6 +33,7 @@ const translations = {
     loadError: "Could not load the folder",
     nSelected: "{{count}} selected",
     copyBuffer: "{{count}} copied to clipboard",
+    cutBuffer: "{{count}} cut to clipboard",
     pasteDone: "{{count}} copied into this folder",
     trashed: "{{count}} moved to trash",
   },
@@ -64,7 +65,9 @@ function media(name, index = 0) {
  * @param {object} [options] - Optional spies/overrides.
  * @param {(file: object) => void} [options.onOpenFile] - Spy for tile clicks.
  * @param {Function} [options.copyFiles] - Stub for window.api.copyFiles.
+ * @param {Function} [options.moveFiles] - Stub for window.api.moveFiles.
  * @param {Function} [options.trashFiles] - Stub for window.api.trashFiles.
+ * @param {() => object} [options.getSettings] - Stub for the settings accessor.
  * @returns {Promise<object>} Grid module API with DOM references and spies.
  */
 async function makeGrid(listFiles, options = {}) {
@@ -80,6 +83,7 @@ async function makeGrid(listFiles, options = {}) {
   window.api = {
     listMediaFiles: listFiles,
     copyFiles: options.copyFiles ?? vi.fn(async () => []),
+    moveFiles: options.moveFiles ?? vi.fn(async () => []),
     trashFiles: options.trashFiles ?? vi.fn(async () => ({ trashed: [], failed: [] })),
   };
   const grid = createGrid({
@@ -92,6 +96,7 @@ async function makeGrid(listFiles, options = {}) {
     },
     onOpenFile,
     onFolderChange: () => {},
+    getSettings: options.getSettings,
   });
   return {
     grid,
@@ -292,6 +297,84 @@ describe("grid selection", () => {
     expect(listFiles).toHaveBeenCalledTimes(1);
     expect(grid.getPath()).toBe("/tmp/folder");
     expect(selectionInfo.textContent).toBe("1 copied into this folder");
+  });
+
+  it("cuts the selected files into the clipboard and shows the cut message", async () => {
+    const { loadFolder, grid, selectionInfo } = await makeGrid(async () => [
+      media("a.png", 0),
+      media("b.png", 1),
+    ]);
+    await loadFolder("/tmp/folder");
+    const cards = document.querySelectorAll(".card");
+
+    clickCard(cards[0], { ctrlKey: true });
+    clickCard(cards[1], { ctrlKey: true });
+    grid.cutSelection();
+
+    expect(grid.hasCopyBuffer()).toBe(true);
+    expect(selectionInfo.textContent).toBe("2 cut to clipboard");
+  });
+
+  it("moves cut files on paste, reloads the folder and consumes the clipboard", async () => {
+    const listFiles = vi.fn(async () => [media("a.png", 0), media("b.png", 1)]);
+    const moveFiles = vi.fn(async () => [
+      { source: "/tmp/folder/a.png", target: "/tmp/other/a.png", ok: true },
+    ]);
+    const { loadFolder, grid, selectionInfo } = await makeGrid(listFiles, { moveFiles });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.cutSelection();
+    const moved = await grid.paste("/tmp/other");
+
+    expect(moved).toBe(true);
+    expect(moveFiles).toHaveBeenCalledWith(["/tmp/folder/a.png"], "/tmp/other", {
+      checksum: false,
+    });
+    // The current folder may have lost files, so it is reloaded too.
+    expect(listFiles).toHaveBeenCalledTimes(2);
+    // A cut clipboard is consumed by the first paste.
+    expect(grid.hasCopyBuffer()).toBe(false);
+    expect(selectionInfo.textContent).toBe("1 copied into this folder");
+  });
+
+  it("moves cut files when pasting into the current folder", async () => {
+    const listFiles = vi.fn(async () => [media("a.png", 0), media("b.png", 1)]);
+    const moveFiles = vi.fn(async () => [
+      { source: "/tmp/folder/a.png", target: "/tmp/folder/a.png", ok: true, unchanged: true },
+    ]);
+    const { loadFolder, grid } = await makeGrid(listFiles, { moveFiles });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.cutSelection();
+    const moved = await grid.paste();
+
+    expect(moved).toBe(true);
+    expect(moveFiles).toHaveBeenCalledWith(["/tmp/folder/a.png"], "/tmp/folder", {
+      checksum: false,
+    });
+    expect(listFiles).toHaveBeenCalledTimes(2);
+    expect(grid.hasCopyBuffer()).toBe(false);
+  });
+
+  it("passes the checksum setting to moveFiles when enabled", async () => {
+    const moveFiles = vi.fn(async () => [
+      { source: "/tmp/folder/a.png", target: "/tmp/other/a.png", ok: true },
+    ]);
+    const { loadFolder, grid } = await makeGrid(async () => [media("a.png", 0)], {
+      moveFiles,
+      getSettings: () => ({ verifyMoveChecksum: true }),
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.cutSelection();
+    await grid.paste("/tmp/other");
+
+    expect(moveFiles).toHaveBeenCalledWith(["/tmp/folder/a.png"], "/tmp/other", {
+      checksum: true,
+    });
   });
 
   it("moves the selected files to the trash and reloads", async () => {

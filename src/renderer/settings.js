@@ -17,6 +17,7 @@ export function createSettings({ dom, onSaved }) {
     duration,
     editor,
     editorBrowse,
+    verify,
     thumbnailFit,
     transparency,
     transparencyColor,
@@ -28,6 +29,7 @@ export function createSettings({ dom, onSaved }) {
     slideshowTransition: "slide",
     animationDurationMs: 300,
     editorCommand: "",
+    verifyMoveChecksum: true,
     transparencyBackground: "checkerboard",
     transparencyColor: "#ffffff",
     thumbnailFit: "cover",
@@ -141,6 +143,7 @@ export function createSettings({ dom, onSaved }) {
     transition.value = settings.slideshowTransition;
     duration.value = String(settings.animationDurationMs);
     editor.value = settings.editorCommand;
+    verify.checked = settings.verifyMoveChecksum !== false;
     thumbnailFit.value = settings.thumbnailFit;
     transparency.value = settings.transparencyBackground;
     transparencyColor.value = settings.transparencyColor;
@@ -170,6 +173,7 @@ export function createSettings({ dom, onSaved }) {
         ? Math.max(0, Math.min(5000, Math.round(parsedDuration)))
         : settings.animationDurationMs,
       editorCommand: editor.value.trim(),
+      verifyMoveChecksum: verify.checked,
       thumbnailFit: thumbnailFit.value === "contain" ? "contain" : "cover",
       transparencyBackground: ["checkerboard", "white", "custom"].includes(transparency.value)
         ? transparency.value
