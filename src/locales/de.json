@@ -4,6 +4,9 @@
     "homeTitle": "Home-Verzeichnis",
     "pathHint": "Auf einen Ordner im Pfad klicken zum Öffnen oder hier klicken zum Bearbeiten"
   },
+  "sidebar": {
+    "resize": "Breite des Verzeichnisbaums ändern"
+  },
   "currentDir": {
     "ariaLabel": "Aktuelles Verzeichnis - Enter drücken zum Öffnen"
   },
@@ -145,6 +148,16 @@
     "editor": "Editor-Befehl",
     "browse": "Durchsuchen…",
     "editorHint": "Wird für „Bearbeiten mit …“ im Kontextmenü verwendet. Leer lassen, um den Eintrag auszublenden.",
+    "appearance": "Darstellung",
+    "thumbnailFit": "Vorschaubild-Anpassung",
+    "thumbnailFitCover": "Cover (Kachel füllen)",
+    "thumbnailFitContain": "Contain (ganzes Bild anzeigen)",
+    "transparency": "Hintergrund für Transparenz",
+    "transparencyCheckerboard": "Schachbrett",
+    "transparencyWhite": "Weiß",
+    "transparencyCustom": "Eigene Farbe",
+    "transparencyColor": "Hintergrundfarbe",
+    "transparencyHint": "Füllt die Kachel hinter transparenten Vorschaubildern; in der Großansicht bildgroß auf einer schwarzen Bühne.",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },

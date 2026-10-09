@@ -8,18 +8,39 @@ import path from "node:path";
  * @property {"fade"|"slide"} slideshowTransition - Slideshow image transition.
  * @property {number} animationDurationMs - Duration of the transition animation in milliseconds.
  * @property {string} editorCommand - External editor command used by the context menu "edit with" entry; empty disables the entry.
+ * @property {"checkerboard"|"white"|"custom"} transparencyBackground - Background shown behind transparent images.
+ * @property {string} transparencyColor - Hex color used when transparencyBackground is "custom".
+ * @property {"cover"|"contain"} thumbnailFit - How image thumbnails are fitted into their tile.
+ * @property {number} sidebarWidth - Width of the directory tree sidebar in pixels.
  */
 
 /** @type {Readonly<AppSettings>} */
 const DEFAULT_SETTINGS = Object.freeze({
   slideshowIntervalSeconds: 5,
-  slideshowTransition: "fade",
-  animationDurationMs: 1000,
+  slideshowTransition: "slide",
+  animationDurationMs: 300,
   editorCommand: "",
+  transparencyBackground: "checkerboard",
+  transparencyColor: "#ffffff",
+  thumbnailFit: "cover",
+  sidebarWidth: 280,
 });
+
+/** Allowed sidebar width range in pixels. */
+const SIDEBAR_WIDTH_MIN = 160;
+const SIDEBAR_WIDTH_MAX = 720;
 
 /** @type {ReadonlyArray<AppSettings["slideshowTransition"]>} */
 const TRANSITIONS = Object.freeze(["fade", "slide"]);
+
+/** @type {ReadonlyArray<AppSettings["transparencyBackground"]>} */
+const TRANSPARENCY_BACKGROUNDS = Object.freeze(["checkerboard", "white", "custom"]);
+
+/** @type {ReadonlyArray<AppSettings["thumbnailFit"]>} */
+const THUMBNAIL_FITS = Object.freeze(["cover", "contain"]);
+
+/** Matches an opaque RGB hex color such as "#1a2b3c". */
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 /**
  * Validates raw input against the defaults and returns a normalized settings object.
@@ -42,6 +63,22 @@ function normalizeSettings(value) {
     }
     if (typeof value.editorCommand === "string") {
       settings.editorCommand = value.editorCommand.trim();
+    }
+    if (TRANSPARENCY_BACKGROUNDS.includes(value.transparencyBackground)) {
+      settings.transparencyBackground = value.transparencyBackground;
+    }
+    if (typeof value.transparencyColor === "string" && HEX_COLOR.test(value.transparencyColor)) {
+      settings.transparencyColor = value.transparencyColor.toLowerCase();
+    }
+    if (THUMBNAIL_FITS.includes(value.thumbnailFit)) {
+      settings.thumbnailFit = value.thumbnailFit;
+    }
+    const sidebarWidth = Number(value.sidebarWidth);
+    if (Number.isFinite(sidebarWidth)) {
+      settings.sidebarWidth = Math.min(
+        SIDEBAR_WIDTH_MAX,
+        Math.max(SIDEBAR_WIDTH_MIN, Math.round(sidebarWidth)),
+      );
     }
   }
   return settings;
@@ -90,6 +127,10 @@ export {
   loadSettings,
   normalizeSettings,
   registerSettingsIpc,
+  SIDEBAR_WIDTH_MAX,
+  SIDEBAR_WIDTH_MIN,
   saveSettings,
+  THUMBNAIL_FITS,
   TRANSITIONS,
+  TRANSPARENCY_BACKGROUNDS,
 };

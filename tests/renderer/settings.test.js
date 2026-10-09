@@ -39,6 +39,18 @@ function makeSettings({ initial = {}, pick = null } = {}) {
         <input id="settings-duration" type="number" />
         <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
         <button id="settings-editor-browse" type="button">Browse…</button>
+        <select id="settings-thumbnail-fit">
+          <option value="cover">cover</option>
+          <option value="contain">contain</option>
+        </select>
+        <select id="settings-transparency">
+          <option value="checkerboard">checkerboard</option>
+          <option value="white">white</option>
+          <option value="custom">custom</option>
+        </select>
+        <div class="settings-row">
+          <input id="settings-transparency-color" type="color" value="#ffffff" />
+        </div>
         <button id="settings-save" type="button">Save</button>
         <button id="settings-cancel" type="button">Cancel</button>
       </div>
@@ -51,6 +63,9 @@ function makeSettings({ initial = {}, pick = null } = {}) {
       duration: document.getElementById("settings-duration"),
       editor: document.getElementById("settings-editor"),
       editorBrowse: document.getElementById("settings-editor-browse"),
+      thumbnailFit: document.getElementById("settings-thumbnail-fit"),
+      transparency: document.getElementById("settings-transparency"),
+      transparencyColor: document.getElementById("settings-transparency-color"),
       save: document.getElementById("settings-save"),
       cancel: document.getElementById("settings-cancel"),
     },
@@ -58,6 +73,9 @@ function makeSettings({ initial = {}, pick = null } = {}) {
   return {
     settings,
     editor: document.getElementById("settings-editor"),
+    transparency: document.getElementById("settings-transparency"),
+    transparencyColor: document.getElementById("settings-transparency-color"),
+    thumbnailFit: document.getElementById("settings-thumbnail-fit"),
     save: document.getElementById("settings-save"),
     calls,
   };
@@ -102,5 +120,97 @@ describe("createSettings editor command", () => {
     await flush();
     expect(calls.picked).toBe(1);
     expect(editor.value).toBe("/usr/bin/mypaint");
+  });
+});
+
+describe("createSettings transparency background", () => {
+  beforeEach(() => {
+    window.api = undefined;
+    document.body.innerHTML = "";
+  });
+
+  it("pre-fills the transparency controls and hides the color picker unless custom", async () => {
+    const { settings, transparency, transparencyColor } = makeSettings({
+      initial: { transparencyBackground: "white", transparencyColor: "#123456" },
+    });
+    await settings.load();
+    settings.open();
+    expect(transparency.value).toBe("white");
+    expect(transparencyColor.value).toBe("#123456");
+    expect(transparencyColor.closest(".settings-row").hidden).toBe(true);
+  });
+
+  it("shows the color picker for the custom mode", async () => {
+    const { settings, transparencyColor } = makeSettings({
+      initial: { transparencyBackground: "custom" },
+    });
+    await settings.load();
+    settings.open();
+    expect(transparencyColor.closest(".settings-row").hidden).toBe(false);
+  });
+
+  it("persists the transparency background and color on save", async () => {
+    const { settings, transparency, transparencyColor, save, calls } = makeSettings();
+    await settings.load();
+    settings.open();
+    transparency.value = "custom";
+    transparencyColor.value = "#abcdef";
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).transparencyBackground).toBe("custom");
+    expect(calls.saved.at(-1).transparencyColor).toBe("#abcdef");
+  });
+});
+
+describe("createSettings thumbnail fit", () => {
+  beforeEach(() => {
+    window.api = undefined;
+    document.body.innerHTML = "";
+  });
+
+  it("pre-fills the thumbnail fit from the loaded settings", async () => {
+    const { settings, thumbnailFit } = makeSettings({ initial: { thumbnailFit: "contain" } });
+    await settings.load();
+    settings.open();
+    expect(thumbnailFit.value).toBe("contain");
+  });
+
+  it("persists the thumbnail fit on save and exposes it to the grid via a CSS variable", async () => {
+    const { settings, thumbnailFit, save, calls } = makeSettings();
+    await settings.load();
+    settings.open();
+    thumbnailFit.value = "contain";
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).thumbnailFit).toBe("contain");
+    expect(document.documentElement.style.getPropertyValue("--thumb-fit")).toBe("contain");
+  });
+});
+
+describe("createSettings sidebar width", () => {
+  beforeEach(() => {
+    window.api = undefined;
+    document.body.innerHTML = "";
+  });
+
+  it("applies the loaded sidebar width as a CSS variable", async () => {
+    const { settings } = makeSettings({ initial: { sidebarWidth: 320 } });
+    await settings.load();
+    expect(document.documentElement.style.getPropertyValue("--sidebar-width")).toBe("320px");
+  });
+
+  it("persists a new sidebar width and applies it", async () => {
+    const { settings, calls } = makeSettings({ initial: { sidebarWidth: 280 } });
+    await settings.load();
+    await settings.saveSidebarWidth(400);
+    expect(calls.saved.at(-1).sidebarWidth).toBe(400);
+    expect(document.documentElement.style.getPropertyValue("--sidebar-width")).toBe("400px");
+  });
+
+  it("clamps a too small sidebar width when applying", async () => {
+    const { settings } = makeSettings({ initial: { sidebarWidth: 280 } });
+    await settings.load();
+    settings.applySidebarWidth(10);
+    expect(settings.get().sidebarWidth).toBe(160);
   });
 });

@@ -112,13 +112,7 @@ async function loadThumb(file, card) {
       wrap.classList.remove("loading");
     } else {
       thumb.src = await loadImageThumbnail(file);
-      const markLoaded = () => {
-        const displaySize = wrap.clientWidth || THUMB_SIZE;
-        if (thumb.naturalWidth <= displaySize && thumb.naturalHeight <= displaySize) {
-          thumb.classList.add("natural");
-        }
-        wrap.classList.remove("loading");
-      };
+      const markLoaded = () => wrap.classList.remove("loading");
       if (thumb.complete) {
         markLoaded();
       } else {

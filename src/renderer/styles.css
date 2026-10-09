@@ -7,7 +7,15 @@
   --text-dim: #9a9a9a;
   --accent: #4f9cf9;
   --tile-size: 200px;
-  --transition-duration: 1000ms;
+  --transition-duration: 300ms;
+  --checker-a: #4a4a4a;
+  --checker-b: #333333;
+  --transparency-background:
+    linear-gradient(45deg, var(--checker-a) 25%, transparent 25%) 0 0 / 24px 24px,
+    linear-gradient(-45deg, var(--checker-a) 25%, transparent 25%) 0 12px / 24px 24px,
+    linear-gradient(45deg, transparent 75%, var(--checker-a) 75%) 12px -12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, var(--checker-a) 75%) -12px 0 / 24px 24px,
+    var(--checker-b);
 }
 
 * {
@@ -162,12 +170,37 @@ main {
 }
 
 .sidebar {
-  width: 280px;
+  width: var(--sidebar-width, 280px);
   flex-shrink: 0;
   overflow: auto;
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 8px;
+}
+
+.resizer {
+  flex: none;
+  width: 6px;
+  height: auto;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+  transition: background 120ms ease;
+}
+
+.resizer:hover,
+.resizer:focus-visible,
+html.resizing .resizer {
+  background: var(--accent);
+  outline: none;
+}
+
+html.resizing,
+html.resizing * {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .sidebar .tree {
@@ -255,8 +288,8 @@ main {
 }
 
 .empty-logo {
-  width: 96px;
-  height: 96px;
+  width: 230px;
+  height: 230px;
 }
 
 .empty-message {
@@ -328,13 +361,7 @@ main {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background:
-    linear-gradient(45deg, var(--surface) 25%, transparent 25%) 0 0 / 24px 24px,
-    linear-gradient(-45deg, var(--surface) 25%, transparent 25%) 0 12px / 24px 24px,
-    linear-gradient(45deg, transparent 75%, var(--surface) 75%) 12px -12px / 24px 24px,
-    linear-gradient(-45deg, transparent 75%, var(--surface) 75%) -12px 0 / 24px 24px,
-    #242424;
-  background-color: #242424;
+  background: var(--transparency-background);
 }
 
 .card .thumb-wrap.loading {
@@ -345,15 +372,7 @@ main {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-}
-
-.card .thumb.natural {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  object-fit: var(--thumb-fit, cover);
 }
 
 .card .meta {
@@ -675,6 +694,7 @@ main {
   display: none;
   overflow: hidden;
   touch-action: none;
+  background: #000;
 }
 
 .large-canvas canvas {
@@ -686,6 +706,10 @@ main {
 .large-canvas .large-frame {
   position: absolute;
   inset: 0;
+}
+
+.large-canvas .large-image {
+  background: var(--transparency-background);
 }
 
 @keyframes large-fade-in {
@@ -789,6 +813,25 @@ main {
   gap: 12px;
   margin: 8px 0;
   font-size: 13px;
+}
+
+.settings-row.settings-row-check {
+  justify-content: flex-start;
+}
+
+.settings-row[hidden] {
+  display: none;
+}
+
+#settings-transparency,
+#settings-thumbnail-fit {
+  width: auto;
+}
+
+#settings-transparency-color {
+  width: 48px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .settings-row input,

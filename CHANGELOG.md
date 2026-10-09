@@ -5,6 +5,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 ## [Unreleased]
 
 ### Added
+- Setting for the background behind transparent images: checkerboard, white or a custom color (fills the grid tile; drawn at image size on a black stage in the large view)
+- Setting for the thumbnail fit: cover (fill the tile) or contain (show the whole image)
+- Resizable directory tree sidebar: drag the divider (or focus it and use the arrow keys); the width is remembered across restarts
 - Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, dragging on empty space draws a rubber-band selection, Ctrl+A selects all and Esc clears the selection
 - Copy and paste of files inside the app (Ctrl+C / Ctrl+V or the context menu); a pasted file whose name already exists gets a “(1)” suffix
 - Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
@@ -12,9 +15,14 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Paste the in-app clipboard into the folder chosen in the directory tree or the empty grid area context menu
 
 ### Changed
+- Default slideshow transition changed to “slide” with a 300 ms animation duration
+- Empty state: larger logo without its dark background
 - Thumbnail context menu: the file information entry is listed first
 - The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
 - Help menu: “Keyboard shortcuts” is now “Usage” and also documents the mouse gestures such as the middle-click fit toggle and the wheel zoom
+
+### Fixed
+- Thumbnails of images smaller than the tile are scaled to fill the tile instead of being shown at natural size, which looked like a transparent border once the transparency background is visible
 
 ## [0.5.0] - 2026-10-09
 
