@@ -102,12 +102,33 @@ contextMenu.register({
   },
 });
 
+contextMenu.register({
+  id: "copy",
+  label: () => t("contextMenu.copy"),
+  icon: "copy",
+  action: () => grid.copySelection(),
+});
+contextMenu.register({
+  id: "paste",
+  label: () => t("contextMenu.paste"),
+  icon: "paste",
+  enabled: () => grid.hasCopyBuffer(),
+  action: () => void grid.paste(),
+});
+contextMenu.register({
+  id: "trash",
+  label: () => t("contextMenu.moveToTrash"),
+  icon: "delete",
+  action: () => void grid.trashSelection(),
+});
+
 grid = createGrid({
   dom: {
     grid: document.getElementById("grid"),
     emptyState: document.getElementById("empty-state"),
     emptyMessage: document.getElementById("empty-message"),
     contentEl: document.querySelector(".content"),
+    selectionInfo: document.getElementById("selection-info"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
   onFolderChange: (dirPath) => {

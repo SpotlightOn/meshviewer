@@ -3,11 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  copyFiles,
   listDirectories,
   listMediaFiles,
   parentDir,
   readFileBuffer,
   registerFsIpc,
+  trashFiles,
 } from "../../src/fsIpc.js";
 
 let fixtureDir;
@@ -138,6 +140,92 @@ describe("readFileBuffer", () => {
   });
 });
 
+describe("copyFiles", () => {
+  it("copies a file into the target directory", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
+    try {
+      const source = join(dir, "a.png");
+      const targetDir = join(dir, "target");
+      await mkdir(targetDir);
+      await writeFile(source, "hello");
+
+      const results = await copyFiles([source], targetDir);
+
+      expect(results).toEqual([{ source, target: join(targetDir, "a.png"), ok: true }]);
+      expect(await readFile(join(targetDir, "a.png"), "utf8")).toBe("hello");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("renames on name collisions with a (1), (2) suffix", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
+    try {
+      const source = join(dir, "a.png");
+      const targetDir = join(dir, "target");
+      await mkdir(targetDir);
+      await writeFile(source, "hello");
+      await writeFile(join(targetDir, "a.png"), "existing");
+      await writeFile(join(targetDir, "a (1).png"), "existing");
+
+      const results = await copyFiles([source], targetDir);
+
+      expect(results[0].target).toBe(join(targetDir, "a (2).png"));
+      expect(results[0].ok).toBe(true);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports missing sources as failed", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
+    try {
+      const targetDir = join(dir, "target");
+      await mkdir(targetDir);
+      const missing = join(dir, "missing.png");
+
+      const results = await copyFiles([missing], targetDir);
+
+      expect(results[0].ok).toBe(false);
+      expect(results[0].source).toBe(missing);
+      expect(typeof results[0].error).toBe("string");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects directories as sources", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
+    try {
+      const source = join(dir, "sub");
+      const targetDir = join(dir, "target");
+      await mkdir(source);
+      await mkdir(targetDir);
+
+      const results = await copyFiles([source], targetDir);
+
+      expect(results[0].ok).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("trashFiles", () => {
+  it("collects successful and failed paths", async () => {
+    const shell = {
+      trashItem: async (filePath) => {
+        if (filePath === "/b") throw new Error("permission denied");
+      },
+    };
+
+    const result = await trashFiles(["/a", "/b"], shell);
+
+    expect(result.trashed).toEqual(["/a"]);
+    expect(result.failed).toEqual([{ path: "/b", error: "permission denied" }]);
+  });
+});
+
 describe("registerFsIpc", () => {
   function createFakes() {
     const handlers = {};
@@ -150,7 +238,10 @@ describe("registerFsIpc", () => {
       getPath: () => "/home/pi",
       getLocale: () => "de-DE",
     };
-    const shell = { openPath: () => Promise.resolve("") };
+    const shell = {
+      openPath: () => Promise.resolve(""),
+      trashItem: () => Promise.resolve(),
+    };
     return { handlers, ipcMain, app, shell };
   }
 
@@ -168,6 +259,8 @@ describe("registerFsIpc", () => {
       "fs:readFile",
       "fs:exif",
       "fs:getThumbnail",
+      "fs:copyFiles",
+      "fs:trashFiles",
       "shell:openPath",
     ];
     for (const channel of channels) {

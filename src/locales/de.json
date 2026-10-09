@@ -13,7 +13,11 @@
     "typeImage": "Bild",
     "loadError": "Fehler beim Lesen des Ordners",
     "noMedia": "In diesem Ordner wurden keine *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg oder *.ico Dateien gefunden.",
-    "previewFailed": "Vorschau fehlgeschlagen"
+    "previewFailed": "Vorschau fehlgeschlagen",
+    "nSelected": "{{count}} ausgewählt",
+    "copyBuffer": "{{count}} in die Zwischenablage kopiert",
+    "pasteDone": "{{count}} in diesen Ordner kopiert",
+    "trashed": "{{count}} in den Papierkorb verschoben"
   },
   "largeView": {
     "back": "Zurück",
@@ -51,7 +55,10 @@
   "contextMenu": {
     "openWith": "Mit Standardanwendung öffnen",
     "fileInfo": "Dateiinformationen",
-    "editWith": "Bearbeiten mit {{app}}"
+    "editWith": "Bearbeiten mit {{app}}",
+    "copy": "Kopieren",
+    "paste": "Einfügen",
+    "moveToTrash": "In den Papierkorb verschieben"
   },
   "menu": {
     "file": "Datei",
@@ -98,6 +105,10 @@
     "largerTiles": "Größere Kacheln",
     "smallerTiles": "Kleinere Kacheln",
     "resetTiles": "Kachelgröße zurücksetzen",
+    "selectAllFiles": "Alle Dateien auswählen",
+    "copyPasteFiles": "Dateien kopieren / einfügen",
+    "moveToTrash": "Ausgewählte Dateien in den Papierkorb",
+    "clearSelection": "Auswahl aufheben",
     "openPath": "Eingegebenen Pfad öffnen",
     "revertPath": "Feld zurücksetzen",
     "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab."
@@ -133,6 +144,8 @@
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
     "fileOpenError": "Fehler beim Öffnen der Datei in der Großansicht:",
     "previewFailed": "Vorschau fehlgeschlagen:",
-    "editorLaunchError": "Fehler beim Starten des Editors:"
+    "editorLaunchError": "Fehler beim Starten des Editors:",
+    "pasteFailed": "Einige Dateien konnten nicht kopiert werden:",
+    "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:"
   }
 }

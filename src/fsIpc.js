@@ -131,10 +131,92 @@ async function readFileBuffer(filePath) {
 }
 
 /**
+ * Checks whether a path exists.
+ * @param {string} filePath - Absolute path.
+ * @returns {Promise<boolean>} true when the path exists.
+ */
+async function exists(filePath) {
+  try {
+    await fsp.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Returns a non-colliding target path inside a directory. Existing names get
+ * a " (1)", " (2)", … suffix before the extension.
+ * @param {string} dir - Target directory.
+ * @param {string} fileName - Original file name.
+ * @returns {Promise<string>} Free absolute target path.
+ */
+async function uniqueTargetPath(dir, fileName) {
+  const ext = path.extname(fileName);
+  const base = path.basename(fileName, ext);
+  let candidate = path.join(dir, fileName);
+  let counter = 1;
+  while (await exists(candidate)) {
+    candidate = path.join(dir, `${base} (${counter})${ext}`);
+    counter += 1;
+  }
+  return candidate;
+}
+
+/**
+ * Copies files into a target directory. Existing files are renamed with a
+ * " (1)", " (2)" suffix; each failed file is reported individually.
+ * @param {Array<string>} sources - Absolute source file paths.
+ * @param {string} targetDir - Destination directory.
+ * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string}>>} Per-file results.
+ */
+async function copyFiles(sources, targetDir) {
+  const results = [];
+  for (const source of sources) {
+    const fallbackTarget = path.join(targetDir, path.basename(source));
+    try {
+      const stat = await fsp.stat(source);
+      if (!stat.isFile()) throw new Error("not a file");
+      const target = await uniqueTargetPath(targetDir, path.basename(source));
+      await fsp.copyFile(source, target);
+      results.push({ source, target, ok: true });
+    } catch (error) {
+      results.push({
+        source,
+        target: fallbackTarget,
+        ok: false,
+        error: error?.message ?? String(error),
+      });
+    }
+  }
+  return results;
+}
+
+/**
+ * Moves files to the operating system trash.
+ * @param {Array<string>} paths - Absolute file paths.
+ * @param {{trashItem: (path: string) => Promise<void>}} shell - Electron shell module.
+ * @returns {Promise<{trashed: Array<string>, failed: Array<{path: string, error: string}>}>} Trash results.
+ */
+async function trashFiles(paths, shell) {
+  const settled = await Promise.allSettled(paths.map((filePath) => shell.trashItem(filePath)));
+  const trashed = [];
+  const failed = [];
+  settled.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      trashed.push(paths[index]);
+    } else {
+      failed.push({ path: paths[index], error: result.reason?.message ?? String(result.reason) });
+    }
+  });
+  return { trashed, failed };
+}
+
+/**
  * Registers the filesystem and shell IPC handlers on the given ipcMain.
  * @param {{handle: Function}} ipcMain - The Electron ipcMain module.
  * @param {{getPath: Function, getLocale: Function}} app - The Electron app module.
- * @param {{openPath: Function}} shell - The Electron shell module.
+ * @param {{openPath: Function, trashItem: Function}} shell - The Electron shell module.
  */
 function registerFsIpc(ipcMain, app, shell) {
   const cacheDir = path.join(app.getPath("userData"), "thumbnails");
@@ -148,14 +230,19 @@ function registerFsIpc(ipcMain, app, shell) {
   ipcMain.handle("fs:readFile", (_event, filePath) => readFileBuffer(filePath));
   ipcMain.handle("fs:exif", (_event, filePath) => readExif(filePath));
   ipcMain.handle("fs:getThumbnail", (_event, file) => getThumbnail(file, cacheDir));
+  ipcMain.handle("fs:copyFiles", (_event, sources, targetDir) => copyFiles(sources, targetDir));
+  ipcMain.handle("fs:trashFiles", (_event, paths) => trashFiles(paths, shell));
   ipcMain.handle("shell:openPath", (_event, filePath) => shell.openPath(filePath));
 }
 
 export {
+  copyFiles,
   IMAGE_EXTENSIONS,
   listDirectories,
   listMediaFiles,
   parentDir,
   readFileBuffer,
   registerFsIpc,
+  trashFiles,
+  uniqueTargetPath,
 };

@@ -1,4 +1,6 @@
-import { basename } from "node:path";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, join } from "node:path";
 import { _electron as electron, expect, test } from "@playwright/test";
 
 /**
@@ -358,4 +360,49 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
 
   await electronApp.close();
+});
+
+test("selects, copies, pastes and trashes files", async () => {
+  const { electronApp, page } = await launchApp();
+  // The fixture must live on the home filesystem: the OS trash cannot handle
+  // files on /tmp (tmpfs).
+  const cacheDir = join(homedir(), ".cache");
+  await mkdir(cacheDir, { recursive: true });
+  const dir = await mkdtemp(join(cacheDir, "meshviewer-e2e-"));
+  await writeFile(join(dir, "a.png"), "a");
+  await writeFile(join(dir, "b.png"), "b");
+  await writeFile(join(dir, "c.png"), "c");
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(3);
+
+    // Ctrl-clicking builds a selection without opening the large view.
+    const cards = page.locator(".card");
+    await cards.nth(0).click({ modifiers: ["Control"] });
+    await cards.nth(1).click({ modifiers: ["Control"] });
+    await expect(page.locator(".card.selected")).toHaveCount(2);
+    await expect(page.locator("#selection-info")).toBeVisible();
+    await expect(page.locator("#large-view")).toBeHidden();
+
+    // Copy and paste inside the folder: the copies are renamed and the grid reloads.
+    await page.keyboard.press("Control+c");
+    await page.keyboard.press("Control+v");
+    await expect(page.locator(".card")).toHaveCount(5);
+    await expect(page.locator(".card.selected")).toHaveCount(0);
+
+    // Move one of the copies to the OS trash.
+    const copy = page.locator(".card", { hasText: "a (1).png" });
+    await expect(copy).toHaveCount(1);
+    await copy.click({ modifiers: ["Control"] });
+    await page.keyboard.press("Delete");
+    await expect(page.locator(".card")).toHaveCount(4);
+    await expect(copy).toHaveCount(0);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });
