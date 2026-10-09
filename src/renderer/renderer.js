@@ -73,16 +73,16 @@ const contextMenu = createContextMenu({
 });
 
 contextMenu.register({
-  id: "open-with",
-  label: () => t("contextMenu.openWith"),
-  icon: "openInNew",
-  action: (file) => void window.api.openPath(file.path),
-});
-contextMenu.register({
   id: "file-info",
   label: () => t("contextMenu.fileInfo"),
   icon: "info",
   action: (file) => infoDialog.open(file),
+});
+contextMenu.register({
+  id: "open-with",
+  label: () => t("contextMenu.openWith"),
+  icon: "openInNew",
+  action: (file) => void window.api.openPath(file.path),
 });
 contextMenu.register({
   id: "edit-with",
