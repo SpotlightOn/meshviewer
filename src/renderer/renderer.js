@@ -4,6 +4,7 @@ import { createGrid } from "./grid.js";
 import { initI18n, t } from "./i18n.js";
 import { createKeyboard } from "./keyboard.js";
 import { createLargeView } from "./large-view.js";
+import { createNewFolderDialog } from "./new-folder-dialog.js";
 import { createPathBar } from "./pathbar.js";
 import { createSettings } from "./settings.js";
 import { createDirectoryTree } from "./tree.js";
@@ -37,6 +38,16 @@ const infoDialog = createInfoDialog({
     closeBtn: document.getElementById("info-close"),
   },
 });
+const newFolderDialog = createNewFolderDialog({
+  dom: {
+    overlay: document.getElementById("new-folder-overlay"),
+    input: document.getElementById("new-folder-input"),
+    error: document.getElementById("new-folder-error"),
+    create: document.getElementById("new-folder-create"),
+    cancel: document.getElementById("new-folder-cancel"),
+  },
+  onCreated: (parentPath) => void tree?.refresh(parentPath),
+});
 const largeView = createLargeView({
   dom: {
     largeView: document.getElementById("large-view"),
@@ -63,62 +74,92 @@ const largeView = createLargeView({
 largeViewRef.current = largeView;
 
 const contextMenu = createContextMenu({
-  host: document.getElementById("grid"),
+  host: document.body,
   menuEl: document.getElementById("context-menu"),
-  resolveFile: (target) => {
+  resolveTarget: (target) => {
     const card = target.closest?.(".card");
-    if (!card || card.dataset.index === undefined) return null;
-    return grid?.getFiles()[Number(card.dataset.index)] ?? null;
+    if (card?.dataset.index !== undefined) {
+      const file = grid?.getFiles()[Number(card.dataset.index)];
+      if (file) return { kind: "file", file };
+    }
+    const row = target.closest?.(".tree-row");
+    if (row) {
+      const dirPath = row.closest("li")?.dataset.path;
+      if (dirPath) return { kind: "folder", path: dirPath };
+    }
+    if (target.closest?.(".content")) {
+      const dirPath = grid?.getPath();
+      if (dirPath) return { kind: "folder", path: dirPath };
+    }
+    return null;
   },
 });
 
 contextMenu.register({
+  id: "new-folder",
+  order: 0,
+  label: () => t("contextMenu.newFolder"),
+  icon: "newFolder",
+  enabled: (context) => context.kind === "folder",
+  action: (context) => newFolderDialog.open(context.path),
+});
+contextMenu.register({
   id: "file-info",
+  order: 0,
   label: () => t("contextMenu.fileInfo"),
   icon: "info",
-  action: (file) => infoDialog.open(file),
+  enabled: (context) => context.kind === "file",
+  action: (context) => infoDialog.open(context.file),
 });
 contextMenu.register({
   id: "open-with",
+  order: 1,
   label: () => t("contextMenu.openWith"),
   icon: "openInNew",
-  action: (file) => void window.api.openPath(file.path),
+  enabled: (context) => context.kind === "file",
+  action: (context) => void window.api.openPath(context.file.path),
 });
 contextMenu.register({
   id: "edit-with",
+  order: 2,
   label: () => {
     const command = settings.get().editorCommand;
     const app = command ? command.split(/[\\/]/).pop() : "";
     return t("contextMenu.editWith", { app });
   },
   icon: "edit",
-  enabled: () => settings.get().editorCommand !== "",
-  action: (file) => {
+  enabled: (context) => context.kind === "file" && settings.get().editorCommand !== "",
+  action: (context) => {
     const command = settings.get().editorCommand;
     if (!command) return;
-    void window.api.runEditor(command, file.path).then((result) => {
+    void window.api.runEditor(command, context.file.path).then((result) => {
       if (!result.ok) console.error(t("console.editorLaunchError"), result.error);
     });
   },
 });
-
 contextMenu.register({
   id: "copy",
+  order: 10,
   label: () => t("contextMenu.copy"),
   icon: "copy",
+  enabled: (context) => context.kind === "file",
   action: () => grid.copySelection(),
 });
 contextMenu.register({
   id: "paste",
+  order: 11,
   label: () => t("contextMenu.paste"),
   icon: "paste",
-  enabled: () => grid.hasCopyBuffer(),
-  action: () => void grid.paste(),
+  enabled: (context) =>
+    (context.kind === "file" || context.kind === "folder") && grid.hasCopyBuffer(),
+  action: (context) => void grid.paste(context.kind === "folder" ? context.path : undefined),
 });
 contextMenu.register({
   id: "trash",
+  order: 12,
   label: () => t("contextMenu.moveToTrash"),
   icon: "delete",
+  enabled: (context) => context.kind === "file",
   action: () => void grid.trashSelection(),
 });
 
@@ -137,7 +178,7 @@ grid = createGrid({
   },
 });
 
-createKeyboard({ settings, infoDialog, largeView, grid });
+createKeyboard({ settings, infoDialog, folderDialog: newFolderDialog, largeView, grid });
 
 const pathBar = createPathBar({
   dom: {

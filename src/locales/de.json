@@ -16,7 +16,7 @@
     "previewFailed": "Vorschau fehlgeschlagen",
     "nSelected": "{{count}} ausgewählt",
     "copyBuffer": "{{count}} in die Zwischenablage kopiert",
-    "pasteDone": "{{count}} in diesen Ordner kopiert",
+    "pasteDone": "{{count}} eingefügt",
     "trashed": "{{count}} in den Papierkorb verschoben"
   },
   "largeView": {
@@ -58,6 +58,7 @@
     "editWith": "Bearbeiten mit {{app}}",
     "copy": "Kopieren",
     "paste": "Einfügen",
+    "newFolder": "Neuer Ordner",
     "moveToTrash": "In den Papierkorb verschieben"
   },
   "menu": {
@@ -135,7 +136,19 @@
     "license": "Lizenz"
   },
   "dialog": {
-    "close": "Schließen"
+    "close": "Schließen",
+    "cancel": "Abbrechen"
+  },
+  "newFolder": {
+    "title": "Neuer Ordner",
+    "name": "Ordnername",
+    "defaultName": "Neuer Ordner",
+    "create": "Erstellen",
+    "error": {
+      "invalid": "Bitte gib einen gültigen Ordnernamen ein.",
+      "exists": "Ein Ordner mit diesem Namen existiert bereits.",
+      "failed": "Der Ordner konnte nicht erstellt werden."
+    }
   },
   "editor": {
     "pickTitle": "Editor-Anwendung auswählen"

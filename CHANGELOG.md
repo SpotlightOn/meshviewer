@@ -8,9 +8,12 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, dragging on empty space draws a rubber-band selection, Ctrl+A selects all and Esc clears the selection
 - Copy and paste of files inside the app (Ctrl+C / Ctrl+V or the context menu); a pasted file whose name already exists gets a “(1)” suffix
 - Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
+- Create a new folder from the context menu of the directory tree or the empty grid area
+- Paste the in-app clipboard into the folder chosen in the directory tree or the empty grid area context menu
 
 ### Changed
 - Thumbnail context menu: the file information entry is listed first
+- The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
 
 ## [0.5.0] - 2026-10-09
 

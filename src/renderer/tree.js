@@ -47,7 +47,7 @@ function createTaskQueue(limit) {
  * @param {string} options.rootLabel - Display name of the root.
  * @param {(path: string) => Promise<Array<{path: string, name: string}>>} options.getChildren - Returns child directories.
  * @param {(path: string) => void} [options.onSelect] - Selection callback.
- * @returns {{el: HTMLDivElement, selectPath: (path: string) => Promise<boolean>, getSelectedPath: () => string | null}} Tree API.
+ * @returns {{el: HTMLDivElement, selectPath: (path: string) => Promise<boolean>, getSelectedPath: () => string | null, refresh: (path: string) => Promise<void>}} Tree API.
  */
 export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect }) {
   const tree = document.createElement("div");
@@ -362,5 +362,24 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
     return false;
   }
 
-  return { el: tree, selectPath, getSelectedPath };
+  /**
+   * Reloads the children of an already loaded node so filesystem changes
+   * (for example a newly created folder) show up. Nodes that were never
+   * loaded stay untouched; they load fresh data on their next expand.
+   * @param {string} targetPath - Path of the node to refresh.
+   * @returns {Promise<void>}
+   */
+  async function refresh(targetPath) {
+    const state = states.get(targetPath);
+    if (!state || !state.loaded) return;
+    state.children = [];
+    state.childStates = [];
+    state.childrenUl.replaceChildren();
+    state.loaded = false;
+    await ensureLoaded(state);
+    updateTwisty(state);
+    if (state.expanded) prefetch(state);
+  }
+
+  return { el: tree, selectPath, getSelectedPath, refresh };
 }

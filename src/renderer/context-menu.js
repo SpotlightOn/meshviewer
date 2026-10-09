@@ -10,25 +10,27 @@ const MENU_ICONS = {
   copy: '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Z"/></svg>',
   paste:
     '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M360-480h240v-80H360v80Zm0 160h240v-80H360v80Zm0 160h160v-80H360v80ZM200-120q-33 0-56.5-23.5T120-200v-640q0-33 23.5-56.5T200-920h120q11-35 39-57.5t61-22.5q33 0 61 22.5t39 57.5h120q33 0 56.5 23.5T720-840v640q0 33-23.5 56.5T640-120H200Zm0-80h440v-640H200v640Zm220-680q17 0 28.5-11.5T460-880q0-17-11.5-28.5T420-920q-17 0-28.5 11.5T380-880q0 17 11.5 28.5T420-840Z"/></svg>',
+  newFolder:
+    '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-320h80v-80h80v-80h-80v-80h-80v80h-80v80h80v80ZM160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/></svg>',
   delete:
     '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>',
 };
 
 /**
- * Context menu module: a reusable popup menu for media tiles. Entries are
- * registered externally through `register()`; the menu opens through a single
- * delegated `contextmenu` listener on the host element, so tiles never need
- * their own listeners.
+ * Context menu module: a reusable popup menu whose entries are registered
+ * externally through `register()`. The menu opens through a single delegated
+ * `contextmenu` listener on the host element and positions itself at the
+ * cursor. Right-clicks on empty areas only close any open menu.
  * @param {object} deps - Module dependencies.
  * @param {HTMLElement} deps.host - Element receiving the delegated contextmenu events.
  * @param {HTMLElement} deps.menuEl - The popup element (role="menu").
- * @param {(target: EventTarget) => object|null} deps.resolveFile - Maps a contextmenu target to its file, or null for empty areas.
- * @returns {{register: (item: object) => void, open: (file: object, x: number, y: number) => void, close: () => void, isOpen: () => boolean}} Context menu API.
+ * @param {(target: EventTarget) => object|null} deps.resolveTarget - Maps a contextmenu target to its context (file, folder, …), or null for empty areas.
+ * @returns {{register: (item: object) => void, open: (context: object, x: number, y: number) => void, close: () => void, isOpen: () => boolean}} Context menu API.
  */
-export function createContextMenu({ host, menuEl, resolveFile }) {
-  /** @type {Array<{id: string, label: string|(() => string), icon?: string, enabled?: (file: object) => boolean, action: (file: object) => void}>} */
+export function createContextMenu({ host, menuEl, resolveTarget }) {
+  /** @type {Array<{id: string, label: string|(() => string), icon?: string, order?: number, enabled?: (context: object) => boolean, action: (context: object) => void}>} */
   const items = [];
-  let file = null;
+  let activeContext = null;
 
   /**
    * Resolves the displayed label of a registered item.
@@ -105,25 +107,28 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
   function close() {
     menuEl.hidden = true;
     menuEl.replaceChildren();
-    file = null;
+    activeContext = null;
     document.removeEventListener("pointerdown", onPointerDown, true);
     window.removeEventListener("resize", close);
     window.removeEventListener("scroll", close, true);
   }
 
   /**
-   * Builds and shows the menu for a file, listing only items that are
-   * enabled for it.
-   * @param {object} targetFile - File the menu opens for.
+   * Builds and shows the menu for a context, listing only the items enabled
+   * for it in ascending `order` (registration order breaks ties).
+   * @param {object} context - Context the menu opens for.
    * @param {number} x - Pointer X coordinate.
    * @param {number} y - Pointer Y coordinate.
    */
-  function open(targetFile, x, y) {
+  function open(context, x, y) {
     close();
-    file = targetFile;
+    activeContext = context;
     menuEl.replaceChildren();
-    for (const item of items) {
-      if (item.enabled && !item.enabled(file)) continue;
+    const visible = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !item.enabled || item.enabled(context))
+      .sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || a.index - b.index);
+    for (const { item } of visible) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "context-item";
@@ -142,12 +147,12 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
       button.append(label);
       button.addEventListener("click", () => {
         close();
-        item.action(targetFile);
+        item.action(context);
       });
       menuEl.append(button);
     }
     if (itemButtons().length === 0) {
-      file = null;
+      activeContext = null;
       return;
     }
     menuEl.hidden = false;
@@ -161,15 +166,15 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
   }
 
   /**
-   * Opens the menu on right-clicks over a resolved file; empty areas just
+   * Opens the menu on right-clicks over a resolved context; empty areas just
    * close any open menu.
    * @param {MouseEvent} event - Contextmenu event.
    */
   function onContextMenu(event) {
-    const targetFile = resolveFile(event.target);
-    if (targetFile) {
+    const context = resolveTarget(event.target);
+    if (context) {
       event.preventDefault();
-      open(targetFile, event.clientX, event.clientY);
+      open(context, event.clientX, event.clientY);
     } else {
       close();
     }
@@ -180,8 +185,9 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
 
   /**
    * Registers a menu entry. Labels may be functions resolved at open time;
-   * `enabled` filters the entry per file.
-   * @param {{id: string, label: string|(() => string), icon?: string, enabled?: (file: object) => boolean, action: (file: object) => void}} item - Menu entry.
+   * `enabled` filters the entry per context; `order` sorts the visible
+   * entries, defaults to 0.
+   * @param {{id: string, label: string|(() => string), icon?: string, order?: number, enabled?: (context: object) => boolean, action: (context: object) => void}} item - Menu entry.
    */
   function register(item) {
     items.push(item);

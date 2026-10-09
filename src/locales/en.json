@@ -16,7 +16,7 @@
     "previewFailed": "Preview failed",
     "nSelected": "{{count}} selected",
     "copyBuffer": "{{count}} copied to clipboard",
-    "pasteDone": "{{count}} copied into this folder",
+    "pasteDone": "{{count}} pasted",
     "trashed": "{{count}} moved to trash"
   },
   "largeView": {
@@ -58,6 +58,7 @@
     "editWith": "Edit with {{app}}",
     "copy": "Copy",
     "paste": "Paste",
+    "newFolder": "New folder",
     "moveToTrash": "Move to trash"
   },
   "menu": {
@@ -135,7 +136,19 @@
     "license": "License"
   },
   "dialog": {
-    "close": "Close"
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "newFolder": {
+    "title": "New folder",
+    "name": "Folder name",
+    "defaultName": "New folder",
+    "create": "Create",
+    "error": {
+      "invalid": "Enter a valid folder name.",
+      "exists": "A folder with this name already exists.",
+      "failed": "The folder could not be created."
+    }
   },
   "editor": {
     "pickTitle": "Choose an editor application"

@@ -274,6 +274,26 @@ describe("grid selection", () => {
     expect(selectionInfo.textContent).toBe("1 copied into this folder");
   });
 
+  it("pastes the clipboard into a given folder without reloading another", async () => {
+    const listFiles = vi.fn(async () => [media("a.png", 0), media("b.png", 1)]);
+    const copyFiles = vi.fn(async () => [
+      { source: "/tmp/folder/a.png", target: "/tmp/other/a.png", ok: true },
+    ]);
+    const { loadFolder, grid, selectionInfo } = await makeGrid(listFiles, { copyFiles });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.copySelection();
+    const copied = await grid.paste("/tmp/other");
+
+    expect(copied).toBe(true);
+    expect(copyFiles).toHaveBeenCalledWith(["/tmp/folder/a.png"], "/tmp/other");
+    // The grid still shows /tmp/folder and was not reloaded.
+    expect(listFiles).toHaveBeenCalledTimes(1);
+    expect(grid.getPath()).toBe("/tmp/folder");
+    expect(selectionInfo.textContent).toBe("1 copied into this folder");
+  });
+
   it("moves the selected files to the trash and reloads", async () => {
     const trashFiles = vi.fn(async () => ({
       trashed: ["/tmp/folder/a.png"],
