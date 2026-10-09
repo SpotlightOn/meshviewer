@@ -21,6 +21,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Default slideshow transition changed to “slide” with a 300 ms animation duration
 - Empty state: larger logo without its dark background
 - Thumbnail context menu: the file information entry is listed first
+- Thumbnail context menu: a separator line divides the file actions from the cut/copy/paste/delete actions
 - The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
 - Cut moves rename the file atomically on the same filesystem and otherwise copy, preserve mode and timestamps and remove the source only after the copy is verified
 - Help menu: “Keyboard shortcuts” is now “Usage” and also documents the mouse gestures such as the middle-click fit toggle and the wheel zoom

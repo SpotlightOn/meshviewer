@@ -9,7 +9,7 @@ const FILES = [
 
 /**
  * Builds a fresh grid + menu DOM and a wired context menu.
- * @param {Array<{id: string, label: string|(() => string), icon?: string, order?: number, enabled?: (context: object) => boolean, action: (context: object) => void}>} [extraItems] - Extra registered entries.
+ * @param {Array<{id: string, label?: string|(() => string), icon?: string, order?: number, separator?: boolean, enabled?: (context: object) => boolean, action?: (context: object) => void}>} [extraItems] - Extra registered entries.
  * @returns {{menu: ReturnType<typeof createContextMenu>, menuEl: HTMLElement, grid: HTMLElement, calls: Array<{id: string, fileId: number}>}} Test harness.
  */
 function makeMenu(extraItems = []) {
@@ -158,6 +158,57 @@ describe("createContextMenu", () => {
     rightClick(grid, 350, 120);
     expect(menu.isOpen()).toBe(false);
     expect(menuEl.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  it("renders a separator between groups and skips it in keyboard navigation", () => {
+    const { menuEl, grid } = makeMenu([
+      { id: "sep", order: 1, separator: true },
+      { id: "cut", order: 2, label: "Cut", action: () => {} },
+    ]);
+    rightClick(grid.querySelector(".card"));
+
+    const classes = [...menuEl.children].map((el) => el.className);
+    expect(classes).toEqual(["context-item", "context-item", "context-separator", "context-item"]);
+
+    const buttons = [...menuEl.querySelectorAll("button[data-action]")];
+    expect(buttons.map((b) => b.dataset.action)).toEqual(["open-with", "file-info", "cut"]);
+    buttons[1].focus();
+    buttons[1].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+    expect(document.activeElement).toBe(buttons[2]);
+  });
+
+  it("drops leading, trailing and consecutive separators", () => {
+    const { menuEl, grid } = makeMenu([
+      { id: "s1", order: -1, separator: true },
+      { id: "cut", order: 1, label: "Cut", action: () => {} },
+      { id: "s2", order: 2, separator: true },
+      { id: "s3", order: 3, separator: true },
+      { id: "delete", order: 4, label: "Delete", action: () => {} },
+      { id: "s4", order: 5, separator: true },
+    ]);
+    rightClick(grid.querySelector(".card"));
+
+    const classes = [...menuEl.children].map((el) => el.className);
+    expect(classes).toEqual([
+      "context-item",
+      "context-item",
+      "context-item",
+      "context-separator",
+      "context-item",
+    ]);
+  });
+
+  it("honors enabled() on separators", () => {
+    const { menuEl, grid } = makeMenu([
+      { id: "sep", order: 1, separator: true, enabled: (file) => file.id === 2 },
+      { id: "cut", order: 2, label: "Cut", action: () => {} },
+    ]);
+
+    rightClick(grid.querySelector(".card[data-index='0']"));
+    expect(menuEl.querySelectorAll(".context-separator")).toHaveLength(0);
+
+    rightClick(grid.querySelector(".card[data-index='1']"));
+    expect(menuEl.querySelectorAll(".context-separator")).toHaveLength(1);
   });
 
   it("sorts visible entries by order and skips disabled contexts", () => {
