@@ -149,6 +149,21 @@ describe("createPathBar", () => {
     expect(root.classList.contains("editing")).toBe(false);
   });
 
+  it("releases keyboard focus when navigation finishes", async () => {
+    const { bar, root, input } = makeBar();
+    bar.setRoot("/");
+    bar.setPath("/home/pi");
+    root.querySelector(".path-segment.active").click();
+    expect(document.activeElement).toBe(input);
+
+    input.value = "/media";
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", cancelable: true }));
+    await flush();
+
+    // A hidden field that keeps focus would swallow Ctrl+C, Delete and friends.
+    expect(document.activeElement).not.toBe(input);
+  });
+
   it("leaves the current path untouched when Enter repeats it", async () => {
     const { bar, root, input, navigated } = makeBar();
     bar.setRoot("/");
