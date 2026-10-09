@@ -58,7 +58,7 @@ Guidance for AI coding agents working in this repository.
 - `pnpm test` – run all Vitest projects (unit, main, renderer)
 - `pnpm run test:unit` / `pnpm run test:main` / `pnpm run test:e2e` – run a single project
 - Vitest config lives in `vitest.config.mjs` (three projects: `unit` = pure helpers, `main` = Node + real temp fixtures, `renderer` = jsdom). Tests live in `tests/unit/`, `tests/main/`, `tests/renderer/`.
-- E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app and need a display. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
+- E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app through `tests/e2e/launch.js` and need a display. The helper sets `MESHVIEWER_E2E_HEADLESS=1` (honoured in `src/main-window.js`), so the app creates an unmapped window and a test run never takes the desktop focus. `packaged.spec.js` runs the `pnpm run pack` build from `dist/linux-unpacked` and is skipped when that build is missing. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
 - Testable code is kept out of the Electron runtime where possible: filesystem IPC logic lives in `src/fsIpc.js` (takes `ipcMain`/`app`/`shell` as arguments), renderer helpers in `src/renderer/utils.js`. Keep new pure logic there or in `tests/*` rather than in `main.js`/`renderer.js`.
 
 ## Architecture
