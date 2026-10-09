@@ -14,6 +14,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 ### Changed
 - Thumbnail context menu: the file information entry is listed first
 - The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
+- Help menu: “Keyboard shortcuts” is now “Usage” and also documents the mouse gestures such as the middle-click fit toggle and the wheel zoom
 
 ## [0.5.0] - 2026-10-09
 

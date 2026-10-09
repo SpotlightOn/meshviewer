@@ -1,7 +1,7 @@
 import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import i18next from "i18next";
-import { registerDialogIpc, showAbout, showShortcuts } from "./dialogs.js";
+import { registerDialogIpc, showAbout, showUsage } from "./dialogs.js";
 import { registerEditorIpc } from "./editorIpc.js";
 import { registerFsIpc } from "./fsIpc.js";
 import i18nDe from "./locales/de.json" with { type: "json" };
@@ -48,7 +48,7 @@ app.whenReady().then(() => {
   initI18n();
   createAppMenu({
     onSettings: openSettings,
-    onShortcuts: showShortcuts,
+    onUsage: showUsage,
     onAbout: showAbout,
   });
   createMainWindow();
