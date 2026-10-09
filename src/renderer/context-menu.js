@@ -29,7 +29,7 @@ const MENU_ICONS = {
  * @returns {{register: (item: object) => void, open: (context: object, x: number, y: number) => void, close: () => void, isOpen: () => boolean}} Context menu API.
  */
 export function createContextMenu({ host, menuEl, resolveTarget }) {
-  /** @type {Array<{id: string, label: string|(() => string), icon?: string, order?: number, enabled?: (context: object) => boolean, action: (context: object) => void}>} */
+  /** @type {Array<{id: string, label?: string|(() => string), icon?: string, order?: number, separator?: boolean, enabled?: (context: object) => boolean, action?: (context: object) => void}>} */
   const items = [];
   let activeContext = null;
 
@@ -115,6 +115,37 @@ export function createContextMenu({ host, menuEl, resolveTarget }) {
   }
 
   /**
+   * Removes separators that are leading, trailing or directly consecutive so
+   * they always sit between two visible items.
+   * @param {Array<{item: object, index: number}>} entries - Sorted visible entries.
+   * @returns {Array<{item: object, index: number}>} Entries without redundant separators.
+   */
+  function dropRedundantSeparators(entries) {
+    const kept = [];
+    for (let i = 0; i < entries.length; i += 1) {
+      const entry = entries[i];
+      if (!entry.item.separator) {
+        kept.push(entry);
+        continue;
+      }
+      if (kept.length === 0 || kept[kept.length - 1].item.separator) continue;
+      if (!entries.slice(i + 1).some((next) => !next.item.separator)) continue;
+      kept.push(entry);
+    }
+    return kept;
+  }
+
+  /**
+   * Creates the divider shown between two menu groups.
+   * @returns {HTMLElement} The separator element.
+   */
+  function createSeparator() {
+    const separator = document.createElement("hr");
+    separator.className = "context-separator";
+    return separator;
+  }
+
+  /**
    * Builds and shows the menu for a context, listing only the items enabled
    * for it in ascending `order` (registration order breaks ties).
    * @param {object} context - Context the menu opens for.
@@ -129,7 +160,11 @@ export function createContextMenu({ host, menuEl, resolveTarget }) {
       .map((item, index) => ({ item, index }))
       .filter(({ item }) => !item.enabled || item.enabled(context))
       .sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || a.index - b.index);
-    for (const { item } of visible) {
+    for (const { item } of dropRedundantSeparators(visible)) {
+      if (item.separator) {
+        menuEl.append(createSeparator());
+        continue;
+      }
       const button = document.createElement("button");
       button.type = "button";
       button.className = "context-item";
@@ -187,8 +222,9 @@ export function createContextMenu({ host, menuEl, resolveTarget }) {
   /**
    * Registers a menu entry. Labels may be functions resolved at open time;
    * `enabled` filters the entry per context; `order` sorts the visible
-   * entries, defaults to 0.
-   * @param {{id: string, label: string|(() => string), icon?: string, order?: number, enabled?: (context: object) => boolean, action: (context: object) => void}} item - Menu entry.
+   * entries, defaults to 0. An entry with `separator: true` renders a divider
+   * instead of a button (it needs no label or action).
+   * @param {{id: string, label?: string|(() => string), icon?: string, order?: number, separator?: boolean, enabled?: (context: object) => boolean, action?: (context: object) => void}} item - Menu entry.
    */
   function register(item) {
     items.push(item);

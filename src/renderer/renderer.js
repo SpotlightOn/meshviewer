@@ -162,6 +162,12 @@ contextMenu.register({
   },
 });
 contextMenu.register({
+  id: "separator-open",
+  order: 3,
+  separator: true,
+  enabled: (context) => context.kind === "file",
+});
+contextMenu.register({
   id: "cut",
   order: 9,
   label: () => t("contextMenu.cut"),

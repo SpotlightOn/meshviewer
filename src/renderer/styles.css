@@ -1022,6 +1022,13 @@ html.resizing * {
   outline: none;
 }
 
+.context-menu .context-separator {
+  height: 0;
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
 .context-menu .context-icon {
   display: inline-flex;
   flex: none;
