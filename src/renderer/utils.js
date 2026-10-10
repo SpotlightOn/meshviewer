@@ -36,25 +36,6 @@ function mimeFor(filename) {
 }
 
 /**
- * Raster ("pixmap") image extensions that can be mapped onto an
- * equirectangular sphere. Vector (SVG) and icon (ICO) formats are excluded.
- * @type {Set<string>}
- */
-const PIXMAP_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp"]);
-
-/**
- * Whether a file name has a raster image extension that supports the
- * equirectangular panorama mode.
- * @param {string} filename - File name.
- * @returns {boolean} true for pixmap formats.
- */
-function isPixmap(filename) {
-  const dot = filename.lastIndexOf(".");
-  const ext = dot === -1 ? "" : filename.slice(dot).toLowerCase();
-  return PIXMAP_EXTENSIONS.has(ext);
-}
-
-/**
  * ExifReader groups that only carry file-format data (file info, PNG chunks,
  * GIF header data, BMP header data) instead of EXIF metadata.
  * @type {Set<string>}
@@ -358,73 +339,6 @@ function zoomScale(percent) {
 }
 
 /**
- * Converts a zoom percentage to a GLB camera distance, where 100 % equals the
- * fitted distance and higher percentages move the camera closer.
- * @param {number} baseDistance - Camera distance at 100 %.
- * @param {number} percent - Zoom in percent.
- * @returns {number} Camera distance.
- */
-function glbDistanceForPercent(baseDistance, percent) {
-  return baseDistance * (100 / clampZoomPercent(percent));
-}
-
-/**
- * Converts a GLB camera distance to a zoom percentage within the slider range.
- * @param {number} baseDistance - Camera distance at 100 %.
- * @param {number} distance - Current camera distance.
- * @returns {number} Zoom in percent.
- */
-function glbPercentForDistance(baseDistance, distance) {
-  return clampZoomPercent(Math.round((baseDistance / Math.max(1e-9, distance)) * 100));
-}
-
-/**
- * Smallest field of view in degrees of the equirectangular panorama, reached
- * at the highest zoom.
- * @type {number}
- */
-const EQUIRECT_FOV_MIN = 10;
-
-/**
- * Largest field of view in degrees of the equirectangular panorama, reached
- * at the lowest zoom.
- * @type {number}
- */
-const EQUIRECT_FOV_MAX = 75;
-
-/**
- * Converts a zoom percentage to an equirectangular camera field of view,
- * where 100 % is the initial panorama view and higher percentages zoom in.
- * @param {number} percent - Zoom in percent.
- * @returns {number} Field of view in degrees.
- */
-function fovForPercent(percent) {
-  const clamped = clampZoomPercent(percent);
-  return (
-    EQUIRECT_FOV_MAX -
-    ((clamped - MIN_ZOOM_PERCENT) * (EQUIRECT_FOV_MAX - EQUIRECT_FOV_MIN)) /
-      (MAX_ZOOM_PERCENT - MIN_ZOOM_PERCENT)
-  );
-}
-
-/**
- * Converts an equirectangular camera field of view to a zoom percentage
- * within the slider range.
- * @param {number} fov - Field of view in degrees.
- * @returns {number} Zoom in percent.
- */
-function percentForFov(fov) {
-  const clamped = Math.min(EQUIRECT_FOV_MAX, Math.max(EQUIRECT_FOV_MIN, fov));
-  return clampZoomPercent(
-    Math.round(
-      MIN_ZOOM_PERCENT +
-        ((EQUIRECT_FOV_MAX - clamped) * (MAX_ZOOM_PERCENT - MIN_ZOOM_PERCENT)) /
-          (EQUIRECT_FOV_MAX - EQUIRECT_FOV_MIN),
-    ),
-  );
-}
-
-/**
  * Parses a zoom text input ("80", "120 %") into a whole percentage, or null
  * when the input is not a plain number.
  * @param {string} value - Raw input value.
@@ -470,25 +384,18 @@ function retireFrames(container, { direction, slide, durationMs, keep = null }) 
 export {
   clampZoom,
   clampZoomPercent,
-  EQUIRECT_FOV_MAX,
-  EQUIRECT_FOV_MIN,
   exifTagLabel,
   exifToSections,
   fileInfoRows,
   formatSize,
-  fovForPercent,
-  glbDistanceForPercent,
-  glbPercentForDistance,
   IMAGE_MIME,
   imageDataUrl,
-  isPixmap,
   MAX_ZOOM,
   MAX_ZOOM_PERCENT,
   MIN_ZOOM,
   MIN_ZOOM_PERCENT,
   mimeFor,
   parseZoomPercent,
-  percentForFov,
   retireFrames,
   toArrayBuffer,
   zoomPercent,

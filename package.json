@@ -3,7 +3,7 @@
   "productName": "MeshViewer",
   "desktopName": "meshviewer.desktop",
   "version": "0.5.0",
-  "description": "Electron viewer that renders thumbnails of local *.glb files using three.js",
+  "description": "A classic photo viewer that renders thumbnails of local *.glb files and 360° images using three.js",
   "main": "src/main.js",
   "type": "module",
   "author": "John Doe",

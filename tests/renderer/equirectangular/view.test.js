@@ -46,7 +46,7 @@ if (!HTMLElement.prototype.setPointerCapture) {
   };
 }
 
-import { createEquirectView } from "../../src/renderer/equirect.js";
+import { createEquirectView } from "../../../src/renderer/equirectangular/view.js";
 
 /** Creates an activated panorama view on its own host element. */
 function createView() {
@@ -103,6 +103,8 @@ describe("createEquirectView", () => {
 
     expect(onHostWheel).not.toHaveBeenCalled();
     expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0][0]).toBeLessThan(100);
+    expect(onChange.mock.calls[0][0]).toBeGreaterThanOrEqual(10);
   });
 
   test("changes the look direction while dragging", () => {
@@ -133,5 +135,29 @@ describe("createEquirectView", () => {
     const afterRelease = renderer.lastDirection.clone();
 
     expect(afterRelease.distanceTo(duringDrag)).toBeCloseTo(0, 6);
+  });
+
+  test("dispose tears down an activated view without throwing", () => {
+    const { host, canvas, onChange, view } = createView();
+    const renderer = rendererInstances.at(-1);
+    const stopLoop = vi.spyOn(renderer, "setAnimationLoop");
+    const disposeRenderer = vi.spyOn(renderer, "dispose");
+
+    expect(() => view.dispose()).not.toThrow();
+
+    expect(canvas.isConnected).toBe(false);
+    expect(host.querySelector("canvas")).toBeNull();
+    expect(stopLoop).toHaveBeenCalledWith(null);
+    expect(disposeRenderer).toHaveBeenCalledTimes(1);
+
+    canvas.dispatchEvent(new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 120 }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  test("dispose stays safe after deactivate and when called twice", () => {
+    const { view } = createView();
+    view.deactivate();
+    view.dispose();
+    expect(() => view.dispose()).not.toThrow();
   });
 });
