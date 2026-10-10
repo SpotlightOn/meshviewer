@@ -1,14 +1,9 @@
-import { basename } from "node:path";
-import { _electron as electron, expect, test } from "@playwright/test";
-
-/**
- * Launches the Electron app and returns the first window.
- * @returns {Promise<import('@playwright/test').Page>} Main window.
- */
-async function launchApp() {
-  const electronApp = await electron.launch({ args: ["."] });
-  return { electronApp, page: await electronApp.firstWindow() };
-}
+import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
+import { basename, join } from "node:path";
+import { expect, test } from "@playwright/test";
+import { launchApp } from "./launch.js";
 
 test("app boots and renders the directory tree", async () => {
   const { electronApp, page } = await launchApp();
@@ -79,7 +74,7 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -92,7 +87,7 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await expect(page.locator("#large-view")).toBeVisible();
 
   await page.locator("#large-back").click();
-  await page.locator(".card", { hasText: "test.glb" }).click();
+  await page.locator(".card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -113,7 +108,7 @@ test("file information dialog renders the embedded preview image and hides raw m
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(1);
 
-  await page.locator(".card").click();
+  await page.locator(".card").dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -185,16 +180,52 @@ test("right-clicking a thumbnail opens the context menu", async () => {
   await page.keyboard.press("Escape");
   await expect(page.locator("#context-menu")).toBeHidden();
 
-  // Right-clicking empty grid space (below the tiles) shows no menu.
+  // Right-clicking empty grid space (below the tiles) opens the folder menu.
   const lastCard = await page.locator(".card", { hasText: "foto2.png" }).boundingBox();
   if (lastCard) {
     await page.mouse.click(lastCard.x + lastCard.width / 2, lastCard.y + lastCard.height + 30, {
       button: "right",
     });
-    await expect(page.locator("#context-menu")).toBeHidden();
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await expect(
+      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+    ).toBeVisible();
+    // The paste entry stays hidden while the clipboard is empty.
+    await expect(page.locator('#context-menu .context-item[data-action="paste"]')).toHaveCount(0);
   }
 
   await electronApp.close();
+});
+
+test("creates a new folder from the content context menu", async () => {
+  const { electronApp, page } = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-"));
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator("#empty-state")).toBeVisible();
+
+    // Right-click the empty content area of the current folder.
+    await page.locator("#empty-state").click({ button: "right" });
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await expect(
+      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+    ).toBeVisible();
+    await page.locator('#context-menu .context-item[data-action="new-folder"]').click();
+
+    const nameInput = page.locator("#new-folder-input");
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill("created");
+    await nameInput.press("Enter");
+    await expect(page.locator("#new-folder-overlay")).toBeHidden();
+    await expect.poll(() => existsSync(join(dir, "created"))).toBe(true);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("actual-size button resets the large view zoom to 100 percent", async () => {
@@ -207,8 +238,11 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   await page.locator("#large-zoom-value").fill("200");
   await page.locator("#large-zoom-value").press("Enter");
@@ -230,7 +264,7 @@ test("zoom slider zooms the 3D view", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "test.glb" }).click();
+  await page.locator(".card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.waitForSelector(".large-canvas canvas");
 
@@ -262,10 +296,11 @@ test("status bar shows file info and the arrow buttons navigate", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
-  const info = (await page.locator("#large-file-info").textContent()) ?? "";
-  expect(info).toMatch(/^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/);
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   const before = (await page.locator("#large-file-info").textContent()) ?? "";
   if (await page.locator("#large-next").isEnabled()) {
@@ -288,8 +323,11 @@ test("swiping the image navigates to the previous and next image", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
   const before = (await page.locator("#large-file-info").textContent()) ?? "";
 
   const box = (await page.locator("#large-canvas").boundingBox()) ?? { x: 0, y: 0 };
@@ -337,8 +375,11 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
+  await expect(page.locator("#large-file-info")).toHaveText(
+    /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
+  );
 
   await page.locator("#large-zoom-value").fill("200");
   await page.locator("#large-zoom-value").press("Enter");
@@ -358,4 +399,108 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   await expect(page.locator("#large-zoom-value")).toHaveValue("100%");
 
   await electronApp.close();
+});
+
+test("selects, copies, pastes, cuts and trashes files", async () => {
+  const { electronApp, page } = await launchApp();
+  // The fixture must live on the home filesystem: the OS trash cannot handle
+  // files on /tmp (tmpfs).
+  const cacheDir = join(homedir(), ".cache");
+  await mkdir(cacheDir, { recursive: true });
+  const dir = await mkdtemp(join(cacheDir, "meshviewer-e2e-"));
+  await writeFile(join(dir, "a.png"), "a");
+  await writeFile(join(dir, "b.png"), "b");
+  await writeFile(join(dir, "c.png"), "c");
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(3);
+
+    // Ctrl-clicking builds a selection without opening the large view.
+    const cards = page.locator(".card");
+    await cards.nth(0).click({ modifiers: ["Control"] });
+    await cards.nth(1).click({ modifiers: ["Control"] });
+    await expect(page.locator(".card.selected")).toHaveCount(2);
+    await expect(page.locator("#selection-info")).toBeVisible();
+    await expect(page.locator("#large-view")).toBeHidden();
+
+    // Copy and paste inside the folder: the copies are renamed and the grid reloads.
+    await page.keyboard.press("Control+c");
+    await page.keyboard.press("Control+v");
+    await expect(page.locator(".card")).toHaveCount(5);
+    await expect(page.locator(".card.selected")).toHaveCount(0);
+
+    // Move one of the copies to the OS trash.
+    const copy = page.locator(".card", { hasText: "a (1).png" });
+    await expect(copy).toHaveCount(1);
+    await copy.click({ modifiers: ["Control"] });
+    await page.keyboard.press("Delete");
+    await expect(page.locator(".card")).toHaveCount(4);
+    await expect(copy).toHaveCount(0);
+
+    // Cut c.png, then move it into a subfolder by pasting there.
+    await mkdir(join(dir, "sub"));
+    const c = page.locator(".card", { hasText: "c.png" });
+    await c.click({ modifiers: ["Control"] });
+    await page.keyboard.press("Control+x");
+    await expect(page.locator(".card.selected")).toHaveCount(1);
+
+    await page.locator(".path-segment.active").click();
+    await input.fill(join(dir, "sub"));
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(0);
+    // The path field keeps focus until navigation completes; only then do
+    // selection shortkeys apply instead of being typed into the input.
+    await expect(input).toBeHidden();
+    await page.keyboard.press("Control+v");
+    await expect(page.locator(".card")).toHaveCount(1);
+    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(1);
+
+    // Back in the source folder, c.png is gone.
+    await page.locator(".path-segment.active").click();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(0);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("trashes a folder from the tree context menu after confirmation", async () => {
+  const { electronApp, page } = await launchApp();
+  // The directory tree hides dot-directories, so the fixture has to live
+  // directly in a visible folder for its row to appear.
+  const dir = await mkdtemp(join(homedir(), "meshviewer-e2e-"));
+  const victim = join(dir, "trashme");
+  await mkdir(victim);
+  await writeFile(join(victim, "inner.png"), "inner");
+  try {
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(input).toBeHidden();
+
+    const row = page.locator(".tree-row", { hasText: "trashme" });
+    await expect(row).toHaveCount(1);
+    await row.click({ button: "right" });
+    await expect(page.locator("#context-menu")).toBeVisible();
+    await page.locator('#context-menu .context-item[data-action="trash"]').click();
+
+    // The folder is only removed after the confirmation is accepted.
+    await expect(page.locator("#confirm-overlay")).toBeVisible();
+    await page.locator("#confirm-accept").click();
+    await expect(page.locator("#confirm-overlay")).toBeHidden();
+    await expect.poll(() => existsSync(victim)).toBe(false);
+    await expect(row).toHaveCount(0);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });

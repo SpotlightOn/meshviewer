@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg: #1e1e1e;
   --surface: #2b2b2b;
   --surface-hover: #333333;
@@ -7,7 +8,32 @@
   --text-dim: #9a9a9a;
   --accent: #4f9cf9;
   --tile-size: 200px;
-  --transition-duration: 1000ms;
+  --transition-duration: 300ms;
+  --checker-a: #4a4a4a;
+  --checker-b: #333333;
+  --transparency-background:
+    linear-gradient(45deg, var(--checker-a) 25%, transparent 25%) 0 0 / 24px 24px,
+    linear-gradient(-45deg, var(--checker-a) 25%, transparent 25%) 0 12px / 24px 24px,
+    linear-gradient(45deg, transparent 75%, var(--checker-a) 75%) 12px -12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, var(--checker-a) 75%) -12px 0 / 24px 24px,
+    var(--checker-b);
+}
+
+/* Light scheme, used when the operating system is light or the theme is set
+   to "light" (both surface as prefers-color-scheme via nativeTheme). */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f4f4;
+    --surface: #ffffff;
+    --surface-hover: #e6e6e6;
+    --border: #cfcfcf;
+    --text: #1f1f1f;
+    --text-dim: #6b6b6b;
+    --accent: #2f7fe0;
+    --checker-a: #dcdcdc;
+    --checker-b: #f2f2f2;
+  }
 }
 
 * {
@@ -162,12 +188,37 @@ main {
 }
 
 .sidebar {
-  width: 280px;
+  width: var(--sidebar-width, 280px);
   flex-shrink: 0;
   overflow: auto;
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 8px;
+}
+
+.resizer {
+  flex: none;
+  width: 6px;
+  height: auto;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+  transition: background 120ms ease;
+}
+
+.resizer:hover,
+.resizer:focus-visible,
+html.resizing .resizer {
+  background: var(--accent);
+  outline: none;
+}
+
+html.resizing,
+html.resizing * {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .sidebar .tree {
@@ -255,8 +306,8 @@ main {
 }
 
 .empty-logo {
-  width: 96px;
-  height: 96px;
+  width: 230px;
+  height: 230px;
 }
 
 .empty-message {
@@ -265,9 +316,41 @@ main {
 }
 
 .grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--tile-size), 1fr));
   gap: 14px;
+}
+
+.card.selected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.marquee {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  pointer-events: none;
+}
+
+.selection-info {
+  position: fixed;
+  z-index: 20;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .card {
@@ -297,13 +380,7 @@ main {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background:
-    linear-gradient(45deg, var(--surface) 25%, transparent 25%) 0 0 / 24px 24px,
-    linear-gradient(-45deg, var(--surface) 25%, transparent 25%) 0 12px / 24px 24px,
-    linear-gradient(45deg, transparent 75%, var(--surface) 75%) 12px -12px / 24px 24px,
-    linear-gradient(-45deg, transparent 75%, var(--surface) 75%) -12px 0 / 24px 24px,
-    #242424;
-  background-color: #242424;
+  background: var(--transparency-background);
 }
 
 .card .thumb-wrap.loading {
@@ -314,15 +391,54 @@ main {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: var(--thumb-fit, cover);
 }
 
-.card .thumb.natural {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+.card[data-kind="folder"] .thumb-wrap {
+  background: var(--checker-a);
+}
+
+.card[data-kind="folder"]:hover .thumb-wrap {
+  background: var(--accent);
+}
+
+.folder-frame {
+  position: relative;
+  width: 80%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: var(--text-dim);
+}
+
+.folder-frame::before {
+  content: "";
+  position: absolute;
+  left: 5%;
+  top: -14%;
+  width: 42%;
+  height: 16%;
+  border-radius: 5px 5px 0 0;
+  background: var(--text-dim);
+}
+
+.folder-preview-img {
+  position: absolute;
+  top: 7%;
+  left: 7%;
+  width: 86%;
+  height: 86%;
+  object-fit: cover;
+  border-radius: 5px;
+  animation: folder-preview-in 0.18s ease-out;
+}
+
+@keyframes folder-preview-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .card .meta {
@@ -474,6 +590,11 @@ main {
 .switch-input:checked + .switch-track .switch-thumb {
   transform: translateX(16px);
   background: #ffffff;
+}
+
+.switch:has(.switch-input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .switch-input:focus-visible + .switch-track {
@@ -644,6 +765,7 @@ main {
   display: none;
   overflow: hidden;
   touch-action: none;
+  background: #000;
 }
 
 .large-canvas canvas {
@@ -655,6 +777,20 @@ main {
 .large-canvas .large-frame {
   position: absolute;
   inset: 0;
+}
+
+.large-canvas .large-frame.equirect-hidden {
+  display: none;
+}
+
+.large-canvas .equirect-canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+.large-canvas .large-image {
+  background: var(--transparency-background);
 }
 
 @keyframes large-fade-in {
@@ -725,12 +861,16 @@ main {
 }
 
 .settings-dialog {
-  width: 340px;
+  width: min(340px, calc(100vw - 32px));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 18px 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+#settings-overlay .settings-dialog {
+  width: min(440px, calc(100vw - 32px));
 }
 
 .settings-dialog h2 {
@@ -739,6 +879,7 @@ main {
 }
 
 .settings-dialog fieldset {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   margin: 0 0 14px;
@@ -753,11 +894,34 @@ main {
 
 .settings-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   margin: 8px 0;
   font-size: 13px;
+}
+
+.settings-row.settings-row-check {
+  justify-content: flex-start;
+}
+
+.settings-row[hidden] {
+  display: none;
+}
+
+#settings-transparency,
+#settings-thumbnail-fit,
+#settings-theme,
+#settings-open-behavior {
+  width: auto;
+  max-width: 100%;
+}
+
+#settings-transparency-color {
+  width: 48px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .settings-row input,
@@ -769,13 +933,15 @@ main {
   padding: 4px 8px;
   font-size: 13px;
   width: 90px;
+  max-width: 100%;
 }
 
 .settings-row .settings-editor {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 240px;
 }
 
@@ -805,6 +971,23 @@ main {
   color: var(--text-dim);
 }
 
+.settings-row input.dialog-input {
+  width: 190px;
+}
+
+.settings-hint.dialog-error {
+  color: #e06c75;
+}
+
+/* The confirmation message is the dialog's main text, so it reads at the
+   normal size and leaves room before the action buttons. */
+#confirm-message {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
 .settings-actions {
   display: flex;
   justify-content: flex-end;
@@ -816,7 +999,7 @@ main {
   font-size: 13px;
   color: var(--text);
   background: var(--accent);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -825,13 +1008,19 @@ main {
   filter: brightness(1.1);
 }
 
-.settings-actions #settings-cancel {
-  background: transparent;
-  border: 1px solid var(--border);
+.settings-actions #settings-cancel,
+.settings-actions #new-folder-cancel,
+.settings-actions #confirm-cancel {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+
+.settings-actions #confirm-accept {
+  background: #b23b3b;
 }
 
 .settings-dialog.info-dialog {
-  width: 440px;
+  width: min(440px, calc(100vw - 32px));
 }
 
 .info-content {
@@ -924,6 +1113,13 @@ main {
 .context-menu .context-item:focus-visible {
   background: var(--surface-hover);
   outline: none;
+}
+
+.context-menu .context-separator {
+  height: 0;
+  margin: 4px 6px;
+  border: 0;
+  border-top: 1px solid var(--border);
 }
 
 .context-menu .context-icon {

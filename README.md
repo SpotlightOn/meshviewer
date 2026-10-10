@@ -2,23 +2,26 @@
 
 [![CI](https://github.com/SpotlightOn/meshviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/SpotlightOn/meshviewer/actions/workflows/codeql.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/codeql.yml)
-[![Release](https://github.com/SpotlightOn/meshviewer/actions/workflows/release.yml/badge.svg)](https://github.com/SpotlightOn/meshviewer/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/SpotlightOn/meshviewer)](https://github.com/SpotlightOn/meshviewer/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/SpotlightOn/meshviewer)](./LICENSE)
 [![Socket.dev: monitored](https://img.shields.io/badge/Socket.dev-monitored-34506b?logo=socketdotdev&logoColor=white)](https://github.com/SpotlightOn/meshviewer/pulls)
 
-Every file manager shows nice thumbnails, so why another app?
-I want something that is really fast and easy for browsing my images.
-There are still lots of things I'd like to improve, but it's already really good.
-It's fast thanks to advanced caching.
-Enjoy a modern, old-fashioned photo browser with a **real 3D viewer**: GLB models open as interactive three.js scenes you can rotate, pan and zoom from any angle.
+Every file manager shows thumbnails, so why build another app?
+I wanted a photo browser that’s fast and easy to use.
 
-Have an idea? Open an issue and let's see what we can do.
+I also have lots of 360° photos from Google Photos and my DJI drone, but I couldn’t find a free image viewer that supported equirectangular images. I work with 3D scenes, too, and couldn’t find a simple viewer for GLB models.
 
-**Short description:**
-Electron application that renders local `*.glb` files as thumbnails (three.js, GLTFLoader). It also supports SVG and most common pixel formats.
+There’s still plenty I’d like to improve, but it’s already working really well—and advanced caching keeps it speedy.
+Enjoy a modern photo browser with an old-fashioned feel—and a real 3D viewer. Open GLB models as interactive Three.js scenes you can rotate, pan, and zoom from any angle.
 
-![Meshviewer screenshot](./docs/screen.png)
+Have an idea? Open an issue, and let’s see what we can do.
+
+Short description:
+An Electron app that renders local .glb files as thumbnails using Three.js and GLTFLoader, displays 360° panoramas, and supports SVGs and most common image formats.
+
+[<img src="./docs/screen.png" alt="Meshviewer screenshot" width="45%" />](./docs/screen.png) [<img src="./docs/screen2.png" alt="Meshviewer screenshot 2" width="45%" />](./docs/screen2.png)
+
+![Panorama demo](./docs/image360.gif)
 
 
 ## Install
@@ -32,7 +35,7 @@ pnpm install
 pnpm start
 ```
 
-Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Clicking a tile opens the large view in full window size (3D models can be rotated and zoomed with the mouse); the back arrow in the header ("Back" tooltip) or `ESC` returns to the list view. The file name and its details are shown in the status bar at the bottom. The fullscreen button switches the window to fullscreen mode: the header and status bar hide, moving the mouse reveals the exit icon, and `ESC` leaves fullscreen first.
+Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Subdirectories appear as folder tiles before the media files; each shows the folder's first image inside a folder-shaped frame, so it stays recognisable as a directory at a glance (folders without images keep the empty folder shape). Double-clicking a tile opens the large view in full window size (a single click only selects it; the “File operations” setting can switch the grid to single-click opening); `Enter` opens the selected tile from the keyboard. 3D models can be rotated and zoomed with the mouse; the back arrow in the header ("Back" tooltip) or `ESC` returns to the list view. The file name and its details are shown in the status bar at the bottom. The fullscreen button switches the window to fullscreen mode: the header and status bar hide, moving the mouse reveals the exit icon, and `ESC` leaves fullscreen first.
 
 ## Keyboard shortcuts
 
@@ -59,6 +62,8 @@ Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale fo
 | `Ctrl` + `+` / `=` | Larger tiles |
 | `Ctrl` + `-` | Smaller tiles |
 | `Ctrl` + `0` | Reset tile size |
+| `Ctrl` + mouse wheel | Zoom tiles in / out |
+| `Enter` | Open the selected tile |
 
 **Path bar**
 

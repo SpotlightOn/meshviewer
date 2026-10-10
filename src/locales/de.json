@@ -4,6 +4,9 @@
     "homeTitle": "Home-Verzeichnis",
     "pathHint": "Auf einen Ordner im Pfad klicken zum Öffnen oder hier klicken zum Bearbeiten"
   },
+  "sidebar": {
+    "resize": "Breite des Verzeichnisbaums ändern"
+  },
   "currentDir": {
     "ariaLabel": "Aktuelles Verzeichnis - Enter drücken zum Öffnen"
   },
@@ -11,15 +14,22 @@
   "grid": {
     "typeGlb": "3D-Modell",
     "typeImage": "Bild",
+    "typeFolder": "Ordner",
     "loadError": "Fehler beim Lesen des Ordners",
     "noMedia": "In diesem Ordner wurden keine *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg oder *.ico Dateien gefunden.",
-    "previewFailed": "Vorschau fehlgeschlagen"
+    "previewFailed": "Vorschau fehlgeschlagen",
+    "nSelected": "{{count}} ausgewählt",
+    "copyBuffer": "{{count}} in die Zwischenablage kopiert",
+    "cutBuffer": "{{count}} in die Zwischenablage ausgeschnitten",
+    "pasteDone": "{{count}} eingefügt",
+    "trashed": "{{count}} in den Papierkorb verschoben"
   },
   "largeView": {
     "back": "Zurück",
     "previous": "Vorherige Datei",
     "next": "Nächste Datei",
     "slideshow": "Diashow",
+    "equirect": "360°-Ansicht",
     "zoom": "Zoom",
     "zoomInput": "Zoom in Prozent",
     "actualSize": "Originalgröße",
@@ -51,7 +61,12 @@
   "contextMenu": {
     "openWith": "Mit Standardanwendung öffnen",
     "fileInfo": "Dateiinformationen",
-    "editWith": "Bearbeiten mit {{app}}"
+    "editWith": "Bearbeiten mit {{app}}",
+    "cut": "Ausschneiden",
+    "copy": "Kopieren",
+    "paste": "Einfügen",
+    "newFolder": "Neuer Ordner",
+    "moveToTrash": "In den Papierkorb verschieben"
   },
   "menu": {
     "file": "Datei",
@@ -78,14 +93,15 @@
     "maximize": "Maximieren",
     "macZoom": "Zoom",
     "help": "Hilfe",
-    "shortcuts": "Tastenkombinationen",
+    "usage": "Bedienung",
     "about": "Über MeshViewer"
   },
   "shortcuts": {
-    "title": "Tastenkombinationen",
+    "title": "Bedienung",
     "largeView": "Großansicht",
     "grid": "Dateiraster",
     "pathField": "Pfadleiste",
+    "mouse": "Maus",
     "previous": "Vorherige Datei",
     "next": "Nächste Datei",
     "toggleFit": "Einpassen / 100 % umschalten (Bilder)",
@@ -97,10 +113,33 @@
     "fullscreen": "Vollbild umschalten",
     "largerTiles": "Größere Kacheln",
     "smallerTiles": "Kleinere Kacheln",
+    "zoomTilesWheel": "Kacheln hinein- / herauszoomen",
     "resetTiles": "Kachelgröße zurücksetzen",
+    "selectAllFiles": "Alle Dateien auswählen",
+    "copyPasteFiles": "Dateien ausschneiden / kopieren / einfügen",
+    "moveToTrash": "Ausgewählte Dateien in den Papierkorb",
+    "clearSelection": "Auswahl aufheben",
     "openPath": "Eingegebenen Pfad öffnen",
     "revertPath": "Feld zurücksetzen",
     "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab."
+  },
+  "mouse": {
+    "leftClick": "Linksklick",
+    "ctrlClick": "Strg / Cmd + Klick",
+    "shiftClick": "Umschalt + Klick",
+    "dragEmpty": "Ziehen auf leerer Fläche",
+    "rightClick": "Rechtsklick",
+    "wheel": "Mausrad",
+    "middleClick": "Mittlere Maustaste",
+    "dragLarge": "Ziehen",
+    "open": "Datei in der Großansicht öffnen",
+    "toggle": "Zur Auswahl hinzufügen oder daraus entfernen",
+    "range": "Einen Bereich von Dateien auswählen",
+    "marquee": "Auswahlrechteck aufziehen",
+    "menu": "Kontextmenü öffnen",
+    "zoom": "Großansicht zoomen",
+    "toggleFit": "Einpassen / 100 % in der Großansicht umschalten",
+    "panSwipe": "Bild verschieben; waagerechtes Ziehen im eingepassten Zustand wechselt zur vorherigen / nächsten Datei"
   },
   "settings": {
     "title": "Einstellungen",
@@ -114,6 +153,26 @@
     "editor": "Editor-Befehl",
     "browse": "Durchsuchen…",
     "editorHint": "Wird für „Bearbeiten mit …“ im Kontextmenü verwendet. Leer lassen, um den Eintrag auszublenden.",
+    "appearance": "Darstellung",
+    "theme": "Farbschema",
+    "themeSystem": "System",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel",
+    "thumbnailFit": "Vorschaubild-Anpassung",
+    "thumbnailFitCover": "Cover (Kachel füllen)",
+    "thumbnailFitContain": "Contain (ganzes Bild anzeigen)",
+    "transparency": "Hintergrund für Transparenz",
+    "transparencyCheckerboard": "Schachbrett",
+    "transparencyWhite": "Weiß",
+    "transparencyCustom": "Eigene Farbe",
+    "transparencyColor": "Hintergrundfarbe",
+    "transparencyHint": "Füllt die Kachel hinter transparenten Vorschaubildern; in der Großansicht bildgroß auf einer schwarzen Bühne.",
+    "fileOperations": "Dateioperationen",
+    "openBehavior": "Dateien und Ordner öffnen",
+    "openDoubleClick": "Doppelklick",
+    "openSingleClick": "Einzelklick",
+    "verifyMoveChecksum": "Prüfsummen beim Verschieben prüfen",
+    "verifyMoveHint": "Beim Verschieben über Dateisystemgrenzen wird die SHA-256-Prüfsumme verglichen, bevor die Quelldatei gelöscht wird. Deaktivieren, um nur die Größe zu prüfen (schneller).",
     "save": "Speichern",
     "cancel": "Abbrechen"
   },
@@ -124,7 +183,26 @@
     "license": "Lizenz"
   },
   "dialog": {
-    "close": "Schließen"
+    "close": "Schließen",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen"
+  },
+  "confirm": {
+    "deleteFolder": {
+      "title": "Ordner in den Papierkorb",
+      "message": "„{{name}}“ mit dem gesamten Inhalt in den Papierkorb verschieben?"
+    }
+  },
+  "newFolder": {
+    "title": "Neuer Ordner",
+    "name": "Ordnername",
+    "defaultName": "Neuer Ordner",
+    "create": "Erstellen",
+    "error": {
+      "invalid": "Bitte gib einen gültigen Ordnernamen ein.",
+      "exists": "Ein Ordner mit diesem Namen existiert bereits.",
+      "failed": "Der Ordner konnte nicht erstellt werden."
+    }
   },
   "editor": {
     "pickTitle": "Editor-Anwendung auswählen"
@@ -133,6 +211,8 @@
     "glbLoadError": "GLB-Ladefehler in der Großansicht:",
     "fileOpenError": "Fehler beim Öffnen der Datei in der Großansicht:",
     "previewFailed": "Vorschau fehlgeschlagen:",
-    "editorLaunchError": "Fehler beim Starten des Editors:"
+    "editorLaunchError": "Fehler beim Starten des Editors:",
+    "pasteFailed": "Einige Dateien konnten nicht kopiert werden:",
+    "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:"
   }
 }

@@ -96,12 +96,16 @@ function createPathBar({ dom, navigate }) {
   }
 
   /**
-   * Leaves the text field and restores the breadcrumb view.
+   * Leaves the text field and restores the breadcrumb view. The field is
+   * blurred explicitly so the document regains keyboard focus: while a hidden
+   * input keeps focus, global shortcuts such as Ctrl+C or Delete are treated
+   * as typing and ignored.
    */
   function endEdit() {
     if (!editing) return;
     editing = false;
     root.classList.remove("editing");
+    if (document.activeElement === input) input.blur();
     render();
   }
 

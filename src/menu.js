@@ -7,10 +7,10 @@ import i18next from "i18next";
  * localization; the standard editing roles keep their behavior.
  * @param {object} actions - Menu action callbacks.
  * @param {() => void} actions.onSettings - Opens the settings dialog in the main window.
- * @param {() => void} actions.onShortcuts - Opens the keyboard shortcuts dialog.
+ * @param {() => void} actions.onUsage - Opens the usage dialog.
  * @param {() => void} actions.onAbout - Opens the About dialog.
  */
-function createAppMenu({ onSettings, onShortcuts, onAbout }) {
+function createAppMenu({ onSettings, onUsage, onAbout }) {
   const isMac = process.platform === "darwin";
   const t = (key) => i18next.t(key);
   const template = [
@@ -60,7 +60,7 @@ function createAppMenu({ onSettings, onShortcuts, onAbout }) {
     {
       label: t("menu.help"),
       submenu: [
-        { label: t("menu.shortcuts"), click: onShortcuts },
+        { label: t("menu.usage"), click: onUsage },
         { type: "separator" },
         { label: t("menu.about"), click: onAbout },
       ],

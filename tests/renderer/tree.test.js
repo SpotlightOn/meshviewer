@@ -209,4 +209,47 @@ describe("createDirectoryTree", () => {
     expect(tree.getSelectedPath()).toBe("/b");
     expect(selected).toContain("/b");
   });
+
+  it("reloads the children of a loaded node on refresh", async () => {
+    const entries = {
+      "/": [{ path: "/home", name: "home" }],
+    };
+    const { tree } = makeTree(entries);
+    await flush();
+    expect(tree.el.querySelectorAll(".tree-row")).toHaveLength(2);
+
+    entries["/"] = [
+      { path: "/home", name: "home" },
+      { path: "/new", name: "new" },
+    ];
+    await tree.refresh("/");
+    const labels = Array.from(tree.el.querySelectorAll(".tree-label")).map((el) => el.textContent);
+    expect(labels).toEqual(["Root", "home", "new"]);
+  });
+
+  it("removes children that disappeared while refreshing", async () => {
+    const entries = {
+      "/": [{ path: "/home", name: "home" }],
+    };
+    const { tree } = makeTree(entries);
+    await flush();
+
+    entries["/"] = [];
+    await tree.refresh("/");
+    expect(tree.el.querySelectorAll(".tree-row")).toHaveLength(1);
+    expect(tree.el.querySelector(".tree-twisty").classList.contains("hidden")).toBe(true);
+  });
+
+  it("leaves unloaded nodes untouched on refresh", async () => {
+    const entries = {
+      "/": [{ path: "/a", name: "a" }],
+      "/a": [{ path: "/a/b", name: "b" }],
+    };
+    const { tree } = makeTree(entries);
+    await flush();
+
+    // "/a/b" exists as a state but was never loaded; refresh must not load it.
+    await tree.refresh("/a/b");
+    expect(tree.el.textContent).toContain("b");
+  });
 });

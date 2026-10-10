@@ -38,7 +38,7 @@ Guidance for AI coding agents working in this repository.
 - `pnpm run icons` – regenerate `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` from the SVG (`scripts/generate-icons.js`)
 - `pnpm run pack` – electron-builder `--dir` (unpacked)
 - `pnpm run dist:linux` / `pnpm run dist:win` / `pnpm run dist:mac` / `pnpm run dist` – build distributables (macOS builds need a macOS host; `dist` = Linux + Windows)
-- `pnpm run lint` / `pnpm run lint:fix` – Biome check (`biome.json`; `src/renderer/vendor/` and `dist/` are ignored)
+- `pnpm run lint` / `pnpm run lint:fix` – Biome check (`biome.json`; `dist/` is ignored)
 - Electron binary may need its postinstall re-run after upgrades: `node node_modules/electron/install.js` (pnpm blocks build scripts by default; approvals live in `pnpm-workspace.yaml` under `allowBuilds`).
 
 ## CI / releases
@@ -58,7 +58,7 @@ Guidance for AI coding agents working in this repository.
 - `pnpm test` – run all Vitest projects (unit, main, renderer)
 - `pnpm run test:unit` / `pnpm run test:main` / `pnpm run test:e2e` – run a single project
 - Vitest config lives in `vitest.config.mjs` (three projects: `unit` = pure helpers, `main` = Node + real temp fixtures, `renderer` = jsdom). Tests live in `tests/unit/`, `tests/main/`, `tests/renderer/`.
-- E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app and need a display. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
+- E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app through `tests/e2e/launch.js` and need a display. The helper sets `MESHVIEWER_E2E_HEADLESS=1` (honoured in `src/main-window.js`), so the app creates an unmapped window and a test run never takes the desktop focus. `packaged.spec.js` runs the `pnpm run pack` build from `dist/linux-unpacked` and is skipped when that build is missing. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
 - Testable code is kept out of the Electron runtime where possible: filesystem IPC logic lives in `src/fsIpc.js` (takes `ipcMain`/`app`/`shell` as arguments), renderer helpers in `src/renderer/utils.js`. Keep new pure logic there or in `tests/*` rather than in `main.js`/`renderer.js`.
 
 ## Architecture
@@ -69,7 +69,10 @@ Guidance for AI coding agents working in this repository.
 
 Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup whenever it runs inside Electron on Linux (see `node_modules/sharp/dist/sharp.cjs`, `process.emitWarning` with code `SharpElectronLinux`). It warns that Electron's Linux binaries dynamically link a globally-installed glib whose symbols leak into the process, which can collide with the glib bundled in sharp's libvips and in rare cases cause `GLib-GObject: g_object_ref/g_object_unref: assertion 'G_IS_OBJECT (object)' failed` crashes (see https://sharp.pixelplumbing.com/install#electron-and-linux, tracking issue electron/electron#46323). It is informational and expected; sharp works fine unless the app actually crashes with a GLib assertion.
 - `src/preload.js` – `contextBridge` API exposed as `window.api` (typed via `@typedef {MeshViewerApi}`)
-- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), thumbnail grid (`renderer.js`) with lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, GLB rendering via three.js (GLTFLoader), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (size/MIME helpers)
+- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), resizable sidebar (`sidebar-resizer.js`, drag or arrow keys, width persisted as `sidebarWidth`), content grid (`grid.js`: folder tiles for subdirectories before the media files, each folder tile showing the folder's first image inside a folder-shaped frame, built only once the app is idle and no media thumbnails are pending, plus lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, multi-selection with copy/cut/trash for files and folders), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (generic helpers: size/MIME, zoom, EXIF rows)
+- `src/renderer/three/` – shared three.js plumbing used by `3d/` and `equirectangular/`: `render-surface.js` (renderer, pixel ratio, resize observer, start/stop loop, dispose). Both view controllers follow the same contract: `activate`/`deactivate`, `setZoomPercent`, `zoomIn`/`zoomOut`, `reset`, `dispose`, with an `onChange(percent)` callback (the GLB viewer adds `load`)
+- `src/renderer/3d/` – everything three.js/GLB: `view.js` (interactive large view: scene, camera, OrbitControls, render loop, zoom), `thumbnails.js` (off-screen 256 px GLB thumbnails), `utils.js` (`disposeObject`, GLB zoom mapping); three.js add-ons (GLTFLoader, OrbitControls) come from `three/addons` via the import map
+- `src/renderer/equirectangular/` – panorama mode: `view.js` (sphere view, drag to look around, wheel/FOV zoom), `utils.js` (`isPixmap`, zoom↔field-of-view mapping)
 - `src/locales/` – `en.json` (default) and `de.json` (translation) for i18next
 - `package.json` holds the electron-builder config (Linux AppImage+tar.gz, Windows nsis+portable+zip). macOS cannot be built from Linux (needs a macOS CI runner).
 
@@ -81,4 +84,4 @@ Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup 
 
 ## Formats
 
-- 3D: `.glb` only. Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails of images smaller than the tile are shown at natural size, centered (`.thumb.natural`).
+- 3D: `.glb` only. Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails fill the tile with `object-fit` set from the “Thumbnail fit” setting (`cover` by default, `contain` optional); transparent areas show the configured transparency background.

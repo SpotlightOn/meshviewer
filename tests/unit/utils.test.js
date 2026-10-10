@@ -6,8 +6,6 @@ import {
   exifToSections,
   fileInfoRows,
   formatSize,
-  glbDistanceForPercent,
-  glbPercentForDistance,
   imageDataUrl,
   mimeFor,
   parseZoomPercent,
@@ -94,16 +92,6 @@ describe("zoom helpers", () => {
     expect(clampZoomPercent(50)).toBe(50);
     expect(clampZoomPercent(5)).toBe(10);
     expect(clampZoomPercent(9000)).toBe(800);
-  });
-
-  it("maps GLB distance and percent inversely", () => {
-    expect(glbDistanceForPercent(100, 100)).toBe(100);
-    expect(glbDistanceForPercent(100, 200)).toBe(50);
-    expect(glbDistanceForPercent(100, 10)).toBe(1000);
-    expect(glbDistanceForPercent(100, 800)).toBe(12.5);
-    expect(glbPercentForDistance(100, 50)).toBe(200);
-    expect(glbPercentForDistance(100, 12.5)).toBe(800);
-    expect(glbPercentForDistance(100, 1000)).toBe(10);
   });
 
   it("parses zoom text input", () => {
