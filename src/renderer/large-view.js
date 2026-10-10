@@ -1,14 +1,11 @@
-import * as THREE from "three";
+import { createGlbView } from "./3d/view.js";
+import { isPixmap } from "./equirectangular/utils.js";
+import { createEquirectView } from "./equirectangular/view.js";
 import { t } from "./i18n.js";
-import { disposeObject } from "./three-utils.js";
 import {
   clampZoom,
   clampZoomPercent,
   formatSize,
-  glbDistanceForPercent,
-  glbPercentForDistance,
-  MAX_ZOOM_PERCENT,
-  MIN_ZOOM_PERCENT,
   mimeFor,
   parseZoomPercent,
   retireFrames,
@@ -16,8 +13,6 @@ import {
   zoomPercent,
   zoomScale,
 } from "./utils.js";
-import { GLTFLoader } from "./vendor/GLTFLoader.js";
-import { OrbitControls } from "./vendor/OrbitControls.js";
 
 const SWIPE_THRESHOLD = 60;
 const MIDDLE_CLICK_TOLERANCE = 8;
@@ -31,7 +26,7 @@ const MIDDLE_CLICK_TOLERANCE = 8;
  * @param {HTMLImageElement} img - The image element (must be loaded).
  * @param {(scale: number) => void} [onChange] - Called after every zoom change with the current scale factor.
  * @param {(delta: number) => void} [onSwipe] - Called when a drag gesture navigates (1 forward, -1 backward).
- * @returns {{fitView: () => void, zoomIn: (anchor?: {x: number, y: number}) => void, zoomOut: (anchor?: {x: number, y: number}) => void, reset: () => void, setZoom: (percent: number) => void, toggleFit: () => void, dispose: () => void}} Image view controller.
+ * @returns {{fitView: () => void, zoomIn: (anchor?: {x: number, y: number}) => void, zoomOut: (anchor?: {x: number, y: number}) => void, reset: () => void, setZoom: (percent: number) => void, toggleFit: () => void, getScale: () => number, dispose: () => void}} Image view controller.
  */
 function createImageView(canvas, img, onChange, onSwipe) {
   const nw = img.naturalWidth;
@@ -349,6 +344,7 @@ function createImageView(canvas, img, onChange, onSwipe) {
     reset,
     setZoom,
     toggleFit,
+    getScale: () => state.scale,
     dispose() {
       canvas.removeEventListener("pointerdown", pointerdown);
       canvas.removeEventListener("pointermove", pointermove);
@@ -366,7 +362,7 @@ function createImageView(canvas, img, onChange, onSwipe) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
@@ -382,6 +378,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeBack,
     infoButton,
     largeSlideshow,
+    largeEquirect,
     largeActual,
     largeFit,
     largePrev,
@@ -401,24 +398,15 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   let currentZoomPercent = 100;
 
   /**
-   * Disposes the resources of the current large view (renderer, controls, scene,
-   * image listeners, object URL) without touching the DOM.
+   * Disposes the resources of the current large view (GLB viewer, image
+   * listeners, panorama, object URL) without touching the DOM.
    */
   function disposeResources() {
     if (!largeViewState) return;
-    const { renderer, controls, scene, resizeObserver, gltf, objectUrl, imageView } =
-      largeViewState;
-    if (renderer) {
-      renderer.setAnimationLoop(null);
-      renderer.dispose();
-      renderer.forceContextLoss();
-      if (renderer.domElement) renderer.domElement.remove();
-    }
-    if (controls) controls.dispose();
-    if (resizeObserver) resizeObserver.disconnect();
+    const { glb, objectUrl, imageView, equirect } = largeViewState;
+    if (glb) glb.dispose();
     if (imageView) imageView.dispose();
-    if (scene) disposeObject(scene);
-    if (gltf) disposeObject(gltf.scene);
+    if (equirect) equirect.dispose();
     if (objectUrl) URL.revokeObjectURL(objectUrl);
     largeViewState = null;
   }
@@ -458,30 +446,18 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   }
 
   /**
-   * Sets the GLB camera zoom to an exact percentage.
-   * @param {{camera: object, controls: object, glbBaseDistance: number}} view - Active GLB large view state.
-   * @param {number} percent - Zoom in percent.
-   */
-  function setGlbZoom(view, percent) {
-    const { camera, controls, glbBaseDistance } = view;
-    const direction = camera.position.clone().sub(controls.target).normalize();
-    camera.position
-      .copy(controls.target)
-      .addScaledVector(direction, glbDistanceForPercent(glbBaseDistance, percent));
-    controls.update();
-  }
-
-  /**
    * Applies a zoom percentage to the active large view and syncs the controls.
    * @param {number} percent - Zoom in percent.
    */
   function setZoom(percent) {
     if (!largeViewState) return;
     const clamped = clampZoomPercent(percent);
-    if (largeViewState.type === "image" && largeViewState.imageView) {
+    if (largeViewState.mode === "equirect" && largeViewState.equirect) {
+      largeViewState.equirect.setZoomPercent(clamped);
+    } else if (largeViewState.type === "image" && largeViewState.imageView) {
       largeViewState.imageView.setZoom(clamped);
-    } else if (largeViewState.type === "glb") {
-      setGlbZoom(largeViewState, clamped);
+    } else if (largeViewState.type === "glb" && largeViewState.glb) {
+      largeViewState.glb.setZoomPercent(clamped);
     }
     syncZoomControl(zoomScale(clamped));
   }
@@ -505,10 +481,13 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
    */
   function fitToScreen() {
     if (!largeViewState) return;
-    if (largeViewState.type === "image" && largeViewState.imageView) {
+    if (largeViewState.mode === "equirect" && largeViewState.equirect) {
+      largeViewState.equirect.reset();
+      syncZoomControl(1);
+    } else if (largeViewState.type === "image" && largeViewState.imageView) {
       largeViewState.imageView.fitView();
-    } else if (largeViewState.type === "glb") {
-      largeViewState.controls.reset();
+    } else if (largeViewState.type === "glb" && largeViewState.glb) {
+      largeViewState.glb.reset();
     }
   }
 
@@ -658,6 +637,50 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   }
 
   /**
+   * Enables the equirectangular panorama mode for the current image: the view
+   * is built lazily on first use and layered over the image, which is hidden
+   * while the panorama is active.
+   */
+  function enableEquirect() {
+    if (largeViewState?.type !== "image") return;
+    if (!isPixmap(largeViewState.file.name)) {
+      largeEquirect.checked = false;
+      return;
+    }
+    const { frame, imageEl } = largeViewState;
+    if (!imageEl) {
+      largeEquirect.checked = false;
+      return;
+    }
+    let view = largeViewState.equirect;
+    if (!view) {
+      view = createEquirectView({
+        host: largeCanvas,
+        image: imageEl,
+        onChange: (percent) => syncZoomControl(percent / 100),
+      });
+      largeViewState.equirect = view;
+    }
+    view.activate();
+    view.setZoomPercent(currentZoomPercent);
+    frame.classList.add("equirect-hidden");
+    largeViewState.mode = "equirect";
+  }
+
+  /**
+   * Disables the equirectangular panorama mode and shows the normal image
+   * again with its previous zoom and pan state.
+   */
+  function disableEquirect() {
+    const { equirect, frame, imageView } = largeViewState ?? {};
+    if (!equirect) return;
+    equirect.deactivate();
+    frame.classList.remove("equirect-hidden");
+    largeViewState.mode = "image";
+    if (imageView) syncZoomControl(imageView.getScale());
+  }
+
+  /**
    * Moves the large view to the previous or next file in the current folder.
    * @param {number} delta - -1 for previous, 1 for next.
    * @param {boolean} [wrap] - Whether to wrap around at the folder boundaries.
@@ -691,6 +714,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     updateStatusBar(file);
     updateNavButtons();
     syncZoomControl(1);
+    largeEquirect.checked = false;
+    largeEquirect.disabled = !isPixmap(file.name);
 
     try {
       if (file.type === "glb") {
@@ -767,27 +792,23 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     retireLargeFrames(direction, frame);
 
     const imageSize = { width: img.naturalWidth, height: img.naturalHeight };
-    largeViewState = { token, file, type: "image", objectUrl: url, imageView, imageSize };
+    largeViewState = {
+      token,
+      file,
+      type: "image",
+      objectUrl: url,
+      imageView,
+      imageSize,
+      frame,
+      imageEl: img,
+    };
   }
 
   /**
-   * Releases the resources of a GLB view that never became the active large
-   * view, because its load failed or was superseded by another navigation.
-   * @param {{renderer: object, controls: object, resizeObserver: ResizeObserver, gltf?: object}} parts - Resources to release.
-   */
-  function disposeUnusedGlbView({ renderer, controls, resizeObserver, gltf }) {
-    renderer.setAnimationLoop(null);
-    renderer.dispose();
-    renderer.forceContextLoss();
-    controls.dispose();
-    resizeObserver.disconnect();
-    if (gltf) disposeObject(gltf.scene);
-  }
-
-  /**
-   * Displays a GLB model interactively in the large view.
-   * The renderer canvas joins the view only once the model is parsed, so the
-   * previous content stays visible for the whole load.
+   * Displays a GLB model interactively in the large view: the viewer owns the
+   * scene, camera, controls and render loop, this function wires it into the
+   * view. The viewer's canvas joins the view only once the model is parsed, so
+   * the previous content stays visible for the whole load.
    * @param {{path: string, name: string}} file - File object.
    * @param {number} token - Load token; aborts if the view changed meanwhile.
    * @param {number} [direction] - Navigation direction: 1 forward, -1 backward, 0 none.
@@ -797,93 +818,22 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     const data = await window.api.readFile(file.path);
     if (largeViewState?.token !== token) return;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x242424);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x505050, 1.4));
-    scene.add(new THREE.DirectionalLight(0xffffff, 1.8));
-
-    const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 1000);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(window.devicePixelRatio);
+    const glb = createGlbView({
+      host: largeCanvas,
+      onZoomChange: (percent) => syncZoomControl(percent / 100),
+    });
+    largeViewState.glb = glb;
     largeCanvas.style.display = "block";
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    const resize = () => {
-      const width = Math.max(1, largeCanvas.clientWidth);
-      const height = Math.max(1, largeCanvas.clientHeight);
-      renderer.setSize(width, height);
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    };
-    resize();
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(largeCanvas);
-
-    let gltf;
     try {
-      gltf = await new Promise((resolve, reject) =>
-        new GLTFLoader().parse(data, "", resolve, reject),
-      );
+      await glb.load(data);
     } catch (error) {
       console.error(t("console.glbLoadError"), error);
-      disposeUnusedGlbView({ renderer, controls, resizeObserver });
       close();
       return;
     }
-    if (largeViewState?.token !== token) {
-      disposeUnusedGlbView({ renderer, controls, resizeObserver, gltf });
-      return;
-    }
-
-    const object = gltf.scene;
-    scene.add(object);
-
-    const box = new THREE.Box3().setFromObject(object);
-    const size = box.getSize(new THREE.Vector3());
-    const center = box.getCenter(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-
-    object.position.sub(center);
-
-    camera.position.set(maxDim * 0.9, maxDim * 0.6, maxDim * 1.6);
-    controls.target.set(0, 0, 0);
-    controls.update();
-
-    const baseDistance = camera.position.distanceTo(controls.target);
-    controls.minDistance = glbDistanceForPercent(baseDistance, MAX_ZOOM_PERCENT);
-    controls.maxDistance = glbDistanceForPercent(baseDistance, MIN_ZOOM_PERCENT);
-    controls.saveState();
-    controls.addEventListener("change", () => {
-      if (largeViewState?.type !== "glb") return;
-      const distance = camera.position.distanceTo(controls.target);
-      syncZoomControl(glbPercentForDistance(baseDistance, distance) / 100);
-    });
-    syncZoomControl(1);
-
-    largeCanvas.append(renderer.domElement);
+    if (largeViewState?.token !== token) return;
+    largeViewState.type = "glb";
     retireLargeFrames(direction);
-
-    renderer.setAnimationLoop(() => {
-      controls.update();
-      renderer.render(scene, camera);
-    });
-
-    largeViewState = {
-      token,
-      file,
-      type: "glb",
-      camera,
-      renderer,
-      controls,
-      scene,
-      resizeObserver,
-      gltf,
-      glbBaseDistance: baseDistance,
-    };
   }
 
   /**
@@ -931,7 +881,11 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
 
     if (event.key === "f" || event.key === "F") {
       if (!event.ctrlKey && !event.metaKey && !event.altKey) {
-        if (largeViewState.type === "image" && largeViewState.imageView) {
+        if (largeViewState.mode === "equirect" && largeViewState.equirect) {
+          event.preventDefault();
+          largeViewState.equirect.reset();
+          syncZoomControl(1);
+        } else if (largeViewState.type === "image" && largeViewState.imageView) {
           event.preventDefault();
           largeViewState.imageView.toggleFit();
         }
@@ -953,11 +907,14 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     }
 
     event.preventDefault();
-    if (largeViewState.type === "glb") {
-      const { controls } = largeViewState;
-      if (zoomIn) controls.dollyIn(1.25);
-      else if (zoomOut) controls.dollyOut(1.25);
-      else controls.reset();
+    if (largeViewState.mode === "equirect" && largeViewState.equirect) {
+      if (zoomIn) largeViewState.equirect.zoomIn();
+      else if (zoomOut) largeViewState.equirect.zoomOut();
+      else largeViewState.equirect.reset();
+    } else if (largeViewState.type === "glb" && largeViewState.glb) {
+      if (zoomIn) largeViewState.glb.zoomIn();
+      else if (zoomOut) largeViewState.glb.zoomOut();
+      else largeViewState.glb.reset();
     } else if (largeViewState.type === "image" && largeViewState.imageView) {
       if (zoomIn) largeViewState.imageView.zoomIn();
       else if (zoomOut) largeViewState.imageView.zoomOut();
@@ -972,6 +929,13 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     infoDialog.open(largeViewState.file, largeViewState.imageSize);
   });
   largeSlideshow.addEventListener("change", toggleSlideshow);
+  largeEquirect.addEventListener("change", () => {
+    if (largeEquirect.checked) {
+      enableEquirect();
+    } else {
+      disableEquirect();
+    }
+  });
   largeActual.addEventListener("click", () => setZoom(100));
   largeFit.addEventListener("click", fitToScreen);
   largePrev.addEventListener("click", () => navigate(-1));

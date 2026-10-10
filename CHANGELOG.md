@@ -4,6 +4,26 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-10
+
+### Added
+- Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, rubber-band drag on empty space, Ctrl+A selects all, Esc clears
+- Copy, cut, paste and trash for files and folders inside the app
+- Create and delete folders from the context menus
+- Folder tiles in the grid with the folder's first image as preview inside a folder-shaped frame
+- Folder tiles: a double click opens them and their context menu matches the directory tree
+- Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow; drag to look around, wheel or zoom slider changes the field of view)
+- Resizable directory tree sidebar
+- Thumbnail grid zoom with Ctrl + mouse wheel
+- New settings: color scheme, open behavior of tiles, thumbnail fit, transparency background, checksum verification for moves
+
+### Changed
+- Default slideshow transition changed to “slide” with a 300 ms animation
+- Thumbnail context menu: the file information entry is listed first, a separator divides the file actions, and “New folder”/“Paste” stay on top
+
+### Fixed
+- Window starts at 100 % again: a page zoom picked in the View menu used to persist across restarts and shrink the whole window
+
 ## [0.5.0] - 2026-10-09
 
 ### Added

@@ -7,23 +7,31 @@ const MENU_ICONS = {
     '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"/></svg>',
   info: '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280h80v-240h-80v240Zm40-320q17 0 28.5-11.5T520-640q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640q0 17 11.5 28.5T480-600Zm0 520q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"/></svg>',
   edit: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
+  copy: '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Z"/></svg>',
+  cut: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM6 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6-7.5c-.28 0-.5-.22-.5-.5s.22-.5.5-.5.5.22.5.5-.22.5-.5.5zM19 3l-6 6 2 2 7-7V3z"/></svg>',
+  paste:
+    '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M360-480h240v-80H360v80Zm0 160h240v-80H360v80Zm0 160h160v-80H360v80ZM200-120q-33 0-56.5-23.5T120-200v-640q0-33 23.5-56.5T200-920h120q11-35 39-57.5t61-22.5q33 0 61 22.5t39 57.5h120q33 0 56.5 23.5T720-840v640q0 33-23.5 56.5T640-120H200Zm0-80h440v-640H200v640Zm220-680q17 0 28.5-11.5T460-880q0-17-11.5-28.5T420-920q-17 0-28.5 11.5T380-880q0 17 11.5 28.5T420-840Z"/></svg>',
+  newFolder:
+    '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M560-320h80v-80h80v-80h-80v-80h-80v80h-80v80h80v80ZM160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/></svg>',
+  delete:
+    '<svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>',
 };
 
 /**
- * Context menu module: a reusable popup menu for media tiles. Entries are
- * registered externally through `register()`; the menu opens through a single
- * delegated `contextmenu` listener on the host element, so tiles never need
- * their own listeners.
+ * Context menu module: a reusable popup menu whose entries are registered
+ * externally through `register()`. The menu opens through a single delegated
+ * `contextmenu` listener on the host element and positions itself at the
+ * cursor. Right-clicks on empty areas only close any open menu.
  * @param {object} deps - Module dependencies.
  * @param {HTMLElement} deps.host - Element receiving the delegated contextmenu events.
  * @param {HTMLElement} deps.menuEl - The popup element (role="menu").
- * @param {(target: EventTarget) => object|null} deps.resolveFile - Maps a contextmenu target to its file, or null for empty areas.
- * @returns {{register: (item: object) => void, open: (file: object, x: number, y: number) => void, close: () => void, isOpen: () => boolean}} Context menu API.
+ * @param {(target: EventTarget) => object|null} deps.resolveTarget - Maps a contextmenu target to its context (file, folder, …), or null for empty areas.
+ * @returns {{register: (item: object) => void, open: (context: object, x: number, y: number) => void, close: () => void, isOpen: () => boolean}} Context menu API.
  */
-export function createContextMenu({ host, menuEl, resolveFile }) {
-  /** @type {Array<{id: string, label: string|(() => string), icon?: string, enabled?: (file: object) => boolean, action: (file: object) => void}>} */
+export function createContextMenu({ host, menuEl, resolveTarget }) {
+  /** @type {Array<{id: string, label?: string|(() => string), icon?: string, order?: number, separator?: boolean, enabled?: (context: object) => boolean, action?: (context: object) => void}>} */
   const items = [];
-  let file = null;
+  let activeContext = null;
 
   /**
    * Resolves the displayed label of a registered item.
@@ -100,25 +108,63 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
   function close() {
     menuEl.hidden = true;
     menuEl.replaceChildren();
-    file = null;
+    activeContext = null;
     document.removeEventListener("pointerdown", onPointerDown, true);
     window.removeEventListener("resize", close);
     window.removeEventListener("scroll", close, true);
   }
 
   /**
-   * Builds and shows the menu for a file, listing only items that are
-   * enabled for it.
-   * @param {object} targetFile - File the menu opens for.
+   * Removes separators that are leading, trailing or directly consecutive so
+   * they always sit between two visible items.
+   * @param {Array<{item: object, index: number}>} entries - Sorted visible entries.
+   * @returns {Array<{item: object, index: number}>} Entries without redundant separators.
+   */
+  function dropRedundantSeparators(entries) {
+    const kept = [];
+    for (let i = 0; i < entries.length; i += 1) {
+      const entry = entries[i];
+      if (!entry.item.separator) {
+        kept.push(entry);
+        continue;
+      }
+      if (kept.length === 0 || kept[kept.length - 1].item.separator) continue;
+      if (!entries.slice(i + 1).some((next) => !next.item.separator)) continue;
+      kept.push(entry);
+    }
+    return kept;
+  }
+
+  /**
+   * Creates the divider shown between two menu groups.
+   * @returns {HTMLElement} The separator element.
+   */
+  function createSeparator() {
+    const separator = document.createElement("hr");
+    separator.className = "context-separator";
+    return separator;
+  }
+
+  /**
+   * Builds and shows the menu for a context, listing only the items enabled
+   * for it in ascending `order` (registration order breaks ties).
+   * @param {object} context - Context the menu opens for.
    * @param {number} x - Pointer X coordinate.
    * @param {number} y - Pointer Y coordinate.
    */
-  function open(targetFile, x, y) {
+  function open(context, x, y) {
     close();
-    file = targetFile;
+    activeContext = context;
     menuEl.replaceChildren();
-    for (const item of items) {
-      if (item.enabled && !item.enabled(file)) continue;
+    const visible = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !item.enabled || item.enabled(context))
+      .sort((a, b) => (a.item.order ?? 0) - (b.item.order ?? 0) || a.index - b.index);
+    for (const { item } of dropRedundantSeparators(visible)) {
+      if (item.separator) {
+        menuEl.append(createSeparator());
+        continue;
+      }
       const button = document.createElement("button");
       button.type = "button";
       button.className = "context-item";
@@ -137,12 +183,12 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
       button.append(label);
       button.addEventListener("click", () => {
         close();
-        item.action(targetFile);
+        item.action(context);
       });
       menuEl.append(button);
     }
     if (itemButtons().length === 0) {
-      file = null;
+      activeContext = null;
       return;
     }
     menuEl.hidden = false;
@@ -156,15 +202,15 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
   }
 
   /**
-   * Opens the menu on right-clicks over a resolved file; empty areas just
+   * Opens the menu on right-clicks over a resolved context; empty areas just
    * close any open menu.
    * @param {MouseEvent} event - Contextmenu event.
    */
   function onContextMenu(event) {
-    const targetFile = resolveFile(event.target);
-    if (targetFile) {
+    const context = resolveTarget(event.target);
+    if (context) {
       event.preventDefault();
-      open(targetFile, event.clientX, event.clientY);
+      open(context, event.clientX, event.clientY);
     } else {
       close();
     }
@@ -175,8 +221,10 @@ export function createContextMenu({ host, menuEl, resolveFile }) {
 
   /**
    * Registers a menu entry. Labels may be functions resolved at open time;
-   * `enabled` filters the entry per file.
-   * @param {{id: string, label: string|(() => string), icon?: string, enabled?: (file: object) => boolean, action: (file: object) => void}} item - Menu entry.
+   * `enabled` filters the entry per context; `order` sorts the visible
+   * entries, defaults to 0. An entry with `separator: true` renders a divider
+   * instead of a button (it needs no label or action).
+   * @param {{id: string, label?: string|(() => string), icon?: string, order?: number, separator?: boolean, enabled?: (context: object) => boolean, action?: (context: object) => void}} item - Menu entry.
    */
   function register(item) {
     items.push(item);

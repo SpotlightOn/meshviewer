@@ -1,9 +1,11 @@
 # MeshViewer — Architecture
 
-MeshViewer is an Electron application that shows local media files as a browsable
-grid: `*.glb` models are rendered to thumbnails with three.js, images are shown
-from a generated or embedded thumbnail. Selecting an item opens a large view with
-keyboard navigation and a slideshow.
+MeshViewer is an Electron application that shows the contents of a directory as a
+browsable grid: subdirectories appear as folder tiles (before the media files)
+and can be opened with a click, while `*.glb` models are rendered to thumbnails
+with three.js and images are shown from a generated or embedded thumbnail.
+Selecting a media file opens a large view with keyboard navigation and a
+slideshow.
 
 It is plain JavaScript — no framework, no bundler. The whole app runs as ES
 modules (`"type": "module"` in `package.json`): the main process is ESM, the
@@ -30,9 +32,11 @@ they cannot be ESM.
 │ src/preload.js (CommonJS)     │   │ Renderer (src/renderer/, ES modules)     │
 │ contextBridge → window.api    │   │ index.html, renderer.js (entry), tree.js,│
 │ contextIsolation: true        │   │ grid.js, large-view.js, settings.js,     │
-│ nodeIntegration: false        │   │ keyboard.js, three-utils.js, i18n.js,    │
-│                               │   │ utils.js, styles.css                     │
-│                               │   │ three.js + vendored GLTFLoader           │
+│ nodeIntegration: false        │   │ keyboard.js, i18n.js, utils.js,          │
+│                               │   │ styles.css                               │
+│                               │   │ 3d/ (GLB viewer, thumbnails),            │
+│                               │   │ equirectangular/ (panorama view),        │
+│                               │   │ three/ (shared render surface)           │
 └───────────────────────────────┘   └──────────────────────────────────────────┘
 ```
 
@@ -50,7 +54,7 @@ they cannot be ESM.
 | `src/main-window.js` | Creates the main `BrowserWindow` (sandboxed preload, window icon) |
 | `src/menu.js` | Application menu with fully i18n labels (Edit roles, Help → dialogs) |
 | `src/dialogs.js` | About + shortcuts dialogs without a menu bar (plain windows), `dialog:close` IPC |
-| `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file reads, locale, `shell:openPath` |
+| `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
 | `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
@@ -58,25 +62,38 @@ they cannot be ESM.
 | `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard/path bar, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
-| `src/renderer/grid.js` | Media grid: folder loading, cards, image/GLB thumbnails |
-| `src/renderer/large-view.js` | Image/GLB large view: zoom, navigation, slideshow |
+| `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
+| `src/renderer/large-view.js` | Large view: zoom, navigation, slideshow; delegates GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
+| `src/renderer/3d/view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
+| `src/renderer/3d/thumbnails.js` | Off-screen 256 px GLB thumbnail renderer |
+| `src/renderer/3d/utils.js` | three.js helpers (`disposeObject`, GLB zoom mapping) |
+| `src/renderer/equirectangular/view.js` | Equirectangular panorama view (drag to look around, wheel/FOV zoom); same controller contract as the GLB viewer |
+| `src/renderer/equirectangular/utils.js` | `isPixmap` and zoom↔field-of-view mapping |
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
-| `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc, grid zoom) |
-| `src/renderer/three-utils.js` | Shared three.js helpers (`disposeObject`) |
+| `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc) and grid zoom (Ctrl `+`/`-`/`0` and Ctrl + mouse wheel) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
-| `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, `ArrayBuffer` conversion |
-| `src/renderer/vendor/` | Pinned three.js add-ons (GLTFLoader, OrbitControls, …) |
+| `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
-`thumbnails.js` and `renderer/utils.js` so it can be unit-tested without
-launching the app.
+`thumbnails.js`, `renderer/utils.js` and the `renderer/three/` +
+`renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
+unit-tested without launching the app.
+
+The two three.js view controllers (`renderer/3d/view.js` and
+`renderer/equirectangular/view.js`) share one contract and one render surface:
+`activate`/`deactivate`, `setZoomPercent`, `zoomIn`/`zoomOut`, `reset` and
+`dispose` (the GLB viewer adds `load`); the `onChange` callback always reports
+the zoom percentage. `renderer/three/render-surface.js` owns the renderer, the
+resize observer and the render-loop/dispose lifecycle for both.
 
 ## IPC surface
 
 | Channel | Direction | Purpose |
 | --- | --- | --- |
 | `fs:listMediaFiles` | renderer → main | Media files of one directory (non-recursive) |
-| `fs:listDirectories` | renderer → main | Child directories for the tree |
+| `fs:listImageFiles` | renderer → main | Up to N image files of one directory for a folder preview (stops early, no full-directory stat) |
+| `fs:listDirectories` | renderer → main | Child directories for the tree and the folder tiles |
 | `fs:homeDir` / `fs:cwd` / `fs:rootDir` / `fs:parentDir` | renderer → main | Path navigation |
 | `fs:locale` | renderer → main | System locale (BCP-47) for i18n |
 | `fs:readFile` | renderer → main | File content as `ArrayBuffer` |
@@ -86,8 +103,9 @@ launching the app.
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |
 | `dialog:close` | dialog → main | Close the modal About/shortcuts dialog |
 
-Directory listings are deliberately one level deep: the grid lists the current
-directory only, while the tree loads children on demand.
+Directory listings are deliberately one level deep: the grid shows the current
+directory's subdirectories and media files only, while the tree loads children on
+demand.
 
 ## Thumbnail pipeline
 
@@ -104,9 +122,9 @@ directory only, while the tree loads children on demand.
 If `sharp` is unavailable or decoding fails, `null` is returned and the renderer
 falls back to displaying the file itself.
 
-GLB thumbnails take a different path: the renderer loads the model with
-`GLTFLoader`, renders it once into an off-screen `WebGLRenderer` at 256 px and
-disposes the scene afterwards.
+GLB thumbnails take a different path: `renderer/3d/thumbnails.js` loads the
+model with `GLTFLoader`, renders it once into an off-screen `WebGLRenderer` at
+256 px and disposes the scene afterwards.
 
 ## Renderer data flow
 
@@ -115,10 +133,11 @@ directory tree (sidebar)          grid (content area)
       │                                │
       │ onSelect(path)                 │ loadFolder(path)
       ▼                                ▼
-  setTreeRoot / openPath  ────►  currentFiles[]  ───►  createCard(file)
-                                      │                     │
-                                      │                     ├─ image  → loadImageThumbnail()
-                                      │                     └─ glb    → renderThumbnail()
+  setTreeRoot / openPath  ────►  entries[]  ───►  createCard(entry)
+                                      │                 │
+                                      │                 ├─ folder → folder icon
+                                      │                 ├─ image  → loadImageThumbnail()
+                                      │                 └─ glb    → renderGlbThumbnail()
                                       ▼
                               IntersectionObserver
                               lazy card previews + content-visibility: auto
@@ -128,7 +147,8 @@ directory tree (sidebar)          grid (content area)
   `createTaskQueue(4)` bounds concurrency and prefetches exactly one level ahead.
 - `renderer.js` is a thin entry: it constructs the modules and wires them through
   injected callbacks (tree `onSelect` → grid `loadFolder`, grid `onOpenFile` →
-  large view), so every module stays independently testable.
+  large view, grid `onOpenFolder` → `openPath`), so every module stays
+  independently testable.
 - Grid cards render only when they approach the viewport, which keeps large
   directories responsive.
 - The large view keeps a single token (`largeToken`) so a navigation that
@@ -192,7 +212,7 @@ fall back to defaults instead of failing.
 
 | Project | Location | Scope |
 | --- | --- | --- |
-| `unit` | `tests/unit/` | Pure helpers (`utils.js`) |
+| `unit` | `tests/unit/` | Pure helpers (`utils.js`, `3d/utils.js`, `equirectangular/utils.js`) |
 | `main` | `tests/main/` | Real temp fixtures against `fsIpc`, `settingsStore`, `thumbnails` |
 | `renderer` | `tests/renderer/` | jsdom tests (directory tree) |
 | e2e | `tests/e2e/` | Playwright `_electron` runs against the real app |

@@ -8,6 +8,10 @@
 
 ## File manager functions
 
-- Multiple selection of images
-- Copy & paste of images to different folders
 - Drag and drop
+
+## CSS variables
+
+- Rename the transparency variables (`--checker-a`, `--checker-b`,
+  `--transparency-background`): the names no longer describe how they are used
+  now that the folder tiles override them.

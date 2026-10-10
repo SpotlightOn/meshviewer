@@ -4,6 +4,9 @@
     "homeTitle": "Home directory",
     "pathHint": "Click a folder in the path to open it, or click here to edit the path"
   },
+  "sidebar": {
+    "resize": "Resize the directory tree"
+  },
   "currentDir": {
     "ariaLabel": "Current directory - press Enter to open it"
   },
@@ -11,15 +14,22 @@
   "grid": {
     "typeGlb": "3D model",
     "typeImage": "Image",
+    "typeFolder": "Folder",
     "loadError": "Error reading folder",
     "noMedia": "No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files found in this folder.",
-    "previewFailed": "Preview failed"
+    "previewFailed": "Preview failed",
+    "nSelected": "{{count}} selected",
+    "copyBuffer": "{{count}} copied to clipboard",
+    "cutBuffer": "{{count}} cut to clipboard",
+    "pasteDone": "{{count}} pasted",
+    "trashed": "{{count}} moved to trash"
   },
   "largeView": {
     "back": "Back",
     "previous": "Previous file",
     "next": "Next file",
     "slideshow": "Slideshow",
+    "equirect": "Equirectangular",
     "zoom": "Zoom",
     "zoomInput": "Zoom percentage",
     "actualSize": "Actual size",
@@ -51,7 +61,12 @@
   "contextMenu": {
     "openWith": "Open with default application",
     "fileInfo": "File information",
-    "editWith": "Edit with {{app}}"
+    "editWith": "Edit with {{app}}",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "newFolder": "New folder",
+    "moveToTrash": "Move to trash"
   },
   "menu": {
     "file": "File",
@@ -78,14 +93,15 @@
     "maximize": "Maximize",
     "macZoom": "Zoom",
     "help": "Help",
-    "shortcuts": "Keyboard shortcuts",
+    "usage": "Usage",
     "about": "About MeshViewer"
   },
   "shortcuts": {
-    "title": "Keyboard shortcuts",
+    "title": "Usage",
     "largeView": "Large view",
     "grid": "File grid",
     "pathField": "Path bar",
+    "mouse": "Mouse",
     "previous": "Previous file",
     "next": "Next file",
     "toggleFit": "Toggle fit / 100 % (images)",
@@ -97,10 +113,33 @@
     "fullscreen": "Toggle fullscreen",
     "largerTiles": "Larger tiles",
     "smallerTiles": "Smaller tiles",
+    "zoomTilesWheel": "Zoom tiles in / out",
     "resetTiles": "Reset tile size",
+    "selectAllFiles": "Select all files",
+    "copyPasteFiles": "Cut / copy / paste files",
+    "moveToTrash": "Move selected files to trash",
+    "clearSelection": "Clear selection",
     "openPath": "Open the entered path",
     "revertPath": "Revert the field",
     "zoomFieldNote": "Zoom field: type a percentage (e.g. 120) and press Enter; Esc cancels."
+  },
+  "mouse": {
+    "leftClick": "Left click",
+    "ctrlClick": "Ctrl / Cmd + click",
+    "shiftClick": "Shift + click",
+    "dragEmpty": "Drag on empty space",
+    "rightClick": "Right click",
+    "wheel": "Mouse wheel",
+    "middleClick": "Middle click",
+    "dragLarge": "Drag",
+    "open": "Open the file in the large view",
+    "toggle": "Add to or remove from the selection",
+    "range": "Select a range of files",
+    "marquee": "Draw a selection rectangle",
+    "menu": "Open the context menu",
+    "zoom": "Zoom the large view",
+    "toggleFit": "Toggle fit / 100 % in the large view",
+    "panSwipe": "Pan the image; a horizontal drag while fitted goes to the previous / next file"
   },
   "settings": {
     "title": "Settings",
@@ -114,6 +153,26 @@
     "editor": "Editor command",
     "browse": "Browse…",
     "editorHint": "Used for “Edit with…” in the context menu. Leave empty to hide the entry.",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "thumbnailFit": "Thumbnail fit",
+    "thumbnailFitCover": "Cover (fill the tile)",
+    "thumbnailFitContain": "Contain (show the whole image)",
+    "transparency": "Transparency background",
+    "transparencyCheckerboard": "Checkerboard",
+    "transparencyWhite": "White",
+    "transparencyCustom": "Custom color",
+    "transparencyColor": "Background color",
+    "transparencyHint": "Fills the tile behind transparent thumbnails; in the large view it is drawn at image size on a black stage.",
+    "fileOperations": "File operations",
+    "openBehavior": "Open files and folders",
+    "openDoubleClick": "Double click",
+    "openSingleClick": "Single click",
+    "verifyMoveChecksum": "Verify checksums when moving files",
+    "verifyMoveHint": "When a move crosses filesystems, the SHA-256 checksum is compared before the source file is deleted. Disable to verify by size only (faster).",
     "save": "Save",
     "cancel": "Cancel"
   },
@@ -124,7 +183,26 @@
     "license": "License"
   },
   "dialog": {
-    "close": "Close"
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "confirm": {
+    "deleteFolder": {
+      "title": "Move folder to trash",
+      "message": "Move “{{name}}” and all of its contents to the trash?"
+    }
+  },
+  "newFolder": {
+    "title": "New folder",
+    "name": "Folder name",
+    "defaultName": "New folder",
+    "create": "Create",
+    "error": {
+      "invalid": "Enter a valid folder name.",
+      "exists": "A folder with this name already exists.",
+      "failed": "The folder could not be created."
+    }
   },
   "editor": {
     "pickTitle": "Choose an editor application"
@@ -133,6 +211,8 @@
     "glbLoadError": "Error loading GLB in the large view:",
     "fileOpenError": "Error opening the file in the large view:",
     "previewFailed": "Preview failed:",
-    "editorLaunchError": "Error launching the editor:"
+    "editorLaunchError": "Error launching the editor:",
+    "pasteFailed": "Some files could not be copied:",
+    "trashFailed": "Some files could not be moved to trash:"
   }
 }
