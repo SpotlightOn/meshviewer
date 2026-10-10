@@ -4,6 +4,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-10
+
 ### Added
 - Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, rubber-band drag on empty space, Ctrl+A selects all, Esc clears
 - Copy, cut, paste and trash for files and folders inside the app
