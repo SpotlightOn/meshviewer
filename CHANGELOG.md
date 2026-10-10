@@ -19,6 +19,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow): drag to look around, wheel or zoom slider to change the field of view
 - Folder tiles in the grid: subdirectories are shown before the media files, a click opens them and their context menu matches the directory tree
 - Multi-selection, copy, cut and trash now also cover folders (recursive copy and move)
+- Zoom the thumbnail grid with Ctrl + mouse wheel (wheel up enlarges, wheel down shrinks)
 
 ### Changed
 - Default slideshow transition changed to “slide” with a 300 ms animation duration

@@ -113,6 +113,7 @@
     "fullscreen": "Toggle fullscreen",
     "largerTiles": "Larger tiles",
     "smallerTiles": "Smaller tiles",
+    "zoomTilesWheel": "Zoom tiles in / out",
     "resetTiles": "Reset tile size",
     "selectAllFiles": "Select all files",
     "copyPasteFiles": "Cut / copy / paste files",

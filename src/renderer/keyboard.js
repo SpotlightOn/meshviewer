@@ -1,9 +1,9 @@
 /**
- * Global keyboard shortcuts: F11 toggles fullscreen, Esc closes the settings,
+ * Global input shortcuts: F11 toggles fullscreen, Esc closes the settings,
  * file information, new folder or confirmation dialog, large view shortkeys
- * are delegated to the large view module and Ctrl++/Ctrl+-/Ctrl+0 zoom the
- * tile grid when no other view is active. Selection shortcuts (Ctrl+A/C/V,
- * Delete, Esc) apply to the file grid.
+ * are delegated to the large view module. Ctrl++/Ctrl+-/Ctrl+0 and Ctrl + mouse
+ * wheel zoom the tile grid when no other view is active. Selection shortcuts
+ * (Ctrl+A/C/V, Delete, Esc) apply to the file grid.
  * @param {object} deps - Module dependencies.
  * @param {{isOpen: () => boolean, close: () => void}} deps.settings - Settings module API.
  * @param {{isOpen: () => boolean, close: () => void}} deps.infoDialog - File information dialog API.
@@ -11,6 +11,7 @@
  * @param {{isOpen: () => boolean, close: () => void}} deps.confirmDialog - Confirmation dialog API.
  * @param {{onKeydown: (event: KeyboardEvent) => boolean, isActive: () => boolean}} deps.largeView - Large view module API.
  * @param {{zoomTiles: (step: number) => void, selectAll: () => void, clearSelection: () => void, hasSelection: () => boolean, hasCopyBuffer: () => boolean, copySelection: () => void, cutSelection: () => void, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} deps.grid - Grid module API.
+ * @param {HTMLElement} deps.contentEl - Scroll container of the tile grid (receives the zoom wheel events).
  */
 export function createKeyboard({
   settings,
@@ -19,6 +20,7 @@ export function createKeyboard({
   confirmDialog,
   largeView,
   grid,
+  contentEl,
 }) {
   /**
    * Toggles the window between normal and fullscreen mode on F11.
@@ -152,7 +154,25 @@ export function createKeyboard({
     grid.zoomTiles(reset ? 0 : zoomIn ? 1 : -1);
   }
 
+  /**
+   * Zooms the thumbnail grid with Ctrl + mouse wheel: wheel up enlarges,
+   * wheel down shrinks.
+   * @param {WheelEvent} event - Wheel event.
+   */
+  function handleGridWheel(event) {
+    if (!event.ctrlKey) return;
+    if (settings.isOpen()) return;
+    if (folderDialog.isOpen()) return;
+    if (confirmDialog.isOpen()) return;
+    if (largeView.isActive()) return;
+    if (event.deltaY === 0) return;
+
+    event.preventDefault();
+    grid.zoomTiles(event.deltaY < 0 ? 1 : -1);
+  }
+
   document.addEventListener("keydown", handleKeydown);
   document.addEventListener("keydown", handleGridZoom);
   document.addEventListener("keydown", handleFileShortcuts);
+  contentEl.addEventListener("wheel", handleGridWheel, { passive: false });
 }

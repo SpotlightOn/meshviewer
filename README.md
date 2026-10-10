@@ -59,6 +59,7 @@ Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale fo
 | `Ctrl` + `+` / `=` | Larger tiles |
 | `Ctrl` + `-` | Smaller tiles |
 | `Ctrl` + `0` | Reset tile size |
+| `Ctrl` + mouse wheel | Zoom tiles in / out |
 
 **Path bar**
 
