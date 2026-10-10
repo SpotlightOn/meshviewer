@@ -207,17 +207,36 @@ describe("copyFiles", () => {
     }
   });
 
-  it("rejects directories as sources", async () => {
+  it("copies a directory recursively", async () => {
     const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
     try {
       const source = join(dir, "sub");
       const targetDir = join(dir, "target");
-      await mkdir(source);
+      await mkdir(join(source, "nested"), { recursive: true });
       await mkdir(targetDir);
+      await writeFile(join(source, "a.txt"), "a");
+      await writeFile(join(source, "nested", "b.txt"), "b");
 
       const results = await copyFiles([source], targetDir);
 
+      expect(results[0]).toEqual({ source, target: join(targetDir, "sub"), ok: true });
+      expect(await readFile(join(targetDir, "sub", "a.txt"), "utf8")).toBe("a");
+      expect(await readFile(join(targetDir, "sub", "nested", "b.txt"), "utf8")).toBe("b");
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses to copy a directory into itself", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-copy-"));
+    try {
+      const source = join(dir, "sub");
+      await mkdir(join(source, "nested"), { recursive: true });
+
+      const results = await copyFiles([source], source);
+
       expect(results[0].ok).toBe(false);
+      expect(results[0].error).toMatch(/inside/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -275,17 +294,35 @@ describe("moveFiles", () => {
     }
   });
 
-  it("rejects directories as sources", async () => {
+  it("moves a directory into the target directory and removes the source", async () => {
     const dir = await mkdtemp(join(tmpdir(), "meshviewer-move-"));
     try {
       const source = join(dir, "sub");
       const targetDir = join(dir, "target");
-      await mkdir(source);
+      await mkdir(join(source, "nested"), { recursive: true });
       await mkdir(targetDir);
+      await writeFile(join(source, "nested", "b.txt"), "b");
 
       const results = await moveFiles([source], targetDir);
 
+      expect(results).toEqual([{ source, target: join(targetDir, "sub"), ok: true }]);
+      expect(await readFile(join(targetDir, "sub", "nested", "b.txt"), "utf8")).toBe("b");
+      await expect(stat(source)).rejects.toThrow();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses to move a directory into itself", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "meshviewer-move-"));
+    try {
+      const source = join(dir, "sub");
+      await mkdir(join(source, "nested"), { recursive: true });
+
+      const results = await moveFiles([source], source);
+
       expect(results[0].ok).toBe(false);
+      expect(results[0].error).toMatch(/inside/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

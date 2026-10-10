@@ -375,6 +375,20 @@ html.resizing * {
   object-fit: var(--thumb-fit, cover);
 }
 
+.card[data-kind="folder"] .thumb-wrap {
+  background: var(--checker-a);
+}
+
+.card[data-kind="folder"] .folder-icon {
+  width: 46%;
+  height: 46%;
+  fill: var(--text-dim);
+}
+
+.card[data-kind="folder"]:hover .thumb-wrap {
+  background: var(--accent);
+}
+
 .card .meta {
   padding: 8px 10px;
   border-top: 1px solid var(--border);

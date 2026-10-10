@@ -7,6 +7,10 @@ const MAX_TILE = 600;
 const DEFAULT_TILE = 200;
 const TILE_STEP = 1.1;
 
+/** Inline Material Symbols "folder" (outlined) icon for folder tiles. */
+const FOLDER_ICON =
+  '<svg class="folder-icon" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/></svg>';
+
 /**
  * Returns the indices of cards whose bounding rect intersects the given rect.
  * @param {ArrayLike<HTMLElement>} cards - Grid cards.
@@ -75,19 +79,29 @@ async function loadThumb(file, card) {
 }
 
 /**
- * Media grid module: loads a folder into the tile grid, lazily renders the
- * previews, provides the tile-zoom shortcuts and manages multi-selection with
- * copy/paste and move-to-trash of the selected files.
+ * Grid module: loads a folder into the tile grid (subdirectories first, then
+ * the media files), lazily renders the previews, provides the tile-zoom
+ * shortcuts and manages multi-selection with copy/paste and move-to-trash of
+ * the selected entries.
  * @param {object} deps - Module dependencies.
  * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement, selectionInfo?: HTMLElement}} deps.dom - Grid DOM elements.
- * @param {(file: object) => void} deps.onOpenFile - Called when a tile is clicked.
+ * @param {(file: object) => void} deps.onOpenFile - Called when a media tile is clicked.
+ * @param {(dirPath: string) => void} deps.onOpenFolder - Called when a folder tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
+ * @param {(dirPath: string) => void} [deps.onDirectoriesChanged] - Called after a paste or a trash that may have changed a folder's subdirectories, so other views (the tree) can refresh.
  * @param {() => object} [deps.getSettings] - Returns the current settings (used for the move checksum option).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getEntry: (index: number) => object|undefined, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
  */
-export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
+export function createGrid({
+  dom,
+  onOpenFile,
+  onOpenFolder,
+  onFolderChange,
+  onDirectoriesChanged,
+  getSettings,
+}) {
   const { grid, emptyState, emptyMessage, contentEl, selectionInfo } = dom;
-  let files = [];
+  let entries = [];
   let path = null;
   let loadToken = 0;
   let thumbnailObserver = null;
@@ -97,36 +111,44 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   let flashTimer = null;
 
   /**
-   * Creates a grid tile for a file.
-   * @param {{path: string, name: string, size: number, mtimeMs: number, type: 'glb'|'image'}} file - File object.
+   * Creates a grid tile for a folder or media entry.
+   * @param {{kind: string, path: string, name: string, size?: number, mtimeMs?: number, type?: 'glb'|'image'}} entry - Entry object.
    * @returns {HTMLDivElement} The tile.
    */
-  function createCard(file) {
+  function createCard(entry) {
     const card = document.createElement("div");
     card.className = "card";
-    card.title = file.path;
+    card.dataset.kind = entry.kind;
+    card.title = entry.path;
 
     const wrap = document.createElement("div");
-    wrap.className = "thumb-wrap loading";
+    wrap.className = "thumb-wrap";
 
-    const img = document.createElement("img");
-    img.className = "thumb";
-    img.alt = file.name;
-    img.decoding = "async";
-    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-
-    wrap.append(img);
+    if (entry.kind === "folder") {
+      wrap.innerHTML = FOLDER_ICON;
+    } else {
+      wrap.classList.add("loading");
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.alt = entry.name;
+      img.decoding = "async";
+      img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+      wrap.append(img);
+    }
 
     const meta = document.createElement("div");
     meta.className = "meta";
 
     const name = document.createElement("div");
     name.className = "name";
-    name.textContent = file.name;
+    name.textContent = entry.name;
 
     const size = document.createElement("div");
     size.className = "size";
-    size.textContent = `${file.type === "glb" ? t("grid.typeGlb") : t("grid.typeImage")} · ${formatSize(file.size)}`;
+    size.textContent =
+      entry.kind === "folder"
+        ? t("grid.typeFolder")
+        : `${entry.kind === "glb" ? t("grid.typeGlb") : t("grid.typeImage")} · ${formatSize(entry.size)}`;
 
     meta.append(name, size);
     card.append(wrap, meta);
@@ -142,7 +164,8 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
         return;
       }
       selectOnly(index);
-      onOpenFile(file);
+      if (entry.kind === "folder") onOpenFolder(entry.path);
+      else onOpenFile(entry);
     });
     return card;
   }
@@ -226,11 +249,11 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   }
 
   /**
-   * Selects every file in the current folder.
+   * Selects every entry in the current folder.
    */
   function selectAll() {
-    selectedIndices = new Set(files.map((_, index) => index));
-    anchorIndex = files.length > 0 ? 0 : null;
+    selectedIndices = new Set(entries.map((_, index) => index));
+    anchorIndex = entries.length > 0 ? 0 : null;
     renderSelection();
   }
 
@@ -253,13 +276,13 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   }
 
   /**
-   * Returns the files of the selected cards in grid order.
-   * @returns {Array} Selected file objects.
+   * Returns the selected entries (folders and files) in grid order.
+   * @returns {Array} Selected entry objects.
    */
   function getSelectionFiles() {
     return [...selectedIndices]
       .sort((a, b) => a - b)
-      .map((index) => files[index])
+      .map((index) => entries[index])
       .filter(Boolean);
   }
 
@@ -272,23 +295,32 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   }
 
   /**
-   * Copies the selected files into the in-app clipboard.
+   * Copies the selected entries into the in-app clipboard.
    */
   function copySelection() {
     const selected = getSelectionFiles();
     if (selected.length === 0) return;
-    copyBuffer = selected.map((file) => ({ path: file.path, name: file.name }));
+    copyBuffer = selected.map((entry) => ({
+      path: entry.path,
+      name: entry.name,
+      kind: entry.kind,
+    }));
     flashMessage(t("grid.copyBuffer", { count: selected.length }));
   }
 
   /**
-   * Cuts the selected files into the in-app clipboard: a later paste moves
+   * Cuts the selected entries into the in-app clipboard: a later paste moves
    * them instead of copying them.
    */
   function cutSelection() {
     const selected = getSelectionFiles();
     if (selected.length === 0) return;
-    copyBuffer = selected.map((file) => ({ path: file.path, name: file.name, cut: true }));
+    copyBuffer = selected.map((entry) => ({
+      path: entry.path,
+      name: entry.name,
+      kind: entry.kind,
+      cut: true,
+    }));
     flashMessage(t("grid.cutBuffer", { count: selected.length }));
   }
 
@@ -302,15 +334,16 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
 
   /**
    * Pastes the clipboard into a directory and reloads the grid when the shown
-   * folder is affected. Cut files are moved: each source is removed after its
-   * copy succeeded and the cut clipboard is consumed. Files that already live
+   * folder is affected. Cut entries are moved: each source is removed after its
+   * copy succeeded and the cut clipboard is consumed. Entries that already live
    * in the target directory stay unchanged.
    * @param {string} [targetDir] - Destination directory; defaults to the current folder.
-   * @returns {Promise<boolean>} true when at least one file was pasted.
+   * @returns {Promise<boolean>} true when at least one entry was pasted.
    */
   async function paste(targetDir = path) {
     if (copyBuffer.length === 0 || !targetDir) return false;
     const moved = copyBuffer.some((file) => file.cut);
+    const hasFolder = copyBuffer.some((file) => file.kind === "folder");
     const paths = copyBuffer.map((file) => file.path);
     const results = moved
       ? await window.api.moveFiles(paths, targetDir, {
@@ -320,6 +353,10 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
     const ok = results.filter((result) => result.ok);
     const failed = results.filter((result) => !result.ok);
     if (targetDir === path || (moved && path)) await loadFolder(path);
+    if (hasFolder) {
+      onDirectoriesChanged?.(targetDir);
+      if (moved && path && targetDir !== path) onDirectoriesChanged?.(path);
+    }
     if (failed.length > 0) {
       console.error(t("console.pasteFailed"), failed);
     }
@@ -329,14 +366,16 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
   }
 
   /**
-   * Moves the selected files to the OS trash and reloads the grid.
-   * @returns {Promise<boolean>} true when at least one file was trashed.
+   * Moves the selected entries to the OS trash and reloads the grid.
+   * @returns {Promise<boolean>} true when at least one entry was trashed.
    */
   async function trashSelection() {
     const selected = getSelectionFiles();
     if (selected.length === 0) return false;
-    const result = await window.api.trashFiles(selected.map((file) => file.path));
+    const hadFolder = selected.some((entry) => entry.kind === "folder");
+    const result = await window.api.trashFiles(selected.map((entry) => entry.path));
     await loadFolder(path);
+    if (hadFolder) onDirectoriesChanged?.(path);
     if (result.failed.length > 0) {
       console.error(t("console.trashFailed"), result.failed);
     }
@@ -398,9 +437,13 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
     grid.innerHTML = "";
     emptyState.style.display = "none";
 
-    let loaded;
+    let directories;
+    let media;
     try {
-      loaded = await window.api.listMediaFiles(dirPath);
+      [directories, media] = await Promise.all([
+        window.api.listDirectories(dirPath),
+        window.api.listMediaFiles(dirPath),
+      ]);
     } catch {
       if (token !== loadToken) return false;
       emptyMessage.textContent = t("grid.loadError");
@@ -411,20 +454,22 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
     if (token !== loadToken) return false;
 
     path = dirPath;
-    files = loaded;
+    const folders = directories.map((dir) => ({ kind: "folder", path: dir.path, name: dir.name }));
+    const mediaEntries = media.map((file) => ({ ...file, kind: file.type }));
+    entries = [...folders, ...mediaEntries];
     selectedIndices = new Set();
     anchorIndex = null;
     renderSelection();
     onFolderChange(dirPath);
 
-    if (files.length === 0) {
+    if (entries.length === 0) {
       emptyMessage.textContent = t("grid.noMedia");
       emptyState.style.display = "flex";
       return true;
     }
 
-    const cards = files.map((file, index) => {
-      const card = createCard(file);
+    const cards = entries.map((entry, index) => {
+      const card = createCard(entry);
       card.dataset.index = String(index);
       return card;
     });
@@ -436,17 +481,18 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
 
     if (thumbnailObserver) thumbnailObserver.disconnect();
     thumbnailObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          thumbnailObserver.unobserve(entry.target);
-          const index = Number(entry.target.dataset.index);
-          loadThumb(files[index], cards[index]);
+      (records) => {
+        for (const record of records) {
+          if (!record.isIntersecting) continue;
+          thumbnailObserver.unobserve(record.target);
+          const index = Number(record.target.dataset.index);
+          loadThumb(entries[index], cards[index]);
         }
       },
       { root: contentEl, rootMargin: "400px" },
     );
     for (let i = 0; i < cards.length; i++) {
+      if (entries[i].kind === "folder") continue;
       const wrap = cards[i].querySelector(".thumb-wrap");
       wrap.dataset.index = String(i);
       thumbnailObserver.observe(wrap);
@@ -457,10 +503,19 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
 
   /**
    * Returns the media files of the currently shown folder.
-   * @returns {Array} Current file list.
+   * @returns {Array} Current media file list.
    */
   function getFiles() {
-    return files;
+    return entries.filter((entry) => entry.kind !== "folder");
+  }
+
+  /**
+   * Returns the entry at a card index.
+   * @param {number} index - Card index.
+   * @returns {object | undefined} Entry object.
+   */
+  function getEntry(index) {
+    return entries[index];
   }
 
   /**
@@ -504,6 +559,7 @@ export function createGrid({ dom, onOpenFile, onFolderChange, getSettings }) {
     cutSelection,
     ensureInSelection,
     flash: flashMessage,
+    getEntry,
     getFiles,
     getPath,
     getSelectionFiles,

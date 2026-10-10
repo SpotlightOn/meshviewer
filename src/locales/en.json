@@ -14,6 +14,7 @@
   "grid": {
     "typeGlb": "3D model",
     "typeImage": "Image",
+    "typeFolder": "Folder",
     "loadError": "Error reading folder",
     "noMedia": "No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files found in this folder.",
     "previewFailed": "Preview failed",
