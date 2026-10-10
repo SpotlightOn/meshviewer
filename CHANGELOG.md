@@ -18,6 +18,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Setting “Verify checksums when moving files” (SHA-256) for moves across filesystems
 - Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow): drag to look around, wheel or zoom slider to change the field of view
 - Folder tiles in the grid: subdirectories are shown before the media files, a click opens them and their context menu matches the directory tree
+- Folder tiles show the folder's first image inside a folder-shaped frame, so a directory stays recognisable at a glance (folders without images keep the empty folder shape); the preview is queued until the app is idle and the current folder's media thumbnails are done, and only the first image of a folder is scanned
 - Multi-selection, copy, cut and trash now also cover folders (recursive copy and move)
 - Zoom the thumbnail grid with Ctrl + mouse wheel (wheel up enlarges, wheel down shrinks)
 

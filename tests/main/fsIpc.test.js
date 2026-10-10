@@ -17,6 +17,7 @@ import {
   copyFileVerified,
   createDirectory,
   listDirectories,
+  listImageFiles,
   listMediaFiles,
   moveFiles,
   parentDir,
@@ -106,6 +107,27 @@ describe("listMediaFiles", () => {
       await chmod(join(locked, "locked-sub"), 0o755);
       await rm(locked, { recursive: true, force: true });
     }
+  });
+});
+
+describe("listImageFiles", () => {
+  it("lists only images and stops once the limit is reached", async () => {
+    const result = await listImageFiles(fixtureDir, 2);
+    expect(result).toHaveLength(2);
+    expect(result.every((f) => f.type === "image")).toBe(true);
+  });
+
+  it("skips GLB files and non-media files", async () => {
+    const result = await listImageFiles(fixtureDir, 10);
+    expect(result.map((f) => f.name).sort()).toEqual(["foto.jpg", "foto.png", "link.png"]);
+  });
+
+  it("returns an empty array when the limit is zero", async () => {
+    expect(await listImageFiles(fixtureDir, 0)).toEqual([]);
+  });
+
+  it("returns an empty array for a missing directory", async () => {
+    expect(await listImageFiles(join(fixtureDir, "missing"), 4)).toEqual([]);
   });
 });
 
@@ -462,6 +484,7 @@ describe("registerFsIpc", () => {
     registerFsIpc(ipcMain, app, shell);
     const channels = [
       "fs:listMediaFiles",
+      "fs:listImageFiles",
       "fs:listDirectories",
       "fs:homeDir",
       "fs:cwd",
@@ -499,6 +522,9 @@ describe("registerFsIpc", () => {
     expect(dirs.map((d) => d.name)).toEqual(["link-to-sub", "sub"]);
     const media = await handlers["fs:listMediaFiles"](null, fixtureDir);
     expect(media.map((f) => f.name)).toContain("model.glb");
+    const preview = await handlers["fs:listImageFiles"](null, fixtureDir, 1);
+    expect(preview).toHaveLength(1);
+    expect(preview[0].type).toBe("image");
     const buffer = await handlers["fs:readFile"](null, join(fixtureDir, "foto.png"));
     expect(buffer.byteLength).toBe("content of foto.png".length);
   });

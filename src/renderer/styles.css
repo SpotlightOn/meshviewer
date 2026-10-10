@@ -379,14 +379,47 @@ html.resizing * {
   background: var(--checker-a);
 }
 
-.card[data-kind="folder"] .folder-icon {
-  width: 46%;
-  height: 46%;
-  fill: var(--text-dim);
-}
-
 .card[data-kind="folder"]:hover .thumb-wrap {
   background: var(--accent);
+}
+
+.folder-frame {
+  position: relative;
+  width: 80%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: var(--text-dim);
+}
+
+.folder-frame::before {
+  content: "";
+  position: absolute;
+  left: 5%;
+  top: -14%;
+  width: 42%;
+  height: 16%;
+  border-radius: 5px 5px 0 0;
+  background: var(--text-dim);
+}
+
+.folder-preview-img {
+  position: absolute;
+  top: 7%;
+  left: 7%;
+  width: 86%;
+  height: 86%;
+  object-fit: cover;
+  border-radius: 5px;
+  animation: folder-preview-in 0.18s ease-out;
+}
+
+@keyframes folder-preview-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .card .meta {

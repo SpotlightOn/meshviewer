@@ -62,7 +62,7 @@ they cannot be ESM.
 | `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard/path bar, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
-| `src/renderer/grid.js` | Content grid: folder tiles + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
+| `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
 | `src/renderer/large-view.js` | Large view: zoom, navigation, slideshow; delegates GLB to `3d/`, panorama to `equirectangular/` |
 | `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
 | `src/renderer/3d/view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
@@ -71,7 +71,7 @@ they cannot be ESM.
 | `src/renderer/equirectangular/view.js` | Equirectangular panorama view (drag to look around, wheel/FOV zoom); same controller contract as the GLB viewer |
 | `src/renderer/equirectangular/utils.js` | `isPixmap` and zoom↔field-of-view mapping |
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
-| `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc, grid zoom) |
+| `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc) and grid zoom (Ctrl `+`/`-`/`0` and Ctrl + mouse wheel) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
@@ -92,6 +92,7 @@ resize observer and the render-loop/dispose lifecycle for both.
 | Channel | Direction | Purpose |
 | --- | --- | --- |
 | `fs:listMediaFiles` | renderer → main | Media files of one directory (non-recursive) |
+| `fs:listImageFiles` | renderer → main | Up to N image files of one directory for a folder preview (stops early, no full-directory stat) |
 | `fs:listDirectories` | renderer → main | Child directories for the tree and the folder tiles |
 | `fs:homeDir` / `fs:cwd` / `fs:rootDir` / `fs:parentDir` | renderer → main | Path navigation |
 | `fs:locale` | renderer → main | System locale (BCP-47) for i18n |
