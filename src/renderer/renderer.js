@@ -83,6 +83,7 @@ const largeView = createLargeView({
     largeBack: document.getElementById("large-back"),
     infoButton: document.getElementById("large-details"),
     largeSlideshow: document.getElementById("large-slideshow"),
+    largeEquirect: document.getElementById("large-equirect"),
     largeActual: document.getElementById("large-actual"),
     largeFit: document.getElementById("large-fit"),
     largePrev: document.getElementById("large-prev"),

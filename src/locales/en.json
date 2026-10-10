@@ -28,6 +28,7 @@
     "previous": "Previous file",
     "next": "Next file",
     "slideshow": "Slideshow",
+    "equirect": "Equirectangular",
     "zoom": "Zoom",
     "zoomInput": "Zoom percentage",
     "actualSize": "Actual size",
