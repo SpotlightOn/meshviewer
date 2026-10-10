@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg: #1e1e1e;
   --surface: #2b2b2b;
   --surface-hover: #333333;
@@ -16,6 +17,23 @@
     linear-gradient(45deg, transparent 75%, var(--checker-a) 75%) 12px -12px / 24px 24px,
     linear-gradient(-45deg, transparent 75%, var(--checker-a) 75%) -12px 0 / 24px 24px,
     var(--checker-b);
+}
+
+/* Light scheme, used when the operating system is light or the theme is set
+   to "light" (both surface as prefers-color-scheme via nativeTheme). */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f4f4;
+    --surface: #ffffff;
+    --surface-hover: #e6e6e6;
+    --border: #cfcfcf;
+    --text: #1f1f1f;
+    --text-dim: #6b6b6b;
+    --accent: #2f7fe0;
+    --checker-a: #dcdcdc;
+    --checker-b: #f2f2f2;
+  }
 }
 
 * {
@@ -332,6 +350,7 @@ html.resizing * {
   font-size: 13px;
   white-space: nowrap;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
 }
 
 .card {
@@ -842,12 +861,16 @@ html.resizing * {
 }
 
 .settings-dialog {
-  width: 340px;
+  width: min(340px, calc(100vw - 32px));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 18px 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+#settings-overlay .settings-dialog {
+  width: min(440px, calc(100vw - 32px));
 }
 
 .settings-dialog h2 {
@@ -856,6 +879,7 @@ html.resizing * {
 }
 
 .settings-dialog fieldset {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   margin: 0 0 14px;
@@ -870,9 +894,10 @@ html.resizing * {
 
 .settings-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   margin: 8px 0;
   font-size: 13px;
 }
@@ -886,8 +911,11 @@ html.resizing * {
 }
 
 #settings-transparency,
-#settings-thumbnail-fit {
+#settings-thumbnail-fit,
+#settings-theme,
+#settings-open-behavior {
   width: auto;
+  max-width: 100%;
 }
 
 #settings-transparency-color {
@@ -905,13 +933,15 @@ html.resizing * {
   padding: 4px 8px;
   font-size: 13px;
   width: 90px;
+  max-width: 100%;
 }
 
 .settings-row .settings-editor {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 240px;
 }
 
@@ -969,7 +999,7 @@ html.resizing * {
   font-size: 13px;
   color: var(--text);
   background: var(--accent);
-  border: none;
+  border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
 }
@@ -979,9 +1009,10 @@ html.resizing * {
 }
 
 .settings-actions #settings-cancel,
+.settings-actions #new-folder-cancel,
 .settings-actions #confirm-cancel {
-  background: transparent;
-  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  border-color: var(--border);
 }
 
 .settings-actions #confirm-accept {
@@ -989,7 +1020,7 @@ html.resizing * {
 }
 
 .settings-dialog.info-dialog {
-  width: 440px;
+  width: min(440px, calc(100vw - 32px));
 }
 
 .info-content {

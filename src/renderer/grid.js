@@ -7,6 +7,9 @@ const MAX_TILE = 600;
 const DEFAULT_TILE = 200;
 const TILE_STEP = 1.1;
 const PREVIEW_COUNT = 1;
+// Maximum pointer travel (px) before a press on empty space counts as a drag
+// instead of a click; a click clears the selection, like a file manager.
+const DRAG_THRESHOLD = 4;
 
 /**
  * Returns the indices of cards whose bounding rect intersects the given rect.
@@ -88,8 +91,8 @@ async function loadThumb(file, card) {
  * @param {(dirPath: string) => void} deps.onOpenFolder - Called when a folder tile is clicked.
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
  * @param {(dirPath: string) => void} [deps.onDirectoriesChanged] - Called after a paste or a trash that may have changed a folder's subdirectories, so other views (the tree) can refresh.
- * @param {() => object} [deps.getSettings] - Returns the current settings (used for the move checksum option).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getEntry: (index: number) => object|undefined, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
+ * @param {() => object} [deps.getSettings] - Returns the current settings (move checksum option and grid click behavior).
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getEntry: (index: number) => object|undefined, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, openActive: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
  */
 export function createGrid({
   dom,
@@ -170,8 +173,11 @@ export function createGrid({
         return;
       }
       selectOnly(index);
-      if (entry.kind === "folder") onOpenFolder(entry.path);
-      else onOpenFile(entry);
+      if (getSettings?.()?.openOnDoubleClick === false) openEntry(entry);
+    });
+    card.addEventListener("dblclick", (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (getSettings?.()?.openOnDoubleClick !== false) openEntry(entry);
     });
     return card;
   }
@@ -279,6 +285,28 @@ export function createGrid({
   function ensureInSelection(index) {
     if (selectedIndices.has(index)) return;
     selectOnly(index);
+  }
+
+  /**
+   * Opens a folder or media entry in the large view or navigates into it.
+   * @param {object | undefined} entry - Entry to open.
+   */
+  function openEntry(entry) {
+    if (!entry) return;
+    if (entry.kind === "folder") onOpenFolder(entry.path);
+    else onOpenFile(entry);
+  }
+
+  /**
+   * Opens the active entry from the keyboard: the anchored card, or the only
+   * selected one.
+   * @returns {boolean} true when an entry was opened.
+   */
+  function openActive() {
+    const index = anchorIndex ?? (selectedIndices.size === 1 ? [...selectedIndices][0] : null);
+    if (index === null || !entries[index]) return false;
+    openEntry(entries[index]);
+    return true;
   }
 
   /**
@@ -392,8 +420,10 @@ export function createGrid({
   }
 
   /**
-   * Starts a rubber-band selection drag on the empty grid background.
-   * @param {PointerEvent} event - Pointer down event.
+   * Starts a rubber-band selection drag on any free area of the content pane.
+   * A press that stays within a small slop is treated as a click and clears
+   * the selection, like a file manager.
+   * @param {MouseEvent} event - Mouse down event.
    */
   function startMarquee(event) {
     const baseRect = grid.getBoundingClientRect();
@@ -403,7 +433,11 @@ export function createGrid({
     const startX = event.clientX;
     const startY = event.clientY;
     const startSelection = new Set(selectedIndices);
+    let moved = false;
     const apply = (moveEvent) => {
+      const dist = Math.abs(moveEvent.clientX - startX) + Math.abs(moveEvent.clientY - startY);
+      if (dist < DRAG_THRESHOLD) return;
+      moved = true;
       const left = Math.min(startX, moveEvent.clientX);
       const top = Math.min(startY, moveEvent.clientY);
       overlay.style.left = `${left - baseRect.left}px`;
@@ -429,10 +463,13 @@ export function createGrid({
     const finish = () => {
       document.removeEventListener("pointermove", apply);
       document.removeEventListener("pointerup", finish);
+      document.removeEventListener("pointercancel", finish);
       overlay.remove();
+      if (!moved) clearSelection();
     };
     document.addEventListener("pointermove", apply);
     document.addEventListener("pointerup", finish);
+    document.addEventListener("pointercancel", finish);
   }
 
   /**
@@ -674,10 +711,21 @@ export function createGrid({
     if (!selectedIndices.has(index)) selectOnly(index);
   });
 
-  grid.addEventListener("pointerdown", (event) => {
+  // Start the rubber-band selection on any free area of the content pane, not
+  // only inside the tile rows, so a press on the empty space below or beside
+  // the tiles begins a marquee drag like in a file manager. Preventing the
+  // default mouse-down action keeps the browser's native text selection (the
+  // blue selection tint over tile labels and thumbnails) from ever appearing;
+  // cards keep their click/double-click behavior untouched.
+  contentEl.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
-    if (event.target.closest?.(".card")) return;
+    if (event.target.closest?.("#selection-info")) return;
+    if (event.target.closest?.(".card")) {
+      event.preventDefault();
+      return;
+    }
     if (emptyState.style.display !== "none") return;
+    event.preventDefault();
     startMarquee(event);
   });
 
@@ -694,6 +742,7 @@ export function createGrid({
     hasCopyBuffer,
     hasSelection,
     loadFolder,
+    openActive,
     paste,
     selectAll,
     trashSelection,

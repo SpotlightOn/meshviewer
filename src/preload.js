@@ -1,6 +1,22 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 /**
+ * Persisted application settings.
+ * @typedef {object} StoredSettings
+ * @property {number} slideshowIntervalSeconds - Seconds between slideshow images.
+ * @property {"fade"|"slide"} slideshowTransition - Slideshow image transition.
+ * @property {number} animationDurationMs - Duration of the transition animation in milliseconds.
+ * @property {string} editorCommand - External editor command; empty hides the "edit with" entry.
+ * @property {boolean} verifyMoveChecksum - Whether cross-filesystem moves verify SHA-256 checksums.
+ * @property {boolean} openOnDoubleClick - Whether a double click opens a grid tile (single click then only selects).
+ * @property {"system"|"light"|"dark"} theme - UI color scheme; "system" follows the operating system.
+ * @property {"checkerboard"|"white"|"custom"} transparencyBackground - Background shown behind transparent images.
+ * @property {string} transparencyColor - Hex color used when transparencyBackground is "custom".
+ * @property {"cover"|"contain"} thumbnailFit - How image thumbnails are fitted into their tile.
+ * @property {number} sidebarWidth - Width of the directory tree sidebar in pixels.
+ */
+
+/**
  * Renderer API exposed via contextBridge.
  * @typedef {object} MeshViewerApi
  * @property {(dirPath: string) => Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: string}>>} listMediaFiles - Lists media files of a directory.
@@ -21,8 +37,8 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
  * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
  * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
- * @property {() => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}>} getSettings - Returns the current application settings.
- * @property {(settings: {slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}) => Promise<{slideshowIntervalSeconds: number, slideshowTransition: string, animationDurationMs: number, editorCommand: string, verifyMoveChecksum: boolean}>} saveSettings - Persists and returns the normalized settings.
+ * @property {() => Promise<StoredSettings>} getSettings - Returns the current application settings.
+ * @property {(settings: StoredSettings) => Promise<StoredSettings>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
  * @property {(flag: boolean) => Promise<void>} setFullScreen - Puts the window into or out of fullscreen mode.
  * @property {(callback: (value: boolean) => void) => () => void} onFullScreenChanged - Subscribes to fullscreen state changes; returns an unsubscribe function.

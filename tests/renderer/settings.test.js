@@ -16,11 +16,25 @@ function flush() {
  */
 function makeSettings({ initial = {}, pick = null } = {}) {
   const calls = { saved: [], picked: 0 };
+  const stored = {
+    slideshowIntervalSeconds: 5,
+    slideshowTransition: "slide",
+    animationDurationMs: 300,
+    editorCommand: "",
+    verifyMoveChecksum: true,
+    openOnDoubleClick: true,
+    theme: "system",
+    transparencyBackground: "checkerboard",
+    transparencyColor: "#ffffff",
+    thumbnailFit: "cover",
+    sidebarWidth: 280,
+    ...initial,
+  };
   window.api = {
-    getSettings: async () => initial,
+    getSettings: async () => stored,
     saveSettings: async (next) => {
       calls.saved.push(next);
-      return { ...initial, ...next };
+      return { ...stored, ...next };
     },
     onOpenSettings: () => () => {},
     pickExecutable: async () => {
@@ -40,6 +54,15 @@ function makeSettings({ initial = {}, pick = null } = {}) {
         <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
         <button id="settings-editor-browse" type="button">Browse…</button>
         <input id="settings-verify-checksum" type="checkbox" class="switch-input" />
+        <select id="settings-open-behavior">
+          <option value="double">double</option>
+          <option value="single">single</option>
+        </select>
+        <select id="settings-theme">
+          <option value="system">system</option>
+          <option value="light">light</option>
+          <option value="dark">dark</option>
+        </select>
         <select id="settings-thumbnail-fit">
           <option value="cover">cover</option>
           <option value="contain">contain</option>
@@ -65,6 +88,8 @@ function makeSettings({ initial = {}, pick = null } = {}) {
       editor: document.getElementById("settings-editor"),
       editorBrowse: document.getElementById("settings-editor-browse"),
       verify: document.getElementById("settings-verify-checksum"),
+      openBehavior: document.getElementById("settings-open-behavior"),
+      theme: document.getElementById("settings-theme"),
       thumbnailFit: document.getElementById("settings-thumbnail-fit"),
       transparency: document.getElementById("settings-transparency"),
       transparencyColor: document.getElementById("settings-transparency-color"),
@@ -76,6 +101,8 @@ function makeSettings({ initial = {}, pick = null } = {}) {
     settings,
     editor: document.getElementById("settings-editor"),
     verify: document.getElementById("settings-verify-checksum"),
+    openBehavior: document.getElementById("settings-open-behavior"),
+    theme: document.getElementById("settings-theme"),
     transparency: document.getElementById("settings-transparency"),
     transparencyColor: document.getElementById("settings-transparency-color"),
     thumbnailFit: document.getElementById("settings-thumbnail-fit"),
@@ -152,6 +179,61 @@ describe("createSettings file operations", () => {
     await flush();
     expect(calls.saved.at(-1).verifyMoveChecksum).toBe(false);
     expect(settings.get().verifyMoveChecksum).toBe(false);
+  });
+
+  it("defaults to double click and persists the single click option", async () => {
+    const { settings, openBehavior, save, calls } = makeSettings();
+    await settings.load();
+    settings.open();
+    expect(openBehavior.value).toBe("double");
+    expect(settings.get().openOnDoubleClick).toBe(true);
+
+    openBehavior.value = "single";
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).openOnDoubleClick).toBe(false);
+    expect(settings.get().openOnDoubleClick).toBe(false);
+  });
+
+  it("pre-fills the single click option from the loaded settings", async () => {
+    const { settings, openBehavior } = makeSettings({ initial: { openOnDoubleClick: false } });
+    await settings.load();
+    settings.open();
+    expect(openBehavior.value).toBe("single");
+  });
+});
+
+describe("createSettings theme", () => {
+  beforeEach(() => {
+    window.api = undefined;
+    document.body.innerHTML = "";
+  });
+
+  it("defaults to the system theme and pre-fills a loaded one", async () => {
+    const { settings, theme } = makeSettings();
+    await settings.load();
+    settings.open();
+    expect(theme.value).toBe("system");
+
+    const reloaded = makeSettings({ initial: { theme: "light" } });
+    await reloaded.settings.load();
+    reloaded.settings.open();
+    expect(reloaded.theme.value).toBe("light");
+  });
+
+  it("persists the chosen theme and rejects unknown values", async () => {
+    const { settings, theme, save, calls } = makeSettings();
+    await settings.load();
+    settings.open();
+    theme.value = "dark";
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).theme).toBe("dark");
+
+    theme.value = "solarized";
+    save.click();
+    await flush();
+    expect(calls.saved.at(-1).theme).toBe("system");
   });
 });
 

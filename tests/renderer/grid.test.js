@@ -178,6 +178,14 @@ function clickCard(card, modifiers = {}) {
   card.dispatchEvent(new MouseEvent("click", { bubbles: true, ...modifiers }));
 }
 
+/**
+ * Dispatches a mouse double click on a card.
+ * @param {HTMLElement} card - Target card.
+ */
+function dblClickCard(card) {
+  card.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+}
+
 describe("grid empty state", () => {
   beforeEach(async () => {
     await i18next.init({
@@ -212,7 +220,7 @@ describe("grid selection", () => {
     });
   });
 
-  it("selects a single file and opens it on a plain click", async () => {
+  it("selects a file on a plain click and only opens it on a double click", async () => {
     const onOpenFile = vi.fn();
     const { loadFolder, grid, selectionInfo } = await makeGrid(
       async () => [media("a.png", 0), media("b.png", 1)],
@@ -220,13 +228,46 @@ describe("grid selection", () => {
     );
     await loadFolder("/tmp/folder");
 
+    const card = document.querySelectorAll(".card")[1];
+    clickCard(card);
+
+    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(grid.getSelectionFiles().map((file) => file.name)).toEqual(["b.png"]);
+    expect(selectionInfo.hidden).toBe(false);
+    expect(selectionInfo.textContent).toBe("1 selected");
+
+    dblClickCard(card);
+    expect(onOpenFile).toHaveBeenCalledTimes(1);
+    expect(onOpenFile.mock.calls[0][0].name).toBe("b.png");
+  });
+
+  it("opens on a plain click when single click mode is set", async () => {
+    const onOpenFile = vi.fn();
+    const { loadFolder } = await makeGrid(async () => [media("a.png", 0), media("b.png", 1)], {
+      onOpenFile,
+      getSettings: () => ({ openOnDoubleClick: false }),
+    });
+    await loadFolder("/tmp/folder");
+
     clickCard(document.querySelectorAll(".card")[1]);
 
     expect(onOpenFile).toHaveBeenCalledTimes(1);
     expect(onOpenFile.mock.calls[0][0].name).toBe("b.png");
-    expect(grid.getSelectionFiles().map((file) => file.name)).toEqual(["b.png"]);
-    expect(selectionInfo.hidden).toBe(false);
-    expect(selectionInfo.textContent).toBe("1 selected");
+  });
+
+  it("opens the anchored file with openActive (Enter)", async () => {
+    const onOpenFile = vi.fn();
+    const { loadFolder, grid } = await makeGrid(
+      async () => [media("a.png", 0), media("b.png", 1)],
+      {
+        onOpenFile,
+      },
+    );
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0]);
+    expect(grid.openActive()).toBe(true);
+    expect(onOpenFile.mock.calls[0][0].name).toBe("a.png");
   });
 
   it("toggles the selection with Ctrl-click without opening the file", async () => {
@@ -303,6 +344,27 @@ describe("grid selection", () => {
     grid.clearSelection();
     expect(grid.hasSelection()).toBe(false);
     expect(selectionInfo.hidden).toBe(true);
+  });
+
+  it("clears the selection when empty space is clicked", async () => {
+    const { loadFolder, grid, selectionInfo } = await makeGrid(async () => [
+      media("a.png", 0),
+      media("b.png", 1),
+    ]);
+    await loadFolder("/tmp/folder");
+
+    grid.selectAll();
+    expect(grid.hasSelection()).toBe(true);
+
+    const content = document.getElementById("content");
+    content.dispatchEvent(
+      new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 50, clientY: 50 }),
+    );
+    document.dispatchEvent(new Event("pointerup"));
+
+    expect(grid.hasSelection()).toBe(false);
+    expect(selectionInfo.hidden).toBe(true);
+    expect(document.querySelector(".marquee")).toBeNull();
   });
 
   it("buffers the selected files and shows the copy message", async () => {
@@ -493,7 +555,7 @@ describe("grid folder tiles", () => {
     expect(grid.getEntry(0)).toMatchObject({ kind: "folder", name: "sub" });
   });
 
-  it("opens a folder on a plain click without opening the large view", async () => {
+  it("selects a folder on a plain click and opens it on a double click", async () => {
     const onOpenFile = vi.fn();
     const onOpenFolder = vi.fn();
     const { loadFolder } = await makeGrid(async () => [], {
@@ -503,8 +565,11 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0]);
+    const card = document.querySelectorAll(".card")[0];
+    clickCard(card);
+    expect(onOpenFolder).not.toHaveBeenCalled();
 
+    dblClickCard(card);
     expect(onOpenFolder).toHaveBeenCalledWith("/tmp/folder/sub");
     expect(onOpenFile).not.toHaveBeenCalled();
   });
