@@ -28,6 +28,7 @@
     "previous": "Vorherige Datei",
     "next": "Nächste Datei",
     "slideshow": "Diashow",
+    "equirect": "360°-Ansicht",
     "zoom": "Zoom",
     "zoomInput": "Zoom in Prozent",
     "actualSize": "Originalgröße",

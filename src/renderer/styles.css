@@ -526,6 +526,11 @@ html.resizing * {
   background: #ffffff;
 }
 
+.switch:has(.switch-input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .switch-input:focus-visible + .switch-track {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -706,6 +711,16 @@ html.resizing * {
 .large-canvas .large-frame {
   position: absolute;
   inset: 0;
+}
+
+.large-canvas .large-frame.equirect-hidden {
+  display: none;
+}
+
+.large-canvas .equirect-canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
 }
 
 .large-canvas .large-image {
