@@ -30,9 +30,11 @@ they cannot be ESM.
 │ src/preload.js (CommonJS)     │   │ Renderer (src/renderer/, ES modules)     │
 │ contextBridge → window.api    │   │ index.html, renderer.js (entry), tree.js,│
 │ contextIsolation: true        │   │ grid.js, large-view.js, settings.js,     │
-│ nodeIntegration: false        │   │ keyboard.js, three-utils.js, i18n.js,    │
-│                               │   │ utils.js, styles.css                     │
-│                               │   │ three.js + vendored GLTFLoader           │
+│ nodeIntegration: false        │   │ keyboard.js, i18n.js, utils.js,          │
+│                               │   │ styles.css                               │
+│                               │   │ 3d/ (GLB viewer, thumbnails),            │
+│                               │   │ equirectangular/ (panorama view),        │
+│                               │   │ three/ (shared render surface)           │
 └───────────────────────────────┘   └──────────────────────────────────────────┘
 ```
 
@@ -58,18 +60,30 @@ they cannot be ESM.
 | `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard/path bar, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
-| `src/renderer/grid.js` | Media grid: folder loading, cards, image/GLB thumbnails |
-| `src/renderer/large-view.js` | Image/GLB large view: zoom, navigation, slideshow |
+| `src/renderer/grid.js` | Media grid: folder loading, cards, image thumbnails, GLB thumbnails via `3d/` |
+| `src/renderer/large-view.js` | Large view: zoom, navigation, slideshow; delegates GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
+| `src/renderer/3d/view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
+| `src/renderer/3d/thumbnails.js` | Off-screen 256 px GLB thumbnail renderer |
+| `src/renderer/3d/utils.js` | three.js helpers (`disposeObject`, GLB zoom mapping) |
+| `src/renderer/equirectangular/view.js` | Equirectangular panorama view (drag to look around, wheel/FOV zoom); same controller contract as the GLB viewer |
+| `src/renderer/equirectangular/utils.js` | `isPixmap` and zoom↔field-of-view mapping |
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
 | `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc, grid zoom) |
-| `src/renderer/three-utils.js` | Shared three.js helpers (`disposeObject`) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
-| `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, `ArrayBuffer` conversion |
-| `src/renderer/vendor/` | Pinned three.js add-ons (GLTFLoader, OrbitControls, …) |
+| `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
-`thumbnails.js` and `renderer/utils.js` so it can be unit-tested without
-launching the app.
+`thumbnails.js`, `renderer/utils.js` and the `renderer/three/` +
+`renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
+unit-tested without launching the app.
+
+The two three.js view controllers (`renderer/3d/view.js` and
+`renderer/equirectangular/view.js`) share one contract and one render surface:
+`activate`/`deactivate`, `setZoomPercent`, `zoomIn`/`zoomOut`, `reset` and
+`dispose` (the GLB viewer adds `load`); the `onChange` callback always reports
+the zoom percentage. `renderer/three/render-surface.js` owns the renderer, the
+resize observer and the render-loop/dispose lifecycle for both.
 
 ## IPC surface
 
@@ -104,9 +118,9 @@ directory only, while the tree loads children on demand.
 If `sharp` is unavailable or decoding fails, `null` is returned and the renderer
 falls back to displaying the file itself.
 
-GLB thumbnails take a different path: the renderer loads the model with
-`GLTFLoader`, renders it once into an off-screen `WebGLRenderer` at 256 px and
-disposes the scene afterwards.
+GLB thumbnails take a different path: `renderer/3d/thumbnails.js` loads the
+model with `GLTFLoader`, renders it once into an off-screen `WebGLRenderer` at
+256 px and disposes the scene afterwards.
 
 ## Renderer data flow
 
@@ -118,7 +132,7 @@ directory tree (sidebar)          grid (content area)
   setTreeRoot / openPath  ────►  currentFiles[]  ───►  createCard(file)
                                       │                     │
                                       │                     ├─ image  → loadImageThumbnail()
-                                      │                     └─ glb    → renderThumbnail()
+                                      │                     └─ glb    → renderGlbThumbnail()
                                       ▼
                               IntersectionObserver
                               lazy card previews + content-visibility: auto
@@ -192,7 +206,7 @@ fall back to defaults instead of failing.
 
 | Project | Location | Scope |
 | --- | --- | --- |
-| `unit` | `tests/unit/` | Pure helpers (`utils.js`) |
+| `unit` | `tests/unit/` | Pure helpers (`utils.js`, `3d/utils.js`, `equirectangular/utils.js`) |
 | `main` | `tests/main/` | Real temp fixtures against `fsIpc`, `settingsStore`, `thumbnails` |
 | `renderer` | `tests/renderer/` | jsdom tests (directory tree) |
 | e2e | `tests/e2e/` | Playwright `_electron` runs against the real app |
