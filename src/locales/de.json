@@ -113,6 +113,7 @@
     "fullscreen": "Vollbild umschalten",
     "largerTiles": "Größere Kacheln",
     "smallerTiles": "Kleinere Kacheln",
+    "zoomTilesWheel": "Kacheln hinein- / herauszoomen",
     "resetTiles": "Kachelgröße zurücksetzen",
     "selectAllFiles": "Alle Dateien auswählen",
     "copyPasteFiles": "Dateien ausschneiden / kopieren / einfügen",

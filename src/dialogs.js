@@ -169,6 +169,7 @@ function showUsage() {
   const gridRows = [
     [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
     [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
+    [`${kbd("Ctrl")} + ${escapeHtml(i18next.t("mouse.wheel"))}`, "shortcuts.zoomTilesWheel"],
     [`${kbd("Ctrl")} + ${kbd("0")}`, "shortcuts.resetTiles"],
     [`${kbd("Ctrl")} + ${kbd("A")}`, "shortcuts.selectAllFiles"],
     [

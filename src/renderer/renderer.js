@@ -245,6 +245,7 @@ createKeyboard({
   confirmDialog,
   largeView,
   grid,
+  contentEl: document.querySelector(".content"),
 });
 
 const pathBar = createPathBar({
