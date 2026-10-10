@@ -166,11 +166,51 @@ async function uniqueTargetPath(dir, fileName) {
 }
 
 /**
- * Copies files into a target directory. Existing files are renamed with a
- * " (1)", " (2)" suffix; each failed file is reported individually.
- * @param {Array<string>} sources - Absolute source file paths.
+ * Returns whether a path is the given directory or lives inside it.
+ * @param {string} candidate - Path to test.
+ * @param {string} dir - Directory path.
+ * @returns {boolean} true when candidate is dir or below it.
+ */
+function isSameOrInside(candidate, dir) {
+  if (!candidate || !dir) return false;
+  if (candidate === dir) return true;
+  const separator = dir.includes("\\") ? "\\" : "/";
+  const prefix = dir.endsWith(separator) ? dir : `${dir}${separator}`;
+  return candidate.startsWith(prefix);
+}
+
+/**
+ * Recursively copies a file or a directory tree. Files are verified and keep
+ * their permission bits and timestamps (see {@link copyFileVerified}); the
+ * intermediate directories keep theirs as well. A partial target left by a
+ * failed copy is removed by the caller.
+ * @param {string} source - Absolute source path.
+ * @param {string} target - Absolute destination path (must not exist yet).
+ * @param {{checksum?: boolean}} [options] - Verification options.
+ * @returns {Promise<void>} Resolves when the copy exists.
+ */
+async function copyTree(source, target, options = {}) {
+  const stat = await fsp.stat(source);
+  if (stat.isDirectory()) {
+    await fsp.mkdir(target);
+    for (const name of await fsp.readdir(source)) {
+      await copyTree(path.join(source, name), path.join(target, name), options);
+    }
+    await fsp.chmod(target, stat.mode & MODE_MASK).catch(() => {});
+    await fsp.utimes(target, stat.atime, stat.mtime).catch(() => {});
+    return;
+  }
+  if (!stat.isFile()) throw new Error("not a file or directory");
+  await copyFileVerified(source, target, stat, options);
+}
+
+/**
+ * Copies files and directories into a target directory. Existing names get a
+ * " (1)", " (2)" suffix; each failed entry is reported individually. Copying a
+ * directory into itself or one of its descendants is rejected.
+ * @param {Array<string>} sources - Absolute source paths.
  * @param {string} targetDir - Destination directory.
- * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string}>>} Per-file results.
+ * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string}>>} Per-entry results.
  */
 async function copyFiles(sources, targetDir) {
   const results = [];
@@ -178,9 +218,17 @@ async function copyFiles(sources, targetDir) {
     const fallbackTarget = path.join(targetDir, path.basename(source));
     try {
       const stat = await fsp.stat(source);
-      if (!stat.isFile()) throw new Error("not a file");
+      if (!stat.isFile() && !stat.isDirectory()) throw new Error("not a file or directory");
+      if (stat.isDirectory() && isSameOrInside(targetDir, source)) {
+        throw new Error("target is inside the source");
+      }
       const target = await uniqueTargetPath(targetDir, path.basename(source));
-      await fsp.copyFile(source, target);
+      try {
+        await copyTree(source, target);
+      } catch (error) {
+        await fsp.rm(target, { recursive: true, force: true }).catch(() => {});
+        throw error;
+      }
       results.push({ source, target, ok: true });
     } catch (error) {
       results.push({
@@ -273,32 +321,42 @@ async function copyFileVerified(source, target, stat, options = {}) {
 }
 
 /**
- * Moves a single file into a target directory. When the target is on the same
- * filesystem the file is renamed: this is atomic, never copies data and
- * preserves every attribute. Crossing a filesystem boundary (EXDEV) falls
- * back to a verified copy with attribute preservation; only after the copy is
- * confirmed is the source removed. Files already inside the target directory
- * are reported as unchanged.
- * @param {string} source - Absolute source file path.
+ * Moves a single file or directory into a target directory. When the target is
+ * on the same filesystem the entry is renamed: this is atomic, never copies
+ * data and preserves every attribute. Crossing a filesystem boundary (EXDEV)
+ * falls back to a verified recursive copy with attribute preservation; only
+ * after the copy is confirmed is the source removed. Entries already inside the
+ * target directory are reported as unchanged, and moving a directory into
+ * itself or one of its descendants is rejected.
+ * @param {string} source - Absolute source path.
  * @param {string} targetDir - Destination directory.
  * @param {{checksum?: boolean}} [options] - Move options.
- * @returns {Promise<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>} Result for the file.
+ * @returns {Promise<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>} Result for the entry.
  */
 async function moveFile(source, targetDir, options = {}) {
   const fallbackTarget = path.join(targetDir, path.basename(source));
   try {
     const stat = await fsp.stat(source);
-    if (!stat.isFile()) throw new Error("not a file");
+    if (!stat.isFile() && !stat.isDirectory()) throw new Error("not a file or directory");
     if (path.dirname(source) === path.normalize(targetDir)) {
       return { source, target: source, ok: true, unchanged: true };
+    }
+    if (stat.isDirectory() && isSameOrInside(targetDir, source)) {
+      throw new Error("target is inside the source");
     }
     const target = await uniqueTargetPath(targetDir, path.basename(source));
     try {
       await fsp.rename(source, target);
     } catch (error) {
       if (error?.code !== "EXDEV") throw error;
-      await copyFileVerified(source, target, stat, options);
-      await fsp.unlink(source);
+      try {
+        await copyTree(source, target, options);
+      } catch (copyError) {
+        await fsp.rm(target, { recursive: true, force: true }).catch(() => {});
+        throw copyError;
+      }
+      if (stat.isDirectory()) await fsp.rm(source, { recursive: true, force: true });
+      else await fsp.unlink(source);
     }
     return { source, target, ok: true };
   } catch (error) {
@@ -307,16 +365,16 @@ async function moveFile(source, targetDir, options = {}) {
 }
 
 /**
- * Moves files into a target directory. Same-filesystem moves use an atomic
- * rename; cross-filesystem moves copy the file first and remove the source
- * only after the copy was verified (see {@link moveFile}). Files that already
- * live in the target directory are reported as unchanged. Existing names in
- * the target get a " (1)", " (2)" suffix; each failed file is reported
+ * Moves files and directories into a target directory. Same-filesystem moves
+ * use an atomic rename; cross-filesystem moves copy the entry first and remove
+ * the source only after the copy was verified (see {@link moveFile}). Entries
+ * that already live in the target directory are reported as unchanged. Existing
+ * names in the target get a " (1)", " (2)" suffix; each failed entry is reported
  * individually.
- * @param {Array<string>} sources - Absolute source file paths.
+ * @param {Array<string>} sources - Absolute source paths.
  * @param {string} targetDir - Destination directory.
  * @param {{checksum?: boolean}} [options] - Move options; `checksum` compares SHA-256 digests on cross-filesystem copies.
- * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>>} Per-file results.
+ * @returns {Promise<Array<{source: string, target: string, ok: boolean, error?: string, unchanged?: boolean}>>} Per-entry results.
  */
 async function moveFiles(sources, targetDir, options = {}) {
   const results = [];

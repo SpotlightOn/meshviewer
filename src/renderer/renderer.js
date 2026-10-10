@@ -61,7 +61,10 @@ const newFolderDialog = createNewFolderDialog({
     create: document.getElementById("new-folder-create"),
     cancel: document.getElementById("new-folder-cancel"),
   },
-  onCreated: (parentPath) => void tree?.refresh(parentPath),
+  onCreated: (parentPath) => {
+    void tree?.refresh(parentPath);
+    if (grid?.getPath() === parentPath) void grid.loadFolder(parentPath);
+  },
 });
 const confirmDialog = createConfirmDialog({
   dom: {
@@ -104,8 +107,9 @@ const contextMenu = createContextMenu({
   resolveTarget: (target) => {
     const card = target.closest?.(".card");
     if (card?.dataset.index !== undefined) {
-      const file = grid?.getFiles()[Number(card.dataset.index)];
-      if (file) return { kind: "file", file };
+      const entry = grid?.getEntry(Number(card.dataset.index));
+      if (entry?.kind === "folder") return { kind: "folder", path: entry.path, origin: "grid" };
+      if (entry) return { kind: "file", file: entry };
     }
     const row = target.closest?.(".tree-row");
     if (row) {
@@ -199,10 +203,20 @@ contextMenu.register({
   label: () => t("contextMenu.moveToTrash"),
   icon: "delete",
   enabled: (context) =>
-    context.kind === "file" || (context.kind === "folder" && context.origin === "tree"),
+    context.kind === "file" || (context.kind === "folder" && context.origin !== "content"),
   action: (context) => {
-    if (context.kind === "folder") void deleteFolder(context.path);
-    else void grid.trashSelection();
+    if (context.kind === "folder" && context.origin === "tree") {
+      void deleteFolder(context.path);
+      return;
+    }
+    if (context.kind === "folder") {
+      const selected = grid.getSelectionFiles();
+      if (selected.length === 1 && selected[0].path === context.path) {
+        void deleteFolder(context.path);
+        return;
+      }
+    }
+    void grid.trashSelection();
   },
 });
 
@@ -215,6 +229,8 @@ grid = createGrid({
     selectionInfo: document.getElementById("selection-info"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
+  onOpenFolder: (dirPath) => void openPath(dirPath),
+  onDirectoriesChanged: (dirPath) => void tree?.refresh(dirPath),
   onFolderChange: (dirPath) => {
     pathBar.setPath(dirPath);
     contextMenu.close();
@@ -311,6 +327,8 @@ async function deleteFolder(folderPath) {
   await tree?.refresh(parent);
   if (isPathInside(grid.getPath(), folderPath)) {
     await openPath(parent === folderPath ? await window.api.getHomeDir() : parent);
+  } else if (grid.getPath()) {
+    await grid.loadFolder(grid.getPath());
   }
 }
 

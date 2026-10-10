@@ -29,6 +29,7 @@ const translations = {
   grid: {
     typeGlb: "3D model",
     typeImage: "Image",
+    typeFolder: "Folder",
     noMedia: "No media files in this folder",
     loadError: "Could not load the folder",
     nSelected: "{{count}} selected",
@@ -60,10 +61,21 @@ function media(name, index = 0) {
 }
 
 /**
+ * Builds a child-directory fixture.
+ * @param {string} name - Directory name.
+ * @returns {{path: string, name: string}} Directory object.
+ */
+function dir(name) {
+  return { path: `/tmp/folder/${name}`, name };
+}
+
+/**
  * Renders the grid DOM and creates the module against a stubbed API.
  * @param {() => Promise<Array>} listFiles - Stub for window.api.listMediaFiles.
  * @param {object} [options] - Optional spies/overrides.
- * @param {(file: object) => void} [options.onOpenFile] - Spy for tile clicks.
+ * @param {(file: object) => void} [options.onOpenFile] - Spy for media tile clicks.
+ * @param {(dirPath: string) => void} [options.onOpenFolder] - Spy for folder tile clicks.
+ * @param {() => Promise<Array>} [options.listDirectories] - Stub for window.api.listDirectories.
  * @param {Function} [options.copyFiles] - Stub for window.api.copyFiles.
  * @param {Function} [options.moveFiles] - Stub for window.api.moveFiles.
  * @param {Function} [options.trashFiles] - Stub for window.api.trashFiles.
@@ -80,8 +92,11 @@ async function makeGrid(listFiles, options = {}) {
     <div id="selection-info" class="selection-info" hidden></div>
     <div id="content" class="content"></div>`;
   const onOpenFile = options.onOpenFile ?? (() => {});
+  const onOpenFolder = options.onOpenFolder ?? (() => {});
+  const onDirectoriesChanged = options.onDirectoriesChanged ?? (() => {});
   window.api = {
     listMediaFiles: listFiles,
+    listDirectories: options.listDirectories ?? vi.fn(async () => []),
     copyFiles: options.copyFiles ?? vi.fn(async () => []),
     moveFiles: options.moveFiles ?? vi.fn(async () => []),
     trashFiles: options.trashFiles ?? vi.fn(async () => ({ trashed: [], failed: [] })),
@@ -95,12 +110,16 @@ async function makeGrid(listFiles, options = {}) {
       selectionInfo: document.getElementById("selection-info"),
     },
     onOpenFile,
+    onOpenFolder,
     onFolderChange: () => {},
+    onDirectoriesChanged,
     getSettings: options.getSettings,
   });
   return {
     grid,
     onOpenFile,
+    onOpenFolder,
+    onDirectoriesChanged,
     loadFolder: grid.loadFolder,
     emptyState: document.getElementById("empty-state"),
     emptyMessage: document.getElementById("empty-message"),
@@ -409,6 +428,131 @@ describe("grid selection", () => {
 
     expect(grid.hasSelection()).toBe(false);
     expect(selectionInfo.hidden).toBe(true);
+  });
+});
+
+describe("grid folder tiles", () => {
+  beforeEach(async () => {
+    await i18next.init({
+      lng: "en",
+      resources: { en: { translation: translations } },
+    });
+  });
+
+  it("lists folders before media files", async () => {
+    const { loadFolder, grid } = await makeGrid(async () => [media("a.png", 0)], {
+      listDirectories: async () => [dir("sub"), dir("zeta")],
+    });
+    await loadFolder("/tmp/folder");
+
+    const cards = document.querySelectorAll(".card");
+    expect([...cards].map((card) => card.dataset.kind)).toEqual(["folder", "folder", "image"]);
+    expect(grid.getFiles().map((file) => file.name)).toEqual(["a.png"]);
+    expect(grid.getEntry(0)).toMatchObject({ kind: "folder", name: "sub" });
+  });
+
+  it("opens a folder on a plain click without opening the large view", async () => {
+    const onOpenFile = vi.fn();
+    const onOpenFolder = vi.fn();
+    const { loadFolder } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("sub")],
+      onOpenFile,
+      onOpenFolder,
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0]);
+
+    expect(onOpenFolder).toHaveBeenCalledWith("/tmp/folder/sub");
+    expect(onOpenFile).not.toHaveBeenCalled();
+  });
+
+  it("selects folders together with files", async () => {
+    const { loadFolder, grid, selectionInfo } = await makeGrid(async () => [media("a.png", 0)], {
+      listDirectories: async () => [dir("sub")],
+    });
+    await loadFolder("/tmp/folder");
+
+    grid.selectAll();
+
+    expect(grid.getSelectionFiles().map((entry) => entry.name)).toEqual(["sub", "a.png"]);
+    expect(selectionInfo.textContent).toBe("2 selected");
+  });
+
+  it("copies a selected folder path into the clipboard", async () => {
+    const copyFiles = vi.fn(async () => [
+      { source: "/tmp/folder/sub", target: "/tmp/other/sub", ok: true },
+    ]);
+    const { loadFolder, grid } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("sub")],
+      copyFiles,
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.copySelection();
+    const copied = await grid.paste("/tmp/other");
+
+    expect(copied).toBe(true);
+    expect(copyFiles).toHaveBeenCalledWith(["/tmp/folder/sub"], "/tmp/other");
+  });
+
+  it("trashes the selected folder", async () => {
+    const trashFiles = vi.fn(async () => ({ trashed: ["/tmp/folder/sub"], failed: [] }));
+    const { loadFolder, grid } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("sub")],
+      trashFiles,
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    await grid.trashSelection();
+
+    expect(trashFiles).toHaveBeenCalledWith(["/tmp/folder/sub"]);
+  });
+
+  it("shows the empty state only when there are neither folders nor media", async () => {
+    const { loadFolder, emptyState } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("empty-sub")],
+    });
+    expect(await loadFolder("/tmp/folder")).toBe(true);
+    expect(emptyState.style.display).toBe("none");
+    expect(document.querySelectorAll(".card")).toHaveLength(1);
+  });
+
+  it("signals a directory change after trashing a folder", async () => {
+    const onDirectoriesChanged = vi.fn();
+    const trashFiles = vi.fn(async () => ({ trashed: ["/tmp/folder/sub"], failed: [] }));
+    const { loadFolder, grid } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("sub")],
+      trashFiles,
+      onDirectoriesChanged,
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    await grid.trashSelection();
+
+    expect(onDirectoriesChanged).toHaveBeenCalledWith("/tmp/folder");
+  });
+
+  it("signals a directory change in the target after pasting a folder", async () => {
+    const onDirectoriesChanged = vi.fn();
+    const copyFiles = vi.fn(async () => [
+      { source: "/tmp/folder/sub", target: "/tmp/other/sub", ok: true },
+    ]);
+    const { loadFolder, grid } = await makeGrid(async () => [], {
+      listDirectories: async () => [dir("sub")],
+      copyFiles,
+      onDirectoriesChanged,
+    });
+    await loadFolder("/tmp/folder");
+
+    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    grid.copySelection();
+    await grid.paste("/tmp/other");
+
+    expect(onDirectoriesChanged).toHaveBeenCalledWith("/tmp/other");
   });
 });
 

@@ -17,6 +17,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Delete a folder (and its contents) from the directory tree context menu: a confirmation dialog appears first and the folder moves to the OS trash
 - Setting “Verify checksums when moving files” (SHA-256) for moves across filesystems
 - Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow): drag to look around, wheel or zoom slider to change the field of view
+- Folder tiles in the grid: subdirectories are shown before the media files, a click opens them and their context menu matches the directory tree
+- Multi-selection, copy, cut and trash now also cover folders (recursive copy and move)
 
 ### Changed
 - Default slideshow transition changed to “slide” with a 300 ms animation duration
