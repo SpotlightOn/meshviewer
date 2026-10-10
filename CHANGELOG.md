@@ -5,34 +5,22 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 ## [Unreleased]
 
 ### Added
-- Setting for the background behind transparent images: checkerboard, white or a custom color (fills the grid tile; drawn at image size on a black stage in the large view)
-- Setting for the thumbnail fit: cover (fill the tile) or contain (show the whole image)
-- Resizable directory tree sidebar: drag the divider (or focus it and use the arrow keys); the width is remembered across restarts
-- Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, dragging on empty space draws a rubber-band selection, Ctrl+A selects all and Esc clears the selection
-- Copy and paste of files inside the app (Ctrl+C / Ctrl+V or the context menu); a pasted file whose name already exists gets a “(1)” suffix
-- Move selected files to the OS trash (Delete key or the context menu); trashed files stay recoverable
-- Create a new folder from the context menu of the directory tree or the empty grid area
-- Paste the in-app clipboard into the folder chosen in the directory tree or the empty grid area context menu
-- Cut files (Ctrl+X or the context menu): pasting a cut selection moves the files into the chosen folder instead of copying them
-- Delete a folder (and its contents) from the directory tree context menu: a confirmation dialog appears first and the folder moves to the OS trash
-- Setting “Verify checksums when moving files” (SHA-256) for moves across filesystems
-- Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow): drag to look around, wheel or zoom slider to change the field of view
-- Folder tiles in the grid: subdirectories are shown before the media files, a click opens them and their context menu matches the directory tree
-- Folder tiles show the folder's first image inside a folder-shaped frame, so a directory stays recognisable at a glance (folders without images keep the empty folder shape); the preview is queued until the app is idle and the current folder's media thumbnails are done, and only the first image of a folder is scanned
-- Multi-selection, copy, cut and trash now also cover folders (recursive copy and move)
-- Zoom the thumbnail grid with Ctrl + mouse wheel (wheel up enlarges, wheel down shrinks)
+- Multiple selection of thumbnails: Ctrl/Cmd-click toggles, Shift-click selects a range, rubber-band drag on empty space, Ctrl+A selects all, Esc clears
+- Copy, cut, paste and trash for files and folders inside the app
+- Create and delete folders from the context menus
+- Folder tiles in the grid with the folder's first image as preview inside a folder-shaped frame
+- Folder tiles: a double click opens them and their context menu matches the directory tree
+- Equirectangular panorama mode for raster images in the large view (toggle next to the slideshow; drag to look around, wheel or zoom slider changes the field of view)
+- Resizable directory tree sidebar
+- Thumbnail grid zoom with Ctrl + mouse wheel
+- New settings: color scheme, open behavior of tiles, thumbnail fit, transparency background, checksum verification for moves
 
 ### Changed
-- Default slideshow transition changed to “slide” with a 300 ms animation duration
-- Empty state: larger logo without its dark background
-- Thumbnail context menu: the file information entry is listed first
-- Thumbnail context menu: a separator line divides the file actions from the cut/copy/paste/delete actions
-- The “New folder” and “Paste” context menu entries are sorted first and apply the action to the chosen folder
-- Cut moves rename the file atomically on the same filesystem and otherwise copy, preserve mode and timestamps and remove the source only after the copy is verified
-- Help menu: “Keyboard shortcuts” is now “Usage” and also documents the mouse gestures such as the middle-click fit toggle and the wheel zoom
+- Default slideshow transition changed to “slide” with a 300 ms animation
+- Thumbnail context menu: the file information entry is listed first, a separator divides the file actions, and “New folder”/“Paste” stay on top
 
 ### Fixed
-- Thumbnails of images smaller than the tile are scaled to fill the tile instead of being shown at natural size, which looked like a transparent border once the transparency background is visible
+- Window starts at 100 % again: a page zoom picked in the View menu used to persist across restarts and shrink the whole window
 
 ## [0.5.0] - 2026-10-09
 

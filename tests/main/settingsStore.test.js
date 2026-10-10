@@ -38,6 +38,8 @@ describe("normalizeSettings", () => {
       animationDurationMs: 800,
       editorCommand: "",
       verifyMoveChecksum: true,
+      openOnDoubleClick: true,
+      theme: "system",
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
@@ -50,6 +52,19 @@ describe("normalizeSettings", () => {
     expect(normalizeSettings({ verifyMoveChecksum: true }).verifyMoveChecksum).toBe(true);
     expect(normalizeSettings({ verifyMoveChecksum: "no" }).verifyMoveChecksum).toBe(true);
     expect(normalizeSettings({ verifyMoveChecksum: 0 }).verifyMoveChecksum).toBe(true);
+  });
+
+  it("keeps a valid openOnDoubleClick flag and ignores non-booleans", () => {
+    expect(normalizeSettings({ openOnDoubleClick: false }).openOnDoubleClick).toBe(false);
+    expect(normalizeSettings({ openOnDoubleClick: true }).openOnDoubleClick).toBe(true);
+    expect(normalizeSettings({ openOnDoubleClick: "no" }).openOnDoubleClick).toBe(true);
+  });
+
+  it("keeps a known theme and rejects unknown ones", () => {
+    expect(normalizeSettings({ theme: "light" }).theme).toBe("light");
+    expect(normalizeSettings({ theme: "dark" }).theme).toBe("dark");
+    expect(normalizeSettings({ theme: "system" }).theme).toBe("system");
+    expect(normalizeSettings({ theme: "solarized" }).theme).toBe("system");
   });
 
   it("keeps the editor command, trims it and ignores non-strings", () => {
@@ -138,6 +153,8 @@ describe("loadSettings / saveSettings", () => {
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
       verifyMoveChecksum: false,
+      openOnDoubleClick: true,
+      theme: "system",
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
@@ -149,6 +166,8 @@ describe("loadSettings / saveSettings", () => {
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
       verifyMoveChecksum: false,
+      openOnDoubleClick: true,
+      theme: "system",
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",
@@ -161,6 +180,8 @@ describe("loadSettings / saveSettings", () => {
       animationDurationMs: 1200,
       editorCommand: "/usr/bin/gimp",
       verifyMoveChecksum: false,
+      openOnDoubleClick: true,
+      theme: "system",
       transparencyBackground: "checkerboard",
       transparencyColor: "#ffffff",
       thumbnailFit: "cover",

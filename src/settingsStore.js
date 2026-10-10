@@ -13,6 +13,8 @@ import path from "node:path";
  * @property {string} transparencyColor - Hex color used when transparencyBackground is "custom".
  * @property {"cover"|"contain"} thumbnailFit - How image thumbnails are fitted into their tile.
  * @property {number} sidebarWidth - Width of the directory tree sidebar in pixels.
+ * @property {boolean} openOnDoubleClick - Whether a double click opens a tile in the grid (a single click then only selects).
+ * @property {"system"|"light"|"dark"} theme - UI color scheme; "system" follows the operating system.
  */
 
 /** @type {Readonly<AppSettings>} */
@@ -22,6 +24,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   animationDurationMs: 300,
   editorCommand: "",
   verifyMoveChecksum: true,
+  openOnDoubleClick: true,
+  theme: "system",
   transparencyBackground: "checkerboard",
   transparencyColor: "#ffffff",
   thumbnailFit: "cover",
@@ -40,6 +44,9 @@ const TRANSPARENCY_BACKGROUNDS = Object.freeze(["checkerboard", "white", "custom
 
 /** @type {ReadonlyArray<AppSettings["thumbnailFit"]>} */
 const THUMBNAIL_FITS = Object.freeze(["cover", "contain"]);
+
+/** @type {ReadonlyArray<AppSettings["theme"]>} */
+const THEMES = Object.freeze(["system", "light", "dark"]);
 
 /** Matches an opaque RGB hex color such as "#1a2b3c". */
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -68,6 +75,12 @@ function normalizeSettings(value) {
     }
     if (typeof value.verifyMoveChecksum === "boolean") {
       settings.verifyMoveChecksum = value.verifyMoveChecksum;
+    }
+    if (typeof value.openOnDoubleClick === "boolean") {
+      settings.openOnDoubleClick = value.openOnDoubleClick;
+    }
+    if (THEMES.includes(value.theme)) {
+      settings.theme = value.theme;
     }
     if (TRANSPARENCY_BACKGROUNDS.includes(value.transparencyBackground)) {
       settings.transparencyBackground = value.transparencyBackground;
@@ -120,11 +133,16 @@ async function saveSettings(filePath, settings) {
  * Registers the settings IPC handlers on the given ipcMain.
  * @param {{handle: Function}} ipcMain - The Electron ipcMain module.
  * @param {(fileName: string) => string} getSettingsPath - Resolves the settings file path.
+ * @param {(settings: AppSettings) => void} [onApply] - Called with the normalized settings after a save (e.g. to apply the theme).
  */
-function registerSettingsIpc(ipcMain, getSettingsPath) {
+function registerSettingsIpc(ipcMain, getSettingsPath, onApply) {
   const settingsPath = getSettingsPath("settings.json");
   ipcMain.handle("settings:get", () => loadSettings(settingsPath));
-  ipcMain.handle("settings:save", (_event, settings) => saveSettings(settingsPath, settings));
+  ipcMain.handle("settings:save", async (_event, settings) => {
+    const normalized = await saveSettings(settingsPath, settings);
+    onApply?.(normalized);
+    return normalized;
+  });
 }
 
 export {
@@ -135,6 +153,7 @@ export {
   SIDEBAR_WIDTH_MAX,
   SIDEBAR_WIDTH_MIN,
   saveSettings,
+  THEMES,
   THUMBNAIL_FITS,
   TRANSITIONS,
   TRANSPARENCY_BACKGROUNDS,

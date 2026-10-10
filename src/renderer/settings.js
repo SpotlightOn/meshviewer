@@ -5,7 +5,7 @@ import { clampSidebarWidth } from "./sidebar-resizer.js";
  * them (animation duration, transparency background, thumbnail fit, sidebar
  * width) to the document styles.
  * @param {object} deps - Module dependencies.
- * @param {{overlay: HTMLElement, interval: HTMLInputElement, transition: HTMLSelectElement, duration: HTMLInputElement, editor: HTMLInputElement, editorBrowse: HTMLButtonElement, verify: HTMLInputElement, thumbnailFit: HTMLSelectElement, transparency: HTMLSelectElement, transparencyColor: HTMLInputElement, save: HTMLButtonElement, cancel: HTMLButtonElement}} deps.dom - Settings dialog elements.
+ * @param {{overlay: HTMLElement, interval: HTMLInputElement, transition: HTMLSelectElement, duration: HTMLInputElement, editor: HTMLInputElement, editorBrowse: HTMLButtonElement, verify: HTMLInputElement, openBehavior: HTMLSelectElement, theme: HTMLSelectElement, thumbnailFit: HTMLSelectElement, transparency: HTMLSelectElement, transparencyColor: HTMLInputElement, save: HTMLButtonElement, cancel: HTMLButtonElement}} deps.dom - Settings dialog elements.
  * @param {() => void} [deps.onSaved] - Called after settings were saved (e.g. to restart a running slideshow).
  * @returns {{load: () => Promise<void>, get: () => object, isOpen: () => boolean, open: () => void, close: () => void, applySidebarWidth: (width: number) => void, saveSidebarWidth: (width: number) => Promise<void>}} Settings module API.
  */
@@ -18,6 +18,8 @@ export function createSettings({ dom, onSaved }) {
     editor,
     editorBrowse,
     verify,
+    openBehavior,
+    theme,
     thumbnailFit,
     transparency,
     transparencyColor,
@@ -30,6 +32,8 @@ export function createSettings({ dom, onSaved }) {
     animationDurationMs: 300,
     editorCommand: "",
     verifyMoveChecksum: true,
+    openOnDoubleClick: true,
+    theme: "system",
     transparencyBackground: "checkerboard",
     transparencyColor: "#ffffff",
     thumbnailFit: "cover",
@@ -38,6 +42,9 @@ export function createSettings({ dom, onSaved }) {
 
   /** Background modes that draw a solid color instead of the checkerboard. */
   const SOLID_BACKGROUNDS = ["white", "custom"];
+
+  /** Color schemes accepted by the settings dialog. */
+  const THEME_VALUES = ["system", "light", "dark"];
 
   /**
    * Applies the current settings to the document styles.
@@ -144,6 +151,8 @@ export function createSettings({ dom, onSaved }) {
     duration.value = String(settings.animationDurationMs);
     editor.value = settings.editorCommand;
     verify.checked = settings.verifyMoveChecksum !== false;
+    openBehavior.value = settings.openOnDoubleClick === false ? "single" : "double";
+    theme.value = settings.theme;
     thumbnailFit.value = settings.thumbnailFit;
     transparency.value = settings.transparencyBackground;
     transparencyColor.value = settings.transparencyColor;
@@ -174,6 +183,8 @@ export function createSettings({ dom, onSaved }) {
         : settings.animationDurationMs,
       editorCommand: editor.value.trim(),
       verifyMoveChecksum: verify.checked,
+      openOnDoubleClick: openBehavior.value !== "single",
+      theme: THEME_VALUES.includes(theme.value) ? theme.value : "system",
       thumbnailFit: thumbnailFit.value === "contain" ? "contain" : "cover",
       transparencyBackground: ["checkerboard", "white", "custom"].includes(transparency.value)
         ? transparency.value

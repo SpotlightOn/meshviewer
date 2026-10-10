@@ -1,5 +1,5 @@
 import path from "node:path";
-import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from "electron";
 import i18next from "i18next";
 import { registerDialogIpc, showAbout, showUsage } from "./dialogs.js";
 import { registerEditorIpc } from "./editorIpc.js";
@@ -9,7 +9,7 @@ import i18nEn from "./locales/en.json" with { type: "json" };
 import { createMainWindow } from "./main-window.js";
 import { createAppMenu } from "./menu.js";
 import { registerAppProtocol } from "./protocol.js";
-import { registerSettingsIpc } from "./settingsStore.js";
+import { loadSettings, registerSettingsIpc } from "./settingsStore.js";
 import { registerWindowIpc } from "./window-ipc.js";
 
 /**
@@ -38,10 +38,14 @@ function openSettings() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   registerAppProtocol();
   registerFsIpc(ipcMain, app, shell);
-  registerSettingsIpc(ipcMain, (fileName) => path.join(app.getPath("userData"), fileName));
+  const settingsPath = (fileName) => path.join(app.getPath("userData"), fileName);
+  nativeTheme.themeSource = (await loadSettings(settingsPath("settings.json"))).theme;
+  registerSettingsIpc(ipcMain, settingsPath, (settings) => {
+    nativeTheme.themeSource = settings.theme;
+  });
   registerEditorIpc(ipcMain, dialog);
   registerDialogIpc(ipcMain);
   registerWindowIpc(ipcMain);

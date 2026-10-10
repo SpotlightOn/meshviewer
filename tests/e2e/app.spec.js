@@ -74,7 +74,7 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -87,7 +87,7 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await expect(page.locator("#large-view")).toBeVisible();
 
   await page.locator("#large-back").click();
-  await page.locator(".card", { hasText: "test.glb" }).click();
+  await page.locator(".card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -108,7 +108,7 @@ test("file information dialog renders the embedded preview image and hides raw m
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(1);
 
-  await page.locator(".card").click();
+  await page.locator(".card").dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
@@ -238,7 +238,7 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -264,7 +264,7 @@ test("zoom slider zooms the 3D view", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "test.glb" }).click();
+  await page.locator(".card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.waitForSelector(".large-canvas canvas");
 
@@ -296,7 +296,7 @@ test("status bar shows file info and the arrow buttons navigate", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -323,7 +323,7 @@ test("swiping the image navigates to the previous and next image", async () => {
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -375,7 +375,7 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   await input.press("Enter");
   await expect(page.locator(".card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click();
+  await page.locator(".card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,

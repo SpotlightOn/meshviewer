@@ -94,6 +94,7 @@
       >
         <svg viewBox="0 -960 960 960" aria-hidden="true"><path d="M400-240 160-480l241-241 43 42-169 169h526v60H275l168 168-43 42Z" /></svg>
       </button>
+      <span class="toolbar-separator" aria-hidden="true"></span>
       <button
         id="large-details"
         type="button"
@@ -306,6 +307,15 @@
       </fieldset>
       <fieldset>
         <legend data-i18n="settings.fileOperations">File operations</legend>
+        <div class="settings-row">
+          <label for="settings-open-behavior" data-i18n="settings.openBehavior"
+            >Open files and folders</label
+          >
+          <select id="settings-open-behavior">
+            <option value="double" data-i18n="settings.openDoubleClick">Double click</option>
+            <option value="single" data-i18n="settings.openSingleClick">Single click</option>
+          </select>
+        </div>
         <div class="settings-row settings-row-check">
           <label class="switch">
             <input id="settings-verify-checksum" type="checkbox" class="switch-input" />
@@ -322,6 +332,14 @@
       </fieldset>
       <fieldset>
         <legend data-i18n="settings.appearance">Appearance</legend>
+        <div class="settings-row">
+          <label for="settings-theme" data-i18n="settings.theme">Theme</label>
+          <select id="settings-theme">
+            <option value="system" data-i18n="settings.themeSystem">System</option>
+            <option value="light" data-i18n="settings.themeLight">Light</option>
+            <option value="dark" data-i18n="settings.themeDark">Dark</option>
+          </select>
+        </div>
         <div class="settings-row">
           <label for="settings-thumbnail-fit" data-i18n="settings.thumbnailFit"
             >Thumbnail fit</label

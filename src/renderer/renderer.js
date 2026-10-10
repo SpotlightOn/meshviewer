@@ -27,6 +27,8 @@ const settings = createSettings({
     editor: document.getElementById("settings-editor"),
     editorBrowse: document.getElementById("settings-editor-browse"),
     verify: document.getElementById("settings-verify-checksum"),
+    openBehavior: document.getElementById("settings-open-behavior"),
+    theme: document.getElementById("settings-theme"),
     thumbnailFit: document.getElementById("settings-thumbnail-fit"),
     transparency: document.getElementById("settings-transparency"),
     transparencyColor: document.getElementById("settings-transparency-color"),

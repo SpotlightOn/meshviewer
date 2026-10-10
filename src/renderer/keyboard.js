@@ -10,7 +10,7 @@
  * @param {{isOpen: () => boolean, close: () => void}} deps.folderDialog - New folder dialog API.
  * @param {{isOpen: () => boolean, close: () => void}} deps.confirmDialog - Confirmation dialog API.
  * @param {{onKeydown: (event: KeyboardEvent) => boolean, isActive: () => boolean}} deps.largeView - Large view module API.
- * @param {{zoomTiles: (step: number) => void, selectAll: () => void, clearSelection: () => void, hasSelection: () => boolean, hasCopyBuffer: () => boolean, copySelection: () => void, cutSelection: () => void, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>}} deps.grid - Grid module API.
+ * @param {{zoomTiles: (step: number) => void, selectAll: () => void, clearSelection: () => void, hasSelection: () => boolean, hasCopyBuffer: () => boolean, copySelection: () => void, cutSelection: () => void, paste: () => Promise<boolean>, trashSelection: () => Promise<boolean>, openActive: () => boolean}} deps.grid - Grid module API.
  * @param {HTMLElement} deps.contentEl - Scroll container of the tile grid (receives the zoom wheel events).
  */
 export function createKeyboard({
@@ -127,6 +127,10 @@ export function createKeyboard({
       if (!grid.hasSelection()) return;
       event.preventDefault();
       void grid.trashSelection();
+      return;
+    }
+    if (event.key === "Enter") {
+      if (grid.openActive()) event.preventDefault();
       return;
     }
     if (event.key === "Escape" && grid.hasSelection()) {
