@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
  * Renderer API exposed via contextBridge.
  * @typedef {object} MeshViewerApi
  * @property {(dirPath: string) => Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: string}>>} listMediaFiles - Lists media files of a directory.
+ * @property {(dirPath: string, limit: number) => Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: string}>>} listImageFiles - Lists up to `limit` image files of a directory for a folder preview.
  * @property {(dirPath: string) => Promise<Array<{path: string, name: string}>>} listDirectories - Lists child directories.
  * @property {() => Promise<string>} getHomeDir - Returns the user's home directory.
  * @property {() => Promise<string>} getCwd - Returns the current working directory.
@@ -30,6 +31,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 /** @type {MeshViewerApi} */
 const api = {
   listMediaFiles: (dirPath) => ipcRenderer.invoke("fs:listMediaFiles", dirPath),
+  listImageFiles: (dirPath, limit) => ipcRenderer.invoke("fs:listImageFiles", dirPath, limit),
   listDirectories: (dirPath) => ipcRenderer.invoke("fs:listDirectories", dirPath),
   getHomeDir: () => ipcRenderer.invoke("fs:homeDir"),
   getCwd: () => ipcRenderer.invoke("fs:cwd"),

@@ -90,6 +90,45 @@ async function listMediaFiles(dir) {
 }
 
 /**
+ * Lists up to `limit` image files directly inside a directory for a folder
+ * preview. Unlike {@link listMediaFiles} it stops as soon as enough images are
+ * found, so folders holding many files are not stat-ed in full.
+ * @param {string} dir - Directory to scan.
+ * @param {number} limit - Maximum number of images to return.
+ * @returns {Promise<Array<{path: string, name: string, size: number, mtimeMs: number, type: 'image'}>>} Image files.
+ */
+async function listImageFiles(dir, limit) {
+  if (limit <= 0) return [];
+  let entries;
+  try {
+    entries = await fsp.readdir(dir, { withFileTypes: true });
+  } catch {
+    return []; // unreadable or missing directory
+  }
+  const results = [];
+  for (const entry of entries) {
+    if (results.length >= limit) break;
+    if (!entry.isFile() && !entry.isSymbolicLink()) continue;
+    if (!IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+    const fullPath = path.join(dir, entry.name);
+    try {
+      const stat = await fsp.stat(fullPath);
+      if (!stat.isFile()) continue;
+      results.push({
+        path: fullPath,
+        name: entry.name,
+        size: stat.size,
+        mtimeMs: stat.mtimeMs,
+        type: "image",
+      });
+    } catch {
+      // broken symlink or vanished file
+    }
+  }
+  return results;
+}
+
+/**
  * Lists the visible subdirectories of a directory, sorted by name.
  * @param {string} dirPath - Parent directory.
  * @returns {Promise<Array<{path: string, name: string}>>} List of subdirectories.
@@ -413,6 +452,7 @@ async function trashFiles(paths, shell) {
 function registerFsIpc(ipcMain, app, shell) {
   const cacheDir = path.join(app.getPath("userData"), "thumbnails");
   ipcMain.handle("fs:listMediaFiles", (_event, dirPath) => listMediaFiles(dirPath));
+  ipcMain.handle("fs:listImageFiles", (_event, dirPath, limit) => listImageFiles(dirPath, limit));
   ipcMain.handle("fs:listDirectories", (_event, dirPath) => listDirectories(dirPath));
   ipcMain.handle("fs:homeDir", () => app.getPath("home"));
   ipcMain.handle("fs:cwd", () => process.cwd());
@@ -439,6 +479,7 @@ export {
   createDirectory,
   IMAGE_EXTENSIONS,
   listDirectories,
+  listImageFiles,
   listMediaFiles,
   moveFiles,
   parentDir,

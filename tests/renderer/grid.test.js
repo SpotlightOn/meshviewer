@@ -13,13 +13,48 @@ vi.mock("three", async (importOriginal) => {
 });
 
 // jsdom does not implement IntersectionObserver, which grid.js uses to lazily
-// load thumbnails.
+// load thumbnails and folder previews. The stub records its instances so tests
+// can trigger intersections on demand.
+const intersectionObservers = [];
 if (!globalThis.IntersectionObserver) {
   globalThis.IntersectionObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+    constructor(callback, options) {
+      this.callback = callback;
+      this.options = options;
+      this.targets = new Set();
+      intersectionObservers.push(this);
+    }
+    observe(target) {
+      this.targets.add(target);
+    }
+    unobserve(target) {
+      this.targets.delete(target);
+    }
+    disconnect() {
+      this.targets.clear();
+    }
   };
+}
+
+// Force the setTimeout fallback of whenIdle so tests can flush the deferred
+// preview pass deterministically.
+window.requestIdleCallback = undefined;
+
+/**
+ * Reports the latest IntersectionObserver's targets as intersecting.
+ * @param {Array<HTMLElement>} targets - Elements to report.
+ */
+function intersect(targets) {
+  const observer = intersectionObservers.at(-1);
+  observer.callback(targets.map((target) => ({ target, isIntersecting: true })));
+}
+
+/**
+ * Waits for a macrotask so the deferred preview pass can run.
+ * @returns {Promise<void>} Resolves after the next timer tick.
+ */
+function settle() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 import { cardIndexesInRect, createGrid } from "../../src/renderer/grid.js";
@@ -76,6 +111,8 @@ function dir(name) {
  * @param {(file: object) => void} [options.onOpenFile] - Spy for media tile clicks.
  * @param {(dirPath: string) => void} [options.onOpenFolder] - Spy for folder tile clicks.
  * @param {() => Promise<Array>} [options.listDirectories] - Stub for window.api.listDirectories.
+ * @param {(dirPath: string, limit: number) => Promise<Array>} [options.listImageFiles] - Stub for window.api.listImageFiles.
+ * @param {Function} [options.getThumbnail] - Stub for window.api.getThumbnail.
  * @param {Function} [options.copyFiles] - Stub for window.api.copyFiles.
  * @param {Function} [options.moveFiles] - Stub for window.api.moveFiles.
  * @param {Function} [options.trashFiles] - Stub for window.api.trashFiles.
@@ -96,7 +133,12 @@ async function makeGrid(listFiles, options = {}) {
   const onDirectoriesChanged = options.onDirectoriesChanged ?? (() => {});
   window.api = {
     listMediaFiles: listFiles,
+    listImageFiles:
+      options.listImageFiles ??
+      (async (dirPath, limit) =>
+        (await listFiles(dirPath)).filter((file) => file.type === "image").slice(0, limit)),
     listDirectories: options.listDirectories ?? vi.fn(async () => []),
+    getThumbnail: options.getThumbnail ?? vi.fn(async () => "data:image/png;base64,AAAA"),
     copyFiles: options.copyFiles ?? vi.fn(async () => []),
     moveFiles: options.moveFiles ?? vi.fn(async () => []),
     trashFiles: options.trashFiles ?? vi.fn(async () => ({ trashed: [], failed: [] })),
@@ -553,6 +595,89 @@ describe("grid folder tiles", () => {
     await grid.paste("/tmp/other");
 
     expect(onDirectoriesChanged).toHaveBeenCalledWith("/tmp/other");
+  });
+});
+
+describe("grid folder previews", () => {
+  beforeEach(async () => {
+    await i18next.init({
+      lng: "en",
+      resources: { en: { translation: translations } },
+    });
+  });
+
+  /**
+   * Returns the folder tile's thumb wrapper after loading the grid.
+   * @returns {HTMLElement} Folder thumb wrapper.
+   */
+  function folderWrap() {
+    return document.querySelector('.card[data-kind="folder"] .thumb-wrap');
+  }
+
+  it("shows the folder's first image inside a folder-shaped frame", async () => {
+    const listFiles = vi.fn(async (dirPath) =>
+      dirPath === "/tmp/folder/sub" ? [media("a.png", 0), media("b.png", 1)] : [],
+    );
+    const getThumbnail = vi.fn(async (file) => `data:image/png;base64,${file.name}`);
+    const { loadFolder } = await makeGrid(listFiles, {
+      listDirectories: async () => [dir("sub")],
+      getThumbnail,
+    });
+    await loadFolder("/tmp/folder");
+
+    const wrap = folderWrap();
+    intersect([wrap]);
+    await settle();
+
+    // The frame keeps the folder shape, so the tile still reads as a directory.
+    expect(wrap.querySelector(".folder-frame")).not.toBeNull();
+    const img = wrap.querySelector(".folder-frame .folder-preview-img");
+    expect(img?.src).toBe("data:image/png;base64,a.png");
+    // Only the first image is used, so only its thumbnail is generated.
+    expect(getThumbnail).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps an empty folder frame when the folder holds no images", async () => {
+    const getThumbnail = vi.fn(async () => "data:image/png;base64,AAAA");
+    const { loadFolder } = await makeGrid(async () => [media("model.glb", 0)], {
+      listDirectories: async () => [dir("sub")],
+      getThumbnail,
+    });
+    await loadFolder("/tmp/folder");
+
+    const wrap = folderWrap();
+    intersect([wrap]);
+    await settle();
+
+    expect(wrap.querySelector(".folder-frame")).not.toBeNull();
+    expect(wrap.querySelector(".folder-preview-img")).toBeNull();
+    // GLB previews need an offscreen 3D render and are skipped.
+    expect(getThumbnail).not.toHaveBeenCalled();
+  });
+
+  it("reuses the cached preview when the folder is reloaded", async () => {
+    const listFiles = vi.fn(async (dirPath) =>
+      dirPath === "/tmp/folder/sub" ? [media("a.png", 0)] : [],
+    );
+    const getThumbnail = vi.fn(async () => "data:image/png;base64,AAAA");
+    const { loadFolder } = await makeGrid(listFiles, {
+      listDirectories: async () => [dir("sub")],
+      getThumbnail,
+    });
+    await loadFolder("/tmp/folder");
+    intersect([folderWrap()]);
+    await settle();
+
+    await loadFolder("/tmp/folder");
+    intersect([folderWrap()]);
+    await settle();
+
+    const subfolderScans = listFiles.mock.calls.filter(
+      ([dirPath]) => dirPath === "/tmp/folder/sub",
+    );
+    expect(subfolderScans).toHaveLength(1);
+    expect(getThumbnail).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".card .folder-preview-img")).not.toBeNull();
   });
 });
 

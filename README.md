@@ -32,7 +32,7 @@ pnpm install
 pnpm start
 ```
 
-Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Clicking a tile opens the large view in full window size (3D models can be rotated and zoomed with the mouse); the back arrow in the header ("Back" tooltip) or `ESC` returns to the list view. The file name and its details are shown in the status bar at the bottom. The fullscreen button switches the window to fullscreen mode: the header and status bar hide, moving the mouse reveals the exit icon, and `ESC` leaves fullscreen first.
+Navigate in the directory tree on the left (rooted at `/`); `..` goes one level up, the Home button jumps to the user directory. All found GLB files (including subfolders) are rendered as previews, image files are shown directly. Subdirectories appear as folder tiles before the media files; each shows the folder's first image inside a folder-shaped frame, so it stays recognisable as a directory at a glance (folders without images keep the empty folder shape). Clicking a tile opens the large view in full window size (3D models can be rotated and zoomed with the mouse); the back arrow in the header ("Back" tooltip) or `ESC` returns to the list view. The file name and its details are shown in the status bar at the bottom. The fullscreen button switches the window to fullscreen mode: the header and status bar hide, moving the mouse reveals the exit icon, and `ESC` leaves fullscreen first.
 
 ## Keyboard shortcuts
 

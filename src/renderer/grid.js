@@ -6,10 +6,7 @@ const MIN_TILE = 80;
 const MAX_TILE = 600;
 const DEFAULT_TILE = 200;
 const TILE_STEP = 1.1;
-
-/** Inline Material Symbols "folder" (outlined) icon for folder tiles. */
-const FOLDER_ICON =
-  '<svg class="folder-icon" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/></svg>';
+const PREVIEW_COUNT = 1;
 
 /**
  * Returns the indices of cards whose bounding rect intersects the given rect.
@@ -80,9 +77,11 @@ async function loadThumb(file, card) {
 
 /**
  * Grid module: loads a folder into the tile grid (subdirectories first, then
- * the media files), lazily renders the previews, provides the tile-zoom
- * shortcuts and manages multi-selection with copy/paste and move-to-trash of
- * the selected entries.
+ * the media files), lazily renders the previews (a thumbnail per media file and
+ * a folder preview that shows the first image inside a folder-shaped frame,
+ * built only once the browser is idle), provides the tile-zoom shortcuts and
+ * manages multi-selection with copy/paste and move-to-trash of the selected
+ * entries.
  * @param {object} deps - Module dependencies.
  * @param {{grid: HTMLElement, emptyState: HTMLElement, emptyMessage: HTMLElement, contentEl: HTMLElement, selectionInfo?: HTMLElement}} deps.dom - Grid DOM elements.
  * @param {(file: object) => void} deps.onOpenFile - Called when a media tile is clicked.
@@ -109,6 +108,11 @@ export function createGrid({
   let anchorIndex = null;
   let copyBuffer = [];
   let flashTimer = null;
+  const previewCache = new Map();
+  let previewQueue = [];
+  let previewScheduled = false;
+  let pendingThumbs = 0;
+  let folderObserver = null;
 
   /**
    * Creates a grid tile for a folder or media entry.
@@ -125,7 +129,9 @@ export function createGrid({
     wrap.className = "thumb-wrap";
 
     if (entry.kind === "folder") {
-      wrap.innerHTML = FOLDER_ICON;
+      const frame = document.createElement("div");
+      frame.className = "folder-frame";
+      wrap.append(frame);
     } else {
       wrap.classList.add("loading");
       const img = document.createElement("img");
@@ -352,6 +358,7 @@ export function createGrid({
       : await window.api.copyFiles(paths, targetDir);
     const ok = results.filter((result) => result.ok);
     const failed = results.filter((result) => !result.ok);
+    previewCache.clear();
     if (targetDir === path || (moved && path)) await loadFolder(path);
     if (hasFolder) {
       onDirectoriesChanged?.(targetDir);
@@ -374,6 +381,7 @@ export function createGrid({
     if (selected.length === 0) return false;
     const hadFolder = selected.some((entry) => entry.kind === "folder");
     const result = await window.api.trashFiles(selected.map((entry) => entry.path));
+    previewCache.clear();
     await loadFolder(path);
     if (hadFolder) onDirectoriesChanged?.(path);
     if (result.failed.length > 0) {
@@ -425,6 +433,110 @@ export function createGrid({
     };
     document.addEventListener("pointermove", apply);
     document.addEventListener("pointerup", finish);
+  }
+
+  /**
+   * Runs a callback once the browser is idle, so deferred work never competes
+   * with loading or with user interaction. Falls back to a macrotask when
+   * requestIdleCallback is unavailable.
+   * @param {() => void} callback - Callback to run when idle.
+   */
+  function whenIdle(callback) {
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(() => callback(), { timeout: 1500 });
+    } else {
+      setTimeout(callback, 0);
+    }
+  }
+
+  /**
+   * Scans a folder for its first image and returns a cached thumbnail. GLB
+   * files are skipped because their previews need an offscreen 3D render.
+   * @param {string} folderPath - Folder to scan.
+   * @returns {Promise<string | null>} Thumbnail data URL, or null when none.
+   */
+  async function buildPreview(folderPath) {
+    let images;
+    try {
+      images = await window.api.listImageFiles(folderPath, PREVIEW_COUNT);
+    } catch {
+      return null;
+    }
+    const file = images[0];
+    if (!file) return null;
+    try {
+      return (await window.api.getThumbnail(file)) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Shows a folder's first image inside its folder-shaped frame, so the tile
+   * stays instantly recognisable as a directory (like a file-manager preview).
+   * @param {HTMLElement} wrap - The tile's thumb wrapper.
+   * @param {string | null} url - Thumbnail data URL, or null to leave it empty.
+   */
+  function applyPreview(wrap, url) {
+    if (!url || !wrap.isConnected) return;
+    const frame = wrap.querySelector(".folder-frame");
+    if (!frame) return;
+    const img = document.createElement("img");
+    img.className = "folder-preview-img";
+    img.alt = "";
+    img.decoding = "async";
+    img.src = url;
+    frame.replaceChildren(img);
+  }
+
+  /**
+   * Builds and applies the preview for one queued folder, reusing the cache.
+   * @param {{path: string, wrap: HTMLElement}} task - Queued folder.
+   * @returns {Promise<void>}
+   */
+  async function renderPreview({ path: folderPath, wrap }) {
+    let url = previewCache.get(folderPath);
+    if (url === undefined) {
+      url = await buildPreview(folderPath);
+      previewCache.set(folderPath, url);
+    }
+    applyPreview(wrap, url);
+  }
+
+  /**
+   * Processes one queued folder preview per idle period. Previews wait until the
+   * media thumbnails of the current folder have finished, so they never compete
+   * with the files the user is looking at, then drain one per idle slice.
+   */
+  function schedulePreviewPass() {
+    if (previewScheduled || previewQueue.length === 0) return;
+    previewScheduled = true;
+    whenIdle(async () => {
+      previewScheduled = false;
+      if (previewQueue.length === 0) return;
+      if (pendingThumbs > 0) {
+        schedulePreviewPass();
+        return;
+      }
+      const task = previewQueue.shift();
+      await renderPreview(task);
+      schedulePreviewPass();
+    });
+  }
+
+  /**
+   * Queues a folder for a preview; already-cached folders are applied at once.
+   * @param {object} entry - Folder entry.
+   * @param {HTMLElement} wrap - The tile's thumb wrapper.
+   */
+  function enqueuePreview(entry, wrap) {
+    const cached = previewCache.get(entry.path);
+    if (cached !== undefined) {
+      applyPreview(wrap, cached);
+      return;
+    }
+    previewQueue.push({ path: entry.path, wrap });
+    schedulePreviewPass();
   }
 
   /**
@@ -480,22 +592,38 @@ export function createGrid({
     grid.append(fragment);
 
     if (thumbnailObserver) thumbnailObserver.disconnect();
+    if (folderObserver) folderObserver.disconnect();
+    previewQueue = [];
+    pendingThumbs = 0;
     thumbnailObserver = new IntersectionObserver(
       (records) => {
         for (const record of records) {
           if (!record.isIntersecting) continue;
           thumbnailObserver.unobserve(record.target);
           const index = Number(record.target.dataset.index);
-          loadThumb(entries[index], cards[index]);
+          pendingThumbs += 1;
+          void loadThumb(entries[index], cards[index]).finally(() => {
+            pendingThumbs -= 1;
+          });
         }
       },
       { root: contentEl, rootMargin: "400px" },
     );
+    folderObserver = new IntersectionObserver(
+      (records) => {
+        for (const record of records) {
+          if (!record.isIntersecting) continue;
+          folderObserver.unobserve(record.target);
+          enqueuePreview(entries[Number(record.target.dataset.index)], record.target);
+        }
+      },
+      { root: contentEl },
+    );
     for (let i = 0; i < cards.length; i++) {
-      if (entries[i].kind === "folder") continue;
       const wrap = cards[i].querySelector(".thumb-wrap");
       wrap.dataset.index = String(i);
-      thumbnailObserver.observe(wrap);
+      if (entries[i].kind === "folder") folderObserver.observe(wrap);
+      else thumbnailObserver.observe(wrap);
     }
 
     return true;
