@@ -92,7 +92,7 @@ async function loadThumb(file, card) {
  * @param {(dirPath: string) => void} deps.onFolderChange - Called when the shown folder changes (updates the location bar).
  * @param {(dirPath: string) => void} [deps.onDirectoriesChanged] - Called after a paste or a trash that may have changed a folder's subdirectories, so other views (the tree) can refresh.
  * @param {() => object} [deps.getSettings] - Returns the current settings (move checksum option and grid click behavior).
- * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getEntry: (index: number) => object|undefined, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, openActive: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, flash: (message: string) => void}} Grid module API.
+ * @returns {{loadFolder: (dirPath: string) => Promise<boolean>, getFiles: () => Array, getEntry: (index: number) => object|undefined, getPath: () => string|null, zoomTiles: (step: number) => void, getSelectionFiles: () => Array, hasSelection: () => boolean, selectAll: () => void, clearSelection: () => void, ensureInSelection: (index: number) => void, copySelection: () => void, cutSelection: () => void, hasCopyBuffer: () => boolean, openActive: () => boolean, paste: (targetDir?: string) => Promise<boolean>, trashSelection: () => Promise<boolean>, refreshFile: (file: object) => Promise<void>, flash: (message: string) => void}} Grid module API.
  */
 export function createGrid({
   dom,
@@ -692,6 +692,44 @@ export function createGrid({
   }
 
   /**
+   * Refreshes a single media tile after its file was rewritten on disk: the
+   * entry gets the new size and modification time, the size label is rebuilt
+   * and the thumbnail is requested again (the thumbnail cache is keyed by size
+   * and modification time, so a rotated file misses it and is regenerated).
+   * The whole folder is not reloaded, so the selection and the scroll
+   * position survive.
+   * @param {{path: string, size?: number, mtimeMs?: number}} file - File entry with its new stat info.
+   * @returns {Promise<void>} Resolves once the new thumbnail is applied.
+   */
+  async function refreshFile(file) {
+    const index = entries.findIndex((entry) => entry.path === file.path);
+    if (index === -1) return;
+    const entry = entries[index];
+    if (entry.kind === "folder") return;
+    if (typeof file.size === "number") entry.size = file.size;
+    if (typeof file.mtimeMs === "number") entry.mtimeMs = file.mtimeMs;
+    const card = grid.children[index];
+    if (!card) return;
+    const size = card.querySelector(".size");
+    if (size) {
+      size.textContent = `${entry.kind === "glb" ? t("grid.typeGlb") : t("grid.typeImage")} · ${formatSize(entry.size)}`;
+    }
+    const thumb = card.querySelector(".thumb");
+    const wrap = card.querySelector(".thumb-wrap");
+    if (!thumb || !wrap) return;
+    wrap.classList.add("loading");
+    try {
+      thumb.src = await loadImageThumbnail(entry);
+      const markLoaded = () => wrap.classList.remove("loading");
+      if (thumb.complete) markLoaded();
+      else thumb.addEventListener("load", markLoaded, { once: true });
+    } catch (error) {
+      wrap.classList.remove("loading");
+      console.error(`${t("console.previewFailed")} ${entry.name}`, error);
+    }
+  }
+
+  /**
    * Zooms the thumbnail grid: step > 0 enlarges, step < 0 shrinks, 0 resets.
    * @param {number} step - Zoom direction.
    */
@@ -744,6 +782,7 @@ export function createGrid({
     loadFolder,
     openActive,
     paste,
+    refreshFile,
     selectAll,
     trashSelection,
     zoomTiles,

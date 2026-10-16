@@ -523,10 +523,23 @@ html.resizing * {
   background: var(--surface-hover);
 }
 
+.large-header button.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.large-header button.icon-btn:hover:disabled {
+  background: transparent;
+}
+
 .large-header button.icon-btn svg {
   width: 24px;
   height: 24px;
   fill: currentColor;
+}
+
+.large-header button.icon-btn[hidden] {
+  display: none;
 }
 
 .large-header .zoom-fit-btn {

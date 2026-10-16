@@ -35,6 +35,8 @@
     "actualSize": "Originalgröße",
     "fitToScreen": "An Bildschirm anpassen",
     "info": "Dateiinformationen",
+    "rotateLeft": "Links drehen (verlustfrei)",
+    "rotateRight": "Rechts drehen (verlustfrei)",
     "fullscreen": "Vollbild",
     "fullscreenExit": "Vollbild beenden"
   },
@@ -213,6 +215,8 @@
     "previewFailed": "Vorschau fehlgeschlagen:",
     "editorLaunchError": "Fehler beim Starten des Editors:",
     "pasteFailed": "Einige Dateien konnten nicht kopiert werden:",
-    "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:"
+    "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:",
+    "rotateFailed": "Fehler beim Drehen der JPEG-Datei:",
+    "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):"
   }
 }
