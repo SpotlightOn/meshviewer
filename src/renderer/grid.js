@@ -1,4 +1,3 @@
-import { renderGlbThumbnail } from "./3d/thumbnails.js";
 import { t } from "./i18n.js";
 import { formatSize, mimeFor, toArrayBuffer } from "./utils.js";
 
@@ -57,6 +56,7 @@ async function loadThumb(file, card) {
   const thumb = card.querySelector(".thumb");
   try {
     if (file.type === "glb") {
+      const { renderGlbThumbnail } = await import("./3d/thumbnails.js");
       thumb.src = await renderGlbThumbnail(toArrayBuffer(await window.api.readFile(file.path)));
       wrap.classList.remove("loading");
     } else {
