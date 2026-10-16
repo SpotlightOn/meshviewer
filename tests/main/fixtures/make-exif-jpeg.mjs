@@ -14,7 +14,7 @@ export async function makeExifJpeg(outPath) {
     .jpeg({ quality: 85 })
     .toBuffer();
   const thumb = await sharp({
-    create: { width: 32, height: 32, channels: 3, background: "#1ec81e" },
+    create: { width: 48, height: 32, channels: 3, background: "#1ec81e" },
   })
     .jpeg({ quality: 60 })
     .toBuffer();

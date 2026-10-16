@@ -31,8 +31,28 @@ function formatSize(bytes) {
  * @returns {string} MIME type or 'application/octet-stream'.
  */
 function mimeFor(filename) {
-  const ext = filename.slice(filename.lastIndexOf(".")).toLowerCase();
-  return IMAGE_MIME[ext] || "application/octet-stream";
+  return IMAGE_MIME[extensionOf(filename)] || "application/octet-stream";
+}
+
+/**
+ * Returns the file name extension, lowercased and with the leading dot, or an
+ * empty string when the name has no extension.
+ * @param {string} filename - File name.
+ * @returns {string} Lowercase extension including the dot.
+ */
+function extensionOf(filename) {
+  const dot = filename.lastIndexOf(".");
+  return dot === -1 ? "" : filename.slice(dot).toLowerCase();
+}
+
+/**
+ * Whether a file name is a JPEG, the only format that can be rotated
+ * losslessly on disk.
+ * @param {string} filename - File name.
+ * @returns {boolean} true for `.jpg` and `.jpeg`.
+ */
+function isJpeg(filename) {
+  return extensionOf(filename) === ".jpg" || extensionOf(filename) === ".jpeg";
 }
 
 /**
@@ -386,10 +406,12 @@ export {
   clampZoomPercent,
   exifTagLabel,
   exifToSections,
+  extensionOf,
   fileInfoRows,
   formatSize,
   IMAGE_MIME,
   imageDataUrl,
+  isJpeg,
   MAX_ZOOM,
   MAX_ZOOM_PERCENT,
   MIN_ZOOM,

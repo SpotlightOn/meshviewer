@@ -9,6 +9,7 @@ import i18nEn from "./locales/en.json" with { type: "json" };
 import { createMainWindow } from "./main-window.js";
 import { createAppMenu } from "./menu.js";
 import { registerAppProtocol } from "./protocol.js";
+import { registerRotateIpc } from "./rotate.js";
 import { loadSettings, registerSettingsIpc } from "./settingsStore.js";
 import { registerWindowIpc } from "./window-ipc.js";
 
@@ -47,6 +48,7 @@ app.whenReady().then(async () => {
     nativeTheme.themeSource = settings.theme;
   });
   registerEditorIpc(ipcMain, dialog);
+  registerRotateIpc(ipcMain);
   registerDialogIpc(ipcMain);
   registerWindowIpc(ipcMain);
   initI18n();

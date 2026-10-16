@@ -166,6 +166,9 @@ importers:
 
   .:
     dependencies:
+      '@chimok/jpegtran-js':
+        specifier: ^0.9.0
+        version: 0.9.0
       exifreader:
         specifier: ^4.47.0
         version: 4.47.0
@@ -270,6 +273,11 @@ packages:
 
   '@bramus/specificity@2.4.3':
     resolution: {integrity: sha512-0GEz8qJWokkUVYQYRukmkSHIFNoBH8QTreeHrAFbvz1XFYc3Y+puhMs8PQ5x8GNugiC2l5jvDBXKLbBIByeSBw==}
+    hasBin: true
+
+  '@chimok/jpegtran-js@0.9.0':
+    resolution: {integrity: sha512-Tthvblyf61yZ64hl4MgZVzRrjQgRMSpmU9w2yb0hMdfw4xdbFfoV9HV7cwXfBWvf3fOWFeqsD7GFUxQSU65Gxw==}
+    engines: {node: '>=22.6'}
     hasBin: true
 
   '@csstools/color-helpers@6.1.2':
@@ -2063,6 +2071,8 @@ snapshots:
   '@bramus/specificity@2.4.3':
     dependencies:
       css-tree: 3.2.1
+
+  '@chimok/jpegtran-js@0.9.0': {}
 
   '@csstools/color-helpers@6.1.2': {}
 

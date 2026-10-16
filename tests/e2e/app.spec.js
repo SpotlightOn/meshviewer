@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { launchApp } from "./launch.js";
 
 test("app boots and renders the directory tree", async () => {
@@ -499,6 +500,45 @@ test("trashes a folder from the tree context menu after confirmation", async () 
     await expect(page.locator("#confirm-overlay")).toBeHidden();
     await expect.poll(() => existsSync(victim)).toBe(false);
     await expect(row).toHaveCount(0);
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("rotate buttons are shown for JPEG files and hidden for other images", async () => {
+  const { electronApp, page } = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-rotate-"));
+  const background = { r: 51, g: 102, b: 153 };
+  try {
+    // Real fixtures so the large view decodes them. Generating them with sharp
+    // keeps the test independent of the rotation module.
+    await sharp({ create: { width: 64, height: 48, channels: 3, background } })
+      .jpeg()
+      .toFile(join(dir, "photo.jpg"));
+    await sharp({ create: { width: 64, height: 48, channels: 3, background } })
+      .png()
+      .toFile(join(dir, "photo.png"));
+
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(2);
+
+    await page.locator(".card", { hasText: "photo.jpg" }).dblclick();
+    await expect(page.locator("#large-view")).toBeVisible();
+    await expect(page.locator("#large-rotate-left")).toBeVisible();
+    await expect(page.locator("#large-rotate-left")).toBeEnabled();
+    await expect(page.locator("#large-rotate-right")).toBeVisible();
+    await expect(page.locator("#large-rotate-right")).toBeEnabled();
+
+    await page.locator("#large-back").click();
+    await page.locator(".card", { hasText: "photo.png" }).dblclick();
+    await expect(page.locator("#large-view")).toBeVisible();
+    await expect(page.locator("#large-rotate-left")).toBeHidden();
+    await expect(page.locator("#large-rotate-right")).toBeHidden();
   } finally {
     await electronApp.close();
     await rm(dir, { recursive: true, force: true });

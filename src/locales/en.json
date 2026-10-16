@@ -35,6 +35,8 @@
     "actualSize": "Actual size",
     "fitToScreen": "Fit to screen",
     "info": "File information",
+    "rotateLeft": "Rotate left (lossless)",
+    "rotateRight": "Rotate right (lossless)",
     "fullscreen": "Fullscreen",
     "fullscreenExit": "Exit fullscreen"
   },
@@ -213,6 +215,8 @@
     "previewFailed": "Preview failed:",
     "editorLaunchError": "Error launching the editor:",
     "pasteFailed": "Some files could not be copied:",
-    "trashFailed": "Some files could not be moved to trash:"
+    "trashFailed": "Some files could not be moved to trash:",
+    "rotateFailed": "Error rotating the JPEG:",
+    "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):"
   }
 }

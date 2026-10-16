@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { freedesktopUri, getThumbnail, thumbnailKey } from "../../src/thumbnails.js";
+import {
+  freedesktopUri,
+  getThumbnail,
+  thumbnailKey,
+  thumbnailMatchesImage,
+} from "../../src/thumbnails.js";
 
 let fixtureDir;
 let cacheDir;
@@ -164,5 +169,34 @@ describe("readFreedesktopThumbnail", () => {
     const result = await getThumbnail(file, ownCache);
     expect(result).toMatch(/^data:image\/jpeg;base64,/);
     expect(await readdir(ownCache)).toHaveLength(1);
+  });
+});
+
+describe("thumbnailMatchesImage", () => {
+  it("accepts thumbnails with the aspect ratio of their image", () => {
+    expect(thumbnailMatchesImage({ width: 160, height: 120 }, { width: 4032, height: 3024 })).toBe(
+      true,
+    );
+    expect(thumbnailMatchesImage({ width: 196, height: 73 }, { width: 800, height: 300 })).toBe(
+      true,
+    );
+  });
+
+  it("rejects a thumbnail whose image was turned by a quarter turn", () => {
+    expect(thumbnailMatchesImage({ width: 160, height: 120 }, { width: 3024, height: 4032 })).toBe(
+      false,
+    );
+  });
+
+  it("rejects a thumbnail that does not match its image at all", () => {
+    expect(thumbnailMatchesImage({ width: 32, height: 32 }, { width: 120, height: 80 })).toBe(
+      false,
+    );
+  });
+
+  it("rejects missing dimensions", () => {
+    expect(thumbnailMatchesImage(null, { width: 120, height: 80 })).toBe(false);
+    expect(thumbnailMatchesImage({ width: 120, height: 80 }, null)).toBe(false);
+    expect(thumbnailMatchesImage(null, null)).toBe(false);
   });
 });
