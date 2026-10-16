@@ -6,6 +6,7 @@ import {
   clampZoom,
   clampZoomPercent,
   formatSize,
+  isJpeg,
   mimeFor,
   parseZoomPercent,
   retireFrames,
@@ -362,13 +363,14 @@ function createImageView(canvas, img, onChange, onSwipe) {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeRotateLeft: HTMLButtonElement, largeRotateRight: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
+ * @param {(file: {path: string, size: number, mtimeMs: number}) => void} [deps.onFileChanged] - Called after a file was rewritten on disk, so other views (the grid) can refresh their thumbnail.
  * @returns {{show: Function, close: () => void, isActive: () => boolean, onKeydown: (event: KeyboardEvent) => boolean, toggleSlideshow: () => void, restartSlideshow: () => void}} Large view module API.
  */
-export function createLargeView({ dom, settings, getFiles, infoDialog }) {
+export function createLargeView({ dom, settings, getFiles, infoDialog, onFileChanged }) {
   const {
     largeView,
     largeCanvas,
@@ -377,6 +379,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeZoomValue,
     largeBack,
     infoButton,
+    largeRotateLeft,
+    largeRotateRight,
     largeSlideshow,
     largeEquirect,
     largeActual,
@@ -393,6 +397,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   let fullscreen = false;
   let fullscreenExitVisible = false;
   let fullscreenIdleTimer = null;
+  let rotating = false;
 
   /** @type {number} */
   let currentZoomPercent = 100;
@@ -554,6 +559,62 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   }
 
   /**
+   * Returns whether the shown file can be rotated losslessly: JPEG is the only
+   * supported format, every other file type has no block-based transform.
+   * @returns {boolean} true when a rotation is possible.
+   */
+  function canRotate() {
+    const file = largeViewState?.file;
+    return Boolean(file) && isJpeg(file.name);
+  }
+
+  /**
+   * Shows both rotation buttons only for JPEG files and disables them while a
+   * rotation is running. For every other format the buttons are hidden, so the
+   * toolbar never offers an action the file does not support.
+   */
+  function updateRotateButtons() {
+    const applicable = canRotate();
+    largeRotateLeft.hidden = !applicable;
+    largeRotateRight.hidden = !applicable;
+    largeRotateLeft.disabled = !applicable || rotating;
+    largeRotateRight.disabled = !applicable || rotating;
+  }
+
+  /**
+   * Rotates the shown JPEG losslessly on disk and reloads it, so the pixels in
+   * the file and the pixels on screen match again. The buttons stay disabled
+   * until the tool finished; a failure only reaches the console and leaves the
+   * file untouched.
+   * @param {number} degrees - Clockwise angle: 90 for a quarter turn to the right, 270 for a quarter turn to the left.
+   * @returns {Promise<void>}
+   */
+  async function rotateCurrent(degrees) {
+    if (rotating || !canRotate()) return;
+    const state = largeViewState;
+    rotating = true;
+    updateRotateButtons();
+    try {
+      const result = await window.api.rotateJpeg(state.file.path, degrees);
+      if (!result.ok) {
+        console.error(t("console.rotateFailed"), state.file.path, result.code, result.detail ?? "");
+        return;
+      }
+      if (result.perfect === false) {
+        console.warn(t("console.rotateImperfect"), state.file.path);
+      }
+      state.file.size = result.size;
+      state.file.mtimeMs = result.mtimeMs;
+      onFileChanged?.(state.file);
+      if (largeViewState !== state) return;
+      await show(state.file, 0);
+    } finally {
+      rotating = false;
+      updateRotateButtons();
+    }
+  }
+
+  /**
    * Closes and hides the large view.
    */
   function close() {
@@ -566,6 +627,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeInfo.textContent = "";
     largePrev.disabled = true;
     largeNext.disabled = true;
+    updateRotateButtons();
     syncZoomControl(1);
   }
 
@@ -713,6 +775,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
     largeView.classList.remove("hidden");
     updateStatusBar(file);
     updateNavButtons();
+    updateRotateButtons();
     syncZoomControl(1);
     largeEquirect.checked = false;
     largeEquirect.disabled = !isPixmap(file.name);
@@ -727,6 +790,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
       console.error(t("console.fileOpenError"), file.path, error);
       if (largeViewState?.token === token) close();
     }
+    updateRotateButtons();
   }
 
   /**
@@ -938,6 +1002,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog }) {
   });
   largeActual.addEventListener("click", () => setZoom(100));
   largeFit.addEventListener("click", fitToScreen);
+  largeRotateLeft.addEventListener("click", () => void rotateCurrent(270));
+  largeRotateRight.addEventListener("click", () => void rotateCurrent(90));
   largePrev.addEventListener("click", () => navigate(-1));
   largeNext.addEventListener("click", () => navigate(1));
   largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));

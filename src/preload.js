@@ -37,6 +37,7 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
  * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
  * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
+ * @property {(filePath: string, degrees: number) => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, angle?: number, perfect?: boolean, code?: string, detail?: string}>} rotateJpeg - Rotates a JPEG losslessly in place (90 = clockwise, 180, 270 = counter-clockwise). On success the new file size and modification time are returned; on failure `code` is one of `invalid-angle`, `not-jpeg`, `transform`, `io`.
  * @property {() => Promise<StoredSettings>} getSettings - Returns the current application settings.
  * @property {(settings: StoredSettings) => Promise<StoredSettings>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
@@ -65,6 +66,7 @@ const api = {
   openPath: (filePath) => ipcRenderer.invoke("shell:openPath", filePath),
   pickExecutable: () => ipcRenderer.invoke("editor:pick"),
   runEditor: (command, filePath) => ipcRenderer.invoke("editor:run", command, filePath),
+  rotateJpeg: (filePath, degrees) => ipcRenderer.invoke("rotate:jpeg", filePath, degrees),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
   onOpenSettings: (callback) => {
