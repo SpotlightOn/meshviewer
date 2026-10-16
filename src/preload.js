@@ -38,6 +38,7 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
  * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
  * @property {(filePath: string, degrees: number) => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, angle?: number, perfect?: boolean, code?: string, detail?: string}>} rotateJpeg - Rotates a JPEG losslessly in place (90 = clockwise, 180, 270 = counter-clockwise). On success the new file size and modification time are returned; on failure `code` is one of `invalid-angle`, `not-jpeg`, `transform`, `io`.
+ * @property {(filePath: string, rect: {x: number, y: number, width: number, height: number}) => Promise<{ok: boolean, path?: string, name?: string, size?: number, mtimeMs?: number, width?: number, height?: number, code?: string, detail?: string}>} cropJpeg - Crops a JPEG losslessly into a new `<name>-crop-<n>.jpg` next to it and leaves the source untouched. On success the path and name of the new file and its dimensions are returned; on failure `code` is one of `invalid-rect`, `not-jpeg`, `bad-crop`, `transform`, `io`.
  * @property {() => Promise<StoredSettings>} getSettings - Returns the current application settings.
  * @property {(settings: StoredSettings) => Promise<StoredSettings>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
@@ -67,6 +68,7 @@ const api = {
   pickExecutable: () => ipcRenderer.invoke("editor:pick"),
   runEditor: (command, filePath) => ipcRenderer.invoke("editor:run", command, filePath),
   rotateJpeg: (filePath, degrees) => ipcRenderer.invoke("rotate:jpeg", filePath, degrees),
+  cropJpeg: (filePath, rect) => ipcRenderer.invoke("crop:jpeg", filePath, rect),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
   onOpenSettings: (callback) => {

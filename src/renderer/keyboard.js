@@ -139,7 +139,8 @@ export function createKeyboard({
   }
 
   /**
-   * Zooms the thumbnail grid with Ctrl++/Ctrl+- and resets it with Ctrl+0.
+   * Zooms the thumbnail grid with + and - and resets it with 0. The Ctrl
+   * variants scale the whole UI through the menu instead.
    * @param {KeyboardEvent} event - Keyboard event.
    */
   function handleGridZoom(event) {
@@ -147,7 +148,7 @@ export function createKeyboard({
     if (folderDialog.isOpen()) return;
     if (confirmDialog.isOpen()) return;
     if (largeView.isActive()) return;
-    if (!event.ctrlKey || isTypingTarget(event)) return;
+    if (event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(event)) return;
 
     const zoomIn = event.key === "+" || event.key === "=" || event.key === "Add";
     const zoomOut = event.key === "-" || event.key === "_" || event.key === "Subtract";

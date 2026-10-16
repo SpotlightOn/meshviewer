@@ -1,34 +1,12 @@
 import fsp from "node:fs/promises";
-import path from "node:path";
-import { COPY, createRotator, STATUS } from "@chimok/jpegtran-js";
+import { COPY } from "@chimok/jpegtran-js";
+import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpegTransform.js";
 
 /**
  * Rotation angles the module can apply (clockwise turns of the stored pixels).
  * @type {Set<number>}
  */
 const ROTATION_ANGLES = new Set([90, 180, 270]);
-
-/**
- * File extensions that are treated as JPEG input.
- * @type {Set<string>}
- */
-const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
-
-/** Permission bits that are carried over from the original file. */
-const MODE_MASK = 0o7777;
-
-/**
- * Marker inside the name of the temporary file, which also carries a `.tmp`
- * extension so a leftover file is never picked up as a media file.
- * @type {string}
- */
-const TEMP_MARKER = ".meshviewer-rotate";
-
-/** Sequence number for the temporary file names inside this process. */
-let tempCounter = 0;
-
-/** The loaded transformer, shared by every rotation in this process. */
-let transformerPromise = null;
 
 /**
  * Normalizes a requested rotation angle to one of the supported clockwise
@@ -43,25 +21,10 @@ function normalizeAngle(degrees) {
 }
 
 /**
- * Loads the @chimok/jpegtran-js WebAssembly module once and caches it. A failed
- * load is not cached, so the next rotation tries again.
- * @returns {Promise<object>} The transformer from @chimok/jpegtran-js.
- */
-async function loadTransformer() {
-  if (transformerPromise === null) {
-    transformerPromise = createRotator().catch((error) => {
-      transformerPromise = null;
-      throw error;
-    });
-  }
-  return transformerPromise;
-}
-
-/**
- * Rotates JPEG bytes in memory through the @chimok/jpegtran-js API: the module only
- * rearranges the DCT blocks, the image is never decoded and recompressed, so
- * the quality stays exactly as it was and every extra marker (Exif included) is
- * kept.
+ * Rotates JPEG bytes in memory through the @chimok/jpegtran-js API: the module
+ * only rearranges the DCT blocks, the image is never decoded and recompressed,
+ * so the quality stays exactly as it was and every extra marker (Exif included)
+ * is kept.
  * @param {Uint8Array} bytes - Content of the JPEG file.
  * @param {number} angle - Clockwise angle (90, 180 or 270).
  * @returns {Promise<{data: Uint8Array, perfect: boolean}>} Rotated bytes and whether the transform was MCU aligned.
@@ -73,32 +36,8 @@ async function rotateBytes(bytes, angle) {
 }
 
 /**
- * Returns the temporary path a rotation writes to before the original file is
- * replaced. It lives in the same directory as the source, so the final move is
- * an atomic rename inside one filesystem.
- * @param {string} filePath - Absolute path of the input file.
- * @returns {string} Absolute path of the temporary output file.
- */
-function tempPathFor(filePath) {
-  const name = `${path.basename(filePath)}.${process.pid}-${tempCounter}${TEMP_MARKER}.tmp`;
-  tempCounter += 1;
-  return path.join(path.dirname(filePath), name);
-}
-
-/**
- * Maps a failed rotation to a result object for the renderer.
- * @param {Error & {status?: number}} error - Error the rotation threw.
- * @returns {{ok: false, code: 'not-jpeg'|'transform', detail: string}} Error result.
- */
-function transformFailure(error) {
-  const detail = (error?.message ?? String(error)).trim();
-  const code = error?.status === STATUS.notJpeg ? "not-jpeg" : "transform";
-  return { ok: false, code, detail };
-}
-
-/**
- * Rotates a JPEG file losslessly in place with the @chimok/jpegtran-js API. Nothing is
- * recompressed and every extra marker is kept.
+ * Rotates a JPEG file losslessly in place with the @chimok/jpegtran-js API.
+ * Nothing is recompressed and every extra marker is kept.
  *
  * The result is written to a temporary file first; the original is only
  * replaced once a complete output exists, and its permission bits are carried
@@ -117,28 +56,13 @@ async function rotateJpeg(filePath, degrees, options = {}) {
 
   const angle = normalizeAngle(degrees);
   if (angle === null) return { ok: false, code: "invalid-angle" };
-  if (!JPEG_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
-    return { ok: false, code: "not-jpeg" };
-  }
 
-  let stat;
-  try {
-    stat = await fileSystem.stat(filePath);
-  } catch (error) {
-    return { ok: false, code: "io", detail: error?.message ?? String(error) };
-  }
-  if (!stat.isFile()) return { ok: false, code: "io", detail: "not a regular file" };
-
-  let bytes;
-  try {
-    bytes = await fileSystem.readFile(filePath);
-  } catch (error) {
-    return { ok: false, code: "io", detail: error?.message ?? String(error) };
-  }
+  const input = await readJpeg(filePath, fileSystem);
+  if (!input.ok) return input;
 
   let rotated;
   try {
-    rotated = await rotate(new Uint8Array(bytes), angle);
+    rotated = await rotate(input.bytes, angle);
   } catch (error) {
     return transformFailure(error);
   }
@@ -146,13 +70,9 @@ async function rotateJpeg(filePath, degrees, options = {}) {
     return { ok: false, code: "transform", detail: "the rotation produced no output" };
   }
 
-  const tempPath = tempPathFor(filePath);
   try {
-    await fileSystem.writeFile(tempPath, rotated.data);
-    await fileSystem.chmod(tempPath, stat.mode & MODE_MASK).catch(() => {});
-    await fileSystem.rename(tempPath, filePath);
+    await writeAtomically(fileSystem, filePath, rotated.data, input.stat.mode);
   } catch (error) {
-    await fileSystem.rm(tempPath, { force: true }).catch(() => {});
     return { ok: false, code: "io", detail: error?.message ?? String(error) };
   }
 

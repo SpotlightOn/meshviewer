@@ -1,6 +1,7 @@
 import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from "electron";
 import i18next from "i18next";
+import { registerCropIpc } from "./crop.js";
 import { registerDialogIpc, showAbout, showUsage } from "./dialogs.js";
 import { registerEditorIpc } from "./editorIpc.js";
 import { registerFsIpc } from "./fsIpc.js";
@@ -49,6 +50,7 @@ app.whenReady().then(async () => {
   });
   registerEditorIpc(ipcMain, dialog);
   registerRotateIpc(ipcMain);
+  registerCropIpc(ipcMain);
   registerDialogIpc(ipcMain);
   registerWindowIpc(ipcMain);
   initI18n();

@@ -159,18 +159,27 @@ function showUsage() {
     [`${kbd("←")} / ${kbd("Backspace")}`, "shortcuts.previous"],
     [`${kbd("→")} / ${kbd("Space")}`, "shortcuts.next"],
     [kbd("F"), "shortcuts.toggleFit"],
-    [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.zoomIn"],
-    [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.zoomOut"],
-    [`${kbd("Ctrl")} + ${kbd("0")} / ${kbd("1")}`, "shortcuts.zoomReset"],
+    [`${kbd("+")} / ${kbd("=")}`, "shortcuts.zoomIn"],
+    [kbd("-"), "shortcuts.zoomOut"],
+    [`${kbd("0")} / ${kbd("1")}`, "shortcuts.zoomReset"],
     [kbd("F5"), "shortcuts.slideshow"],
     [kbd("Esc"), "shortcuts.closeLarge"],
     [kbd("F11"), "shortcuts.fullscreen"],
   ];
+  const cropRows = [
+    [`${kbd("←")} / ${kbd("→")} / ${kbd("↑")} / ${kbd("↓")}`, "shortcuts.cropMove"],
+    [
+      `${kbd("Shift")} + ${kbd("←")} / ${kbd("→")} / ${kbd("↑")} / ${kbd("↓")}`,
+      "shortcuts.cropResize",
+    ],
+    [kbd("Enter"), "shortcuts.cropApply"],
+    [kbd("Esc"), "shortcuts.cropCancel"],
+  ];
   const gridRows = [
-    [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
-    [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
+    [`${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
+    [kbd("-"), "shortcuts.smallerTiles"],
     [`${kbd("Ctrl")} + ${escapeHtml(i18next.t("mouse.wheel"))}`, "shortcuts.zoomTilesWheel"],
-    [`${kbd("Ctrl")} + ${kbd("0")}`, "shortcuts.resetTiles"],
+    [kbd("0"), "shortcuts.resetTiles"],
     [`${kbd("Ctrl")} + ${kbd("A")}`, "shortcuts.selectAllFiles"],
     [
       `${kbd("Ctrl")} + ${kbd("X")} / ${kbd("Ctrl")} + ${kbd("C")} / ${kbd("Ctrl")} + ${kbd("V")}`,
@@ -205,6 +214,7 @@ function showUsage() {
     bodyHtml: `
   <h2>${escapeHtml(i18next.t("shortcuts.title"))}</h2>
   ${section("shortcuts.largeView", rows)}
+  ${section("shortcuts.crop", cropRows)}
   ${section("shortcuts.grid", gridRows)}
   ${section("shortcuts.pathField", pathRows)}
   ${section("shortcuts.mouse", mouseRows)}

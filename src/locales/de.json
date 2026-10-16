@@ -38,7 +38,11 @@
     "rotateLeft": "Links drehen (verlustfrei)",
     "rotateRight": "Rechts drehen (verlustfrei)",
     "fullscreen": "Vollbild",
-    "fullscreenExit": "Vollbild beenden"
+    "fullscreenExit": "Vollbild beenden",
+    "crop": "Zuschneiden (verlustfrei)",
+    "cropApply": "Zuschnitt als neue Datei speichern",
+    "cropReset": "Das ganze Bild auswählen",
+    "cropCancel": "Zuschneiden verlassen"
   },
   "info": {
     "title": "Dateiinformationen",
@@ -123,7 +127,12 @@
     "clearSelection": "Auswahl aufheben",
     "openPath": "Eingegebenen Pfad öffnen",
     "revertPath": "Feld zurücksetzen",
-    "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab."
+    "zoomFieldNote": "Zoomfeld: Prozentzahl eingeben (z. B. 120) und Enter drücken; Esc bricht ab.",
+    "cropMove": "Zuschnitt verschieben",
+    "cropResize": "Zuschnitt skalieren",
+    "cropApply": "Zuschnitt speichern",
+    "cropCancel": "Zuschneiden verlassen",
+    "crop": "Zuschneiden (JPEG)"
   },
   "mouse": {
     "leftClick": "Linksklick",
@@ -217,6 +226,7 @@
     "pasteFailed": "Einige Dateien konnten nicht kopiert werden:",
     "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:",
     "rotateFailed": "Fehler beim Drehen der JPEG-Datei:",
-    "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):"
+    "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
+    "cropFailed": "Fehler beim Zuschneiden der JPEG-Datei:"
   }
 }
