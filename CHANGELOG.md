@@ -6,6 +6,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Added
 - Lossless JPEG rotation: rotate-left / rotate-right buttons in the large view rewrite `.jpg`/`.jpeg` in place through the bundled `@chimok/jpegtran-js` WebAssembly module (no recompression, EXIF preserved, no external binary required)
+- Lossless JPEG crop: a crop mode in the large view with a selection rectangle that snaps to the iMCU grid of the file, writes `<name>-crop-<n>.jpg` next to the source and leaves the original untouched (no recompression, EXIF preserved)
 
 ## [0.8.0] - 2026-10-10
 

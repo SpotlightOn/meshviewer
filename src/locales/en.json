@@ -38,7 +38,11 @@
     "rotateLeft": "Rotate left (lossless)",
     "rotateRight": "Rotate right (lossless)",
     "fullscreen": "Fullscreen",
-    "fullscreenExit": "Exit fullscreen"
+    "fullscreenExit": "Exit fullscreen",
+    "crop": "Crop (lossless)",
+    "cropApply": "Save the crop as a new file",
+    "cropReset": "Select the whole image",
+    "cropCancel": "Leave crop mode"
   },
   "info": {
     "title": "File information",
@@ -123,7 +127,12 @@
     "clearSelection": "Clear selection",
     "openPath": "Open the entered path",
     "revertPath": "Revert the field",
-    "zoomFieldNote": "Zoom field: type a percentage (e.g. 120) and press Enter; Esc cancels."
+    "zoomFieldNote": "Zoom field: type a percentage (e.g. 120) and press Enter; Esc cancels.",
+    "cropMove": "Move the crop selection",
+    "cropResize": "Resize the crop selection",
+    "cropApply": "Save the crop",
+    "cropCancel": "Leave crop mode",
+    "crop": "Crop (JPEG)"
   },
   "mouse": {
     "leftClick": "Left click",
@@ -217,6 +226,7 @@
     "pasteFailed": "Some files could not be copied:",
     "trashFailed": "Some files could not be moved to trash:",
     "rotateFailed": "Error rotating the JPEG:",
-    "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):"
+    "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):",
+    "cropFailed": "Error cropping the JPEG:"
   }
 }

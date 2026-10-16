@@ -38,6 +38,7 @@ An Electron app that renders local .glb files as thumbnails using Three.js and G
 - **Slideshow** — fade or slide transition with configurable interval and animation duration, progress line in the header
 - **File information dialog** — all EXIF groups of an image plus basic file information, with the embedded preview shown as an image
 - **Lossless JPEG rotation** — rotate left/right in the large view rewrites `.jpg`/`.jpeg` in place without recompressing; EXIF and the other markers survive, and it runs in-process through the bundled `@chimok/jpegtran-js` WebAssembly module
+- **Lossless JPEG crop** — a crop mode in the large view whose selection snaps to the iMCU grid of the file, so the result is exactly the area that was picked; it is written as `<name>-crop-<n>.jpg` next to the source, which stays untouched
 - **Path bar** — clickable breadcrumbs that switch to an editable text field
 - **Settings** — color scheme, tile open behavior, thumbnail fit, transparency background, editor command, slideshow, checksum verification
 
@@ -71,6 +72,16 @@ Navigate in the directory tree on the left (rooted at `/`); `..` goes one level 
 | `F11` | Toggle fullscreen |
 
 Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale for images) and the zoom slider in the header. The percentage field next to the slider accepts a typed value such as `120` — `Enter` or clicking away applies it, `Esc` reverts the field. The fit-to-screen button beside it restores the fitted size after zooming, and the slideshow is toggled with a switch in the header; while it runs, a subtle 1 px progress line at the header's bottom edge shows the time until the next image.
+
+**Crop mode (JPEG)**
+
+| Shortcut | Action |
+| --- | --- |
+| `←` / `→` / `↑` / `↓` | Move the selection by one grid step |
+| `Shift` + arrows | Resize the selection |
+| `R` | Select the whole image again |
+| `Enter` | Write the crop as a new file |
+| `Esc` | Leave the crop mode |
 
 **File grid**
 
