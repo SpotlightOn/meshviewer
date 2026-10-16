@@ -1,4 +1,13 @@
 import { createGlbView } from "./3d/view.js";
+import {
+  displayGrid,
+  displaySize,
+  imcuSize,
+  moveRegion,
+  orientRegion,
+  resizeRegion,
+} from "./crop.js";
+import { createCropOverlay } from "./crop-overlay.js";
 import { isPixmap } from "./equirectangular/utils.js";
 import { createEquirectView } from "./equirectangular/view.js";
 import { t } from "./i18n.js";
@@ -27,7 +36,7 @@ const MIDDLE_CLICK_TOLERANCE = 8;
  * @param {HTMLImageElement} img - The image element (must be loaded).
  * @param {(scale: number) => void} [onChange] - Called after every zoom change with the current scale factor.
  * @param {(delta: number) => void} [onSwipe] - Called when a drag gesture navigates (1 forward, -1 backward).
- * @returns {{fitView: () => void, zoomIn: (anchor?: {x: number, y: number}) => void, zoomOut: (anchor?: {x: number, y: number}) => void, reset: () => void, setZoom: (percent: number) => void, toggleFit: () => void, getScale: () => number, dispose: () => void}} Image view controller.
+ * @returns {{fitView: () => void, zoomIn: (anchor?: {x: number, y: number}) => void, zoomOut: (anchor?: {x: number, y: number}) => void, reset: () => void, setZoom: (percent: number) => void, toggleFit: () => void, getScale: () => number, getTransform: () => {tx: number, ty: number, scale: number}, dispose: () => void}} Image view controller.
  */
 function createImageView(canvas, img, onChange, onSwipe) {
   const nw = img.naturalWidth;
@@ -346,6 +355,7 @@ function createImageView(canvas, img, onChange, onSwipe) {
     setZoom,
     toggleFit,
     getScale: () => state.scale,
+    getTransform: () => ({ tx: state.tx, ty: state.ty, scale: state.scale }),
     dispose() {
       canvas.removeEventListener("pointerdown", pointerdown);
       canvas.removeEventListener("pointermove", pointermove);
@@ -368,9 +378,17 @@ function createImageView(canvas, img, onChange, onSwipe) {
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
  * @param {(file: {path: string, size: number, mtimeMs: number}) => void} [deps.onFileChanged] - Called after a file was rewritten on disk, so other views (the grid) can refresh their thumbnail.
+ * @param {(file: object) => Promise<void>} [deps.onFileCreated] - Called after a new file was written next to the current one, so other views (the grid) can pick it up.
  * @returns {{show: Function, close: () => void, isActive: () => boolean, onKeydown: (event: KeyboardEvent) => boolean, toggleSlideshow: () => void, restartSlideshow: () => void}} Large view module API.
  */
-export function createLargeView({ dom, settings, getFiles, infoDialog, onFileChanged }) {
+export function createLargeView({
+  dom,
+  settings,
+  getFiles,
+  infoDialog,
+  onFileChanged,
+  onFileCreated,
+}) {
   const {
     largeView,
     largeCanvas,
@@ -390,6 +408,12 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
     largeFullscreen,
     largeFullscreenExit,
     slideshowProgress,
+    largeCrop,
+    cropTools,
+    cropReadout,
+    cropApply,
+    cropReset,
+    cropCancel,
   } = dom;
   let largeViewState = null;
   let largeToken = 0;
@@ -398,6 +422,8 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
   let fullscreenExitVisible = false;
   let fullscreenIdleTimer = null;
   let rotating = false;
+  let crop = null;
+  let cropping = false;
 
   /** @type {number} */
   let currentZoomPercent = 100;
@@ -409,6 +435,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
   function disposeResources() {
     if (!largeViewState) return;
     const { glb, objectUrl, imageView, equirect } = largeViewState;
+    if (crop) leaveCrop();
     if (glb) glb.dispose();
     if (imageView) imageView.dispose();
     if (equirect) equirect.dispose();
@@ -559,26 +586,33 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
   }
 
   /**
-   * Returns whether the shown file can be rotated losslessly: JPEG is the only
-   * supported format, every other file type has no block-based transform.
-   * @returns {boolean} true when a rotation is possible.
+   * Returns whether the shown file supports the lossless JPEG tools: JPEG is the
+   * only supported format, every other file type has no block-based transform.
+   * @returns {boolean} true when a rotation or a crop is possible.
    */
-  function canRotate() {
+  function canEditJpeg() {
     const file = largeViewState?.file;
     return Boolean(file) && isJpeg(file.name);
   }
 
   /**
-   * Shows both rotation buttons only for JPEG files and disables them while a
-   * rotation is running. For every other format the buttons are hidden, so the
+   * Shows the JPEG tools only for JPEG files and disables them while one of
+   * them is running. For every other format the buttons are hidden, so the
    * toolbar never offers an action the file does not support.
    */
-  function updateRotateButtons() {
-    const applicable = canRotate();
+  function updateToolButtons() {
+    const applicable = canEditJpeg() && largeViewState?.mode !== "equirect";
+    const busy = rotating || cropping;
     largeRotateLeft.hidden = !applicable;
     largeRotateRight.hidden = !applicable;
-    largeRotateLeft.disabled = !applicable || rotating;
-    largeRotateRight.disabled = !applicable || rotating;
+    largeRotateLeft.disabled = !applicable || busy;
+    largeRotateRight.disabled = !applicable || busy;
+    largeCrop.hidden = !applicable || crop !== null;
+    largeCrop.disabled = !applicable || busy;
+    cropTools.hidden = crop === null;
+    cropApply.disabled = busy;
+    cropReset.disabled = busy;
+    cropCancel.disabled = busy;
   }
 
   /**
@@ -590,10 +624,10 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
    * @returns {Promise<void>}
    */
   async function rotateCurrent(degrees) {
-    if (rotating || !canRotate()) return;
+    if (rotating || !canEditJpeg()) return;
     const state = largeViewState;
     rotating = true;
-    updateRotateButtons();
+    updateToolButtons();
     try {
       const result = await window.api.rotateJpeg(state.file.path, degrees);
       if (!result.ok) {
@@ -610,8 +644,166 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
       await show(state.file, 0);
     } finally {
       rotating = false;
-      updateRotateButtons();
+      updateToolButtons();
     }
+  }
+
+  /**
+   * Reads the EXIF orientation of an image, so a selection made on the rotated
+   * display can be mapped back to the stored pixels.
+   * @param {string} filePath - Absolute path of the image.
+   * @returns {Promise<number>} Orientation between 1 and 8, 1 when unknown.
+   */
+  async function readOrientation(filePath) {
+    try {
+      const tags = await window.api.exif(filePath);
+      const value = Number(tags?.exif?.Orientation?.value);
+      return Number.isInteger(value) && value >= 1 && value <= 8 ? value : 1;
+    } catch {
+      return 1;
+    }
+  }
+
+  /**
+   * Shows the current selection in the toolbar.
+   */
+  function updateCropReadout() {
+    const region = crop?.overlay.getRegion() ?? null;
+    cropReadout.textContent =
+      region === null ? "" : `${region.x}, ${region.y} — ${region.width} × ${region.height}`;
+  }
+
+  /**
+   * Starts the crop mode for the shown JPEG. The selection grid is the iMCU of
+   * the file, so the crop never has to move or grow the region that was picked.
+   * @returns {Promise<void>}
+   */
+  async function startCrop() {
+    if (crop !== null || !canEditJpeg()) return;
+    const state = largeViewState;
+    const orientation = await readOrientation(state.file.path);
+    if (largeViewState !== state) return;
+
+    const display = state.imageSize;
+    const imcu = imcuSize(state.imageBytes);
+    const overlay = createCropOverlay(largeCanvas, {
+      getTransform: () => state.imageView.getTransform(),
+      getBounds: () => display,
+      getGrid: () => displayGrid(imcu, orientation),
+      onChange: updateCropReadout,
+    });
+    crop = { overlay, orientation, imcu, stored: displaySize(display, orientation) };
+    overlay.setRegion({ x: 0, y: 0, width: display.width, height: display.height });
+    updateCropReadout();
+    updateToolButtons();
+  }
+
+  /**
+   * Leaves the crop mode and drops the selection.
+   */
+  function leaveCrop() {
+    if (crop === null) return;
+    crop.overlay.dispose();
+    crop = null;
+    cropReadout.textContent = "";
+    updateToolButtons();
+  }
+
+  /**
+   * Puts the selection back onto the whole image.
+   */
+  function resetCrop() {
+    const display = largeViewState?.imageSize;
+    if (crop === null || !display) return;
+    crop.overlay.setRegion({ x: 0, y: 0, width: display.width, height: display.height });
+  }
+
+  /**
+   * Writes the selection as a new file next to the source and switches to it.
+   * The source file is left untouched.
+   * @returns {Promise<void>}
+   */
+  async function applyCrop() {
+    if (crop === null || cropping) return;
+    const state = largeViewState;
+    const displayRegion = crop.overlay.getRegion();
+    if (displayRegion === null) return;
+
+    const rect = orientRegion(displayRegion, crop.orientation, crop.stored);
+    cropping = true;
+    updateToolButtons();
+    try {
+      const result = await window.api.cropJpeg(state.file.path, rect);
+      if (!result.ok) {
+        console.error(t("console.cropFailed"), state.file.path, result.code, result.detail ?? "");
+        return;
+      }
+      if (largeViewState !== state) return;
+      const created = {
+        path: result.path,
+        name: result.name,
+        type: "image",
+        size: result.size,
+        mtimeMs: result.mtimeMs,
+      };
+      leaveCrop();
+      await onFileCreated?.(created);
+      await show(created, 0);
+    } finally {
+      cropping = false;
+      updateToolButtons();
+    }
+  }
+
+  /**
+   * Handles the keyboard while the crop mode is running: the arrow keys move the
+   * selection (with Shift they resize it), Enter writes the crop and Escape
+   * leaves the mode.
+   * @param {KeyboardEvent} event - Keyboard event.
+   * @returns {boolean} true when the event was consumed.
+   */
+  function handleCropKey(event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      leaveCrop();
+      return true;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void applyCrop();
+      return true;
+    }
+    if (event.key === "r" || event.key === "R") {
+      event.preventDefault();
+      resetCrop();
+      return true;
+    }
+
+    const directions = {
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+    };
+    const direction = directions[event.key];
+    if (!direction) return false;
+
+    event.preventDefault();
+    const region = crop.overlay.getRegion();
+    if (region === null) return true;
+    const grid = displayGrid(crop.imcu, crop.orientation);
+    const bounds = largeViewState.imageSize;
+    const dx = direction[0] * grid.width;
+    const dy = direction[1] * grid.height;
+    if (!event.shiftKey) {
+      crop.overlay.setRegion(moveRegion(region, dx, dy, grid, bounds));
+      return true;
+    }
+
+    const handle =
+      direction[0] !== 0 ? (direction[0] > 0 ? "e" : "w") : direction[1] > 0 ? "s" : "n";
+    crop.overlay.setRegion(resizeRegion(region, handle, dx, dy, grid, bounds));
+    return true;
   }
 
   /**
@@ -627,7 +819,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
     largeInfo.textContent = "";
     largePrev.disabled = true;
     largeNext.disabled = true;
-    updateRotateButtons();
+    updateToolButtons();
     syncZoomControl(1);
   }
 
@@ -705,6 +897,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
    */
   function enableEquirect() {
     if (largeViewState?.type !== "image") return;
+    if (crop !== null) leaveCrop();
     if (!isPixmap(largeViewState.file.name)) {
       largeEquirect.checked = false;
       return;
@@ -727,6 +920,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
     view.setZoomPercent(currentZoomPercent);
     frame.classList.add("equirect-hidden");
     largeViewState.mode = "equirect";
+    updateToolButtons();
   }
 
   /**
@@ -740,6 +934,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
     frame.classList.remove("equirect-hidden");
     largeViewState.mode = "image";
     if (imageView) syncZoomControl(imageView.getScale());
+    updateToolButtons();
   }
 
   /**
@@ -775,7 +970,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
     largeView.classList.remove("hidden");
     updateStatusBar(file);
     updateNavButtons();
-    updateRotateButtons();
+    updateToolButtons();
     syncZoomControl(1);
     largeEquirect.checked = false;
     largeEquirect.disabled = !isPixmap(file.name);
@@ -790,7 +985,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
       console.error(t("console.fileOpenError"), file.path, error);
       if (largeViewState?.token === token) close();
     }
-    updateRotateButtons();
+    updateToolButtons();
   }
 
   /**
@@ -843,6 +1038,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
       img,
       (scale) => {
         syncZoomControl(scale);
+        crop?.overlay.render();
       },
       (delta) => navigate(delta),
     );
@@ -863,6 +1059,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
       objectUrl: url,
       imageView,
       imageSize,
+      imageBytes: new Uint8Array(toArrayBuffer(data)),
       frame,
       imageEl: img,
     };
@@ -910,6 +1107,7 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
    */
   function onKeydown(event) {
     if (largeView.classList.contains("hidden") || !largeViewState) return false;
+    if (crop !== null && handleCropKey(event)) return true;
     const target = event.target;
     if (target instanceof HTMLElement) {
       if (
@@ -1004,6 +1202,10 @@ export function createLargeView({ dom, settings, getFiles, infoDialog, onFileCha
   largeFit.addEventListener("click", fitToScreen);
   largeRotateLeft.addEventListener("click", () => void rotateCurrent(270));
   largeRotateRight.addEventListener("click", () => void rotateCurrent(90));
+  largeCrop.addEventListener("click", () => void startCrop());
+  cropApply.addEventListener("click", () => void applyCrop());
+  cropReset.addEventListener("click", resetCrop);
+  cropCancel.addEventListener("click", leaveCrop);
   largePrev.addEventListener("click", () => navigate(-1));
   largeNext.addEventListener("click", () => navigate(1));
   largeFullscreen.addEventListener("click", () => window.api.setFullScreen(true));

@@ -166,6 +166,15 @@ function showUsage() {
     [kbd("Esc"), "shortcuts.closeLarge"],
     [kbd("F11"), "shortcuts.fullscreen"],
   ];
+  const cropRows = [
+    [`${kbd("←")} / ${kbd("→")} / ${kbd("↑")} / ${kbd("↓")}`, "shortcuts.cropMove"],
+    [
+      `${kbd("Shift")} + ${kbd("←")} / ${kbd("→")} / ${kbd("↑")} / ${kbd("↓")}`,
+      "shortcuts.cropResize",
+    ],
+    [kbd("Enter"), "shortcuts.cropApply"],
+    [kbd("Esc"), "shortcuts.cropCancel"],
+  ];
   const gridRows = [
     [`${kbd("Ctrl")} + ${kbd("+")} / ${kbd("=")}`, "shortcuts.largerTiles"],
     [`${kbd("Ctrl")} + ${kbd("-")}`, "shortcuts.smallerTiles"],
@@ -205,6 +214,7 @@ function showUsage() {
     bodyHtml: `
   <h2>${escapeHtml(i18next.t("shortcuts.title"))}</h2>
   ${section("shortcuts.largeView", rows)}
+  ${section("shortcuts.crop", cropRows)}
   ${section("shortcuts.grid", gridRows)}
   ${section("shortcuts.pathField", pathRows)}
   ${section("shortcuts.mouse", mouseRows)}

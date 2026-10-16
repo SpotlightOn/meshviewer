@@ -98,11 +98,21 @@ const largeView = createLargeView({
     largeFullscreen: document.getElementById("large-fullscreen"),
     largeFullscreenExit: document.getElementById("large-fullscreen-exit"),
     slideshowProgress: document.getElementById("slideshow-progress"),
+    largeCrop: document.getElementById("large-crop"),
+    cropTools: document.getElementById("crop-tools"),
+    cropReadout: document.getElementById("crop-readout"),
+    cropApply: document.getElementById("crop-apply"),
+    cropReset: document.getElementById("crop-reset"),
+    cropCancel: document.getElementById("crop-cancel"),
   },
   settings,
   getFiles: () => grid.getFiles(),
   infoDialog,
   onFileChanged: (file) => void grid?.refreshFile(file),
+  onFileCreated: async () => {
+    const path = grid?.getPath();
+    if (path) await grid.loadFolder(path);
+  },
 });
 largeViewRef.current = largeView;
 
