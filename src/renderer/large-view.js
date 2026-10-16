@@ -1,4 +1,3 @@
-import { createGlbView } from "./3d/view.js";
 import {
   displayGrid,
   displaySize,
@@ -9,7 +8,6 @@ import {
 } from "./crop.js";
 import { createCropOverlay } from "./crop-overlay.js";
 import { isPixmap } from "./equirectangular/utils.js";
-import { createEquirectView } from "./equirectangular/view.js";
 import { t } from "./i18n.js";
 import {
   clampZoom,
@@ -895,7 +893,7 @@ export function createLargeView({
    * is built lazily on first use and layered over the image, which is hidden
    * while the panorama is active.
    */
-  function enableEquirect() {
+  async function enableEquirect() {
     if (largeViewState?.type !== "image") return;
     if (crop !== null) leaveCrop();
     if (!isPixmap(largeViewState.file.name)) {
@@ -909,6 +907,7 @@ export function createLargeView({
     }
     let view = largeViewState.equirect;
     if (!view) {
+      const { createEquirectView } = await import("./equirectangular/view.js");
       view = createEquirectView({
         host: largeCanvas,
         image: imageEl,
@@ -1079,6 +1078,7 @@ export function createLargeView({
     const data = await window.api.readFile(file.path);
     if (largeViewState?.token !== token) return;
 
+    const { createGlbView } = await import("./3d/view.js");
     const glb = createGlbView({
       host: largeCanvas,
       onZoomChange: (percent) => syncZoomControl(percent / 100),
@@ -1194,7 +1194,7 @@ export function createLargeView({
   largeSlideshow.addEventListener("change", toggleSlideshow);
   largeEquirect.addEventListener("change", () => {
     if (largeEquirect.checked) {
-      enableEquirect();
+      void enableEquirect();
     } else {
       disableEquirect();
     }
