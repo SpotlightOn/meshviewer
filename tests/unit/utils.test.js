@@ -7,6 +7,7 @@ import {
   fileInfoRows,
   formatSize,
   imageDataUrl,
+  isJpeg,
   mimeFor,
   parseZoomPercent,
   toArrayBuffer,
@@ -53,6 +54,21 @@ describe("mimeFor", () => {
   it("falls back for unknown extensions", () => {
     expect(mimeFor("model.glb")).toBe("application/octet-stream");
     expect(mimeFor("noextension")).toBe("application/octet-stream");
+  });
+});
+
+describe("isJpeg", () => {
+  it("accepts both JPEG extensions, case-insensitively", () => {
+    expect(isJpeg("photo.jpg")).toBe(true);
+    expect(isJpeg("photo.JPEG")).toBe(true);
+    expect(isJpeg("photo.jpeg")).toBe(true);
+  });
+
+  it("rejects every other file type", () => {
+    expect(isJpeg("photo.png")).toBe(false);
+    expect(isJpeg("photo.jpg.png")).toBe(false);
+    expect(isJpeg("photo")).toBe(false);
+    expect(isJpeg("model.glb")).toBe(false);
   });
 });
 

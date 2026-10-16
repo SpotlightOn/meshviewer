@@ -25,6 +25,7 @@ they cannot be ESM.
 │ src/dialogs.js     About + shortcuts dialogs, dialog:close IPC                │
 │ src/fsIpc.js       filesystem IPC handlers (fs:*)                             │
 │ src/thumbnails.js  thumbnail cache (sharp, freedesktop, EXIF)                 │
+│ src/rotate.js      lossless JPEG rotation via @chimok/jpegtran-js             │
 │ src/settingsStore.js  settings.json in userData (settings:*)                  │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
                 │ ipcRenderer.invoke / handle                  │ protocol.handle
@@ -56,6 +57,7 @@ they cannot be ESM.
 | `src/dialogs.js` | About + shortcuts dialogs without a menu bar (plain windows), `dialog:close` IPC |
 | `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
 | `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
+| `src/rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory with the `@chimok/jpegtran-js` WebAssembly module, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
 | `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
@@ -76,7 +78,7 @@ they cannot be ESM.
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
-`thumbnails.js`, `renderer/utils.js` and the `renderer/three/` +
+`thumbnails.js`, `rotate.js`, `renderer/utils.js` and the `renderer/three/` +
 `renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
 unit-tested without launching the app.
 
@@ -99,6 +101,7 @@ resize observer and the render-loop/dispose lifecycle for both.
 | `fs:readFile` | renderer → main | File content as `ArrayBuffer` |
 | `fs:getThumbnail` | renderer → main | Cached/generated JPEG data URL, or `null` |
 | `shell:openPath` | renderer → main | Open a file with the system handler |
+| `rotate:jpeg` | renderer → main | Rotate a JPEG losslessly in place (`@chimok/jpegtran-js`); returns the new size/mtime or an error code |
 | `settings:get` / `settings:save` | renderer → main | Read/validate/persist settings |
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |
 | `dialog:close` | dialog → main | Close the modal About/shortcuts dialog |

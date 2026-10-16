@@ -3,3 +3,4 @@ allowBuilds:
   exifreader: false
 minimumReleaseAgeExclude:
   - exifreader@4.47.0
+  - '@chimok/jpegtran-js@0.9.0'

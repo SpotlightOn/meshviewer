@@ -18,6 +18,16 @@ const EXIF_PREFIX_SIZE = 1024 * 1024; // embedded thumbnails live near the start
 const THUMBNAIL_CACHE_VERSION = 2;
 
 /**
+ * Maximum relative difference between the aspect ratio of an embedded JPEG
+ * thumbnail and the aspect ratio of the image it belongs to before the
+ * thumbnail is treated as stale. Real thumbnails only deviate by the rounding
+ * of their scaled dimensions (measured up to ~0.7 %), while a lossless
+ * rotation of the image changes the ratio by a whole factor.
+ * @type {number}
+ */
+const THUMBNAIL_ASPECT_TOLERANCE = 0.02;
+
+/**
  * EXIF orientation values that need a rotation without a mirror and the angle
  * that displays them correctly. Mirroring orientations (2, 4, 5, 7) cannot be
  * expressed by an angle and fall back to the full decode.
@@ -136,6 +146,39 @@ function embeddedThumbnailAngle(outer, embedded) {
 }
 
 /**
+ * Reads the pixel dimensions of an image buffer or file from its header
+ * without decoding the pixels.
+ * @param {string|Buffer} input - Image file path or buffer.
+ * @returns {Promise<{width: number, height: number}|null>} Dimensions, or null when they cannot be read.
+ */
+async function readImageSize(input) {
+  if (sharp == null) return null;
+  try {
+    const meta = await sharp(input, { failOn: "none" }).metadata();
+    if (!meta.width || !meta.height) return null;
+    return { width: meta.width, height: meta.height };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether an embedded thumbnail may still be used for its image. A lossless
+ * rotation turns the stored pixels while the embedded thumbnail keeps its old
+ * content, so a differing aspect ratio marks the thumbnail as stale and the
+ * full image is decoded instead.
+ * @param {{width: number, height: number}|null} thumb - Dimensions of the embedded thumbnail.
+ * @param {{width: number, height: number}|null} image - Dimensions of the image.
+ * @returns {boolean} true when the thumbnail matches the image.
+ */
+function thumbnailMatchesImage(thumb, image) {
+  if (!thumb || !image) return false;
+  const thumbRatio = thumb.width / thumb.height;
+  const imageRatio = image.width / image.height;
+  return Math.abs(thumbRatio - imageRatio) / imageRatio <= THUMBNAIL_ASPECT_TOLERANCE;
+}
+
+/**
  * Reads a prefix of a file into a buffer.
  * @param {string} filePath - Absolute file path.
  * @param {number} bytes - Maximum number of bytes to read.
@@ -241,11 +284,17 @@ async function getThumbnail(file, cacheDir) {
       if (embedded != null) {
         const rotation = embeddedThumbnailAngle(extractExifTags(prefix), embedded);
         if (rotation !== null) {
-          try {
-            await generateThumbnail(embedded, cacheFile, rotation);
-            return toDataUrl(await fsp.readFile(cacheFile));
-          } catch {
-            // embedded thumbnail unusable, fall through to full decode
+          const [thumbSize, imageSize] = await Promise.all([
+            readImageSize(embedded),
+            readImageSize(file.path),
+          ]);
+          if (thumbnailMatchesImage(thumbSize, imageSize)) {
+            try {
+              await generateThumbnail(embedded, cacheFile, rotation);
+              return toDataUrl(await fsp.readFile(cacheFile));
+            } catch {
+              // embedded thumbnail unusable, fall through to full decode
+            }
           }
         }
       }
@@ -267,7 +316,9 @@ export {
   readEmbeddedThumbnail,
   readFilePrefix,
   readFreedesktopThumbnail,
+  readImageSize,
   THUMB_SIZE,
   thumbnailKey,
+  thumbnailMatchesImage,
   toDataUrl,
 };

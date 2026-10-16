@@ -89,8 +89,8 @@ describe("getThumbnail with embedded EXIF thumbnail", () => {
     const entries = await readdir(cacheDir);
     expect(entries).toHaveLength(1);
     const meta = await sharp(join(cacheDir, entries[0])).metadata();
-    expect(meta.width).toBeLessThanOrEqual(256);
-    expect(meta.height).toBeLessThanOrEqual(256);
+    expect(meta.width).toBe(48);
+    expect(meta.height).toBe(32);
   });
 
   it("falls back to full decode when there is no embedded thumbnail", async () => {
@@ -101,6 +101,19 @@ describe("getThumbnail with embedded EXIF thumbnail", () => {
     const result = await getThumbnail(file, cacheDir);
     expect(result).toMatch(/^data:image\/jpeg;base64,/);
     expect(await readdir(cacheDir)).toHaveLength(1);
+  });
+
+  it("ignores an embedded thumbnail whose aspect ratio no longer matches", async () => {
+    const stalePath = join(dir, "stale.jpg");
+    await makeOrientedJpeg(stalePath, { mainSize: [120, 80], thumbSize: [32, 32] });
+    const fileState = await stat(stalePath);
+    const cacheDir = join(dir, "cache-stale");
+    const file = { path: stalePath, size: fileState.size, mtimeMs: fileState.mtimeMs };
+    const result = await getThumbnail(file, cacheDir);
+    expect(result).toMatch(/^data:image\/jpeg;base64,/);
+    const meta = await sharp(join(cacheDir, thumbnailKey(file))).metadata();
+    expect(meta.width).toBe(120);
+    expect(meta.height).toBe(80);
   });
 });
 

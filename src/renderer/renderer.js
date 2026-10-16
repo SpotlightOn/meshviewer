@@ -87,6 +87,8 @@ const largeView = createLargeView({
     largeZoomValue: document.getElementById("large-zoom-value"),
     largeBack: document.getElementById("large-back"),
     infoButton: document.getElementById("large-details"),
+    largeRotateLeft: document.getElementById("large-rotate-left"),
+    largeRotateRight: document.getElementById("large-rotate-right"),
     largeSlideshow: document.getElementById("large-slideshow"),
     largeEquirect: document.getElementById("large-equirect"),
     largeActual: document.getElementById("large-actual"),
@@ -100,6 +102,7 @@ const largeView = createLargeView({
   settings,
   getFiles: () => grid.getFiles(),
   infoDialog,
+  onFileChanged: (file) => void grid?.refreshFile(file),
 });
 largeViewRef.current = largeView;
 
