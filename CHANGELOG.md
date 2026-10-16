@@ -8,6 +8,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 - Lossless JPEG rotation: rotate-left / rotate-right buttons in the large view rewrite `.jpg`/`.jpeg` in place through the bundled `@chimok/jpegtran-js` WebAssembly module (no recompression, EXIF preserved, no external binary required)
 - Lossless JPEG crop: a crop mode in the large view with a selection rectangle that snaps to the iMCU grid of the file, writes `<name>-crop-<n>.jpg` next to the source and leaves the original untouched (no recompression, EXIF preserved)
 
+### Changed
+- Zoom keys: `+` / `-` / `0` zoom the large view and the tile grid, while `Ctrl` + `+` / `-` / `0` keeps scaling the whole UI as Electron does by default (the menu accelerators used to swallow the keys, so the content zoom never fired)
+
 ## [0.8.0] - 2026-10-10
 
 ### Added

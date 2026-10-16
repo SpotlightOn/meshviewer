@@ -1099,8 +1099,9 @@ export function createLargeView({
 
   /**
    * Handles large view keyboard shortcuts: Esc closes, arrows/Backspace/Space
-   * navigate, F5 toggles the slideshow, F toggles fit/original size,
-   * Ctrl++/Ctrl+- zoom (3D dolly or image zoom), Ctrl+0/Ctrl+1 reset to 100%.
+   * navigate, F5 toggles the slideshow, F toggles fit/original size, + and -
+   * zoom (3D dolly or image zoom), 0 and 1 reset to 100 %. The Ctrl variants
+   * are left to the menu, which scales the whole UI.
    * Returns true when the event was consumed.
    * @param {KeyboardEvent} event - Keyboard event.
    * @returns {boolean} true if the event was handled.
@@ -1164,7 +1165,7 @@ export function createLargeView({
     const zoomIn = event.key === "+" || event.key === "=" || event.key === "Add";
     const zoomOut = event.key === "-" || event.key === "_" || event.key === "Subtract";
     const reset = event.key === "0" || event.key === "1";
-    if (!event.ctrlKey || (!zoomIn && !zoomOut && !reset)) {
+    if (event.ctrlKey || event.metaKey || event.altKey || (!zoomIn && !zoomOut && !reset)) {
       return false;
     }
 

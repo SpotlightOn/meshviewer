@@ -64,14 +64,14 @@ Navigate in the directory tree on the left (rooted at `/`); `..` goes one level 
 | `←` / `Backspace` | Previous file |
 | `→` / `Space` | Next file |
 | `F` | Toggle fit / original size (images) |
-| `Ctrl` + `+` / `=` | Zoom in |
-| `Ctrl` + `-` | Zoom out |
-| `Ctrl` + `0` / `1` | Reset zoom to 100 % |
+| `+` / `=` | Zoom in |
+| `-` | Zoom out |
+| `0` / `1` | Reset zoom to 100 % |
 | `F5` | Start / stop the slideshow |
 | `Esc` | Close the large view |
 | `F11` | Toggle fullscreen |
 
-Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale for images) and the zoom slider in the header. The percentage field next to the slider accepts a typed value such as `120` — `Enter` or clicking away applies it, `Esc` reverts the field. The fit-to-screen button beside it restores the fitted size after zooming, and the slideshow is toggled with a switch in the header; while it runs, a subtle 1 px progress line at the header's bottom edge shows the time until the next image.
+Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale for images) and the zoom slider in the header. `Ctrl` + `+`, `Ctrl` + `-` and `Ctrl` + `0` scale the whole UI instead, following the Electron default. The percentage field next to the slider accepts a typed value such as `120` — `Enter` or clicking away applies it, `Esc` reverts the field. The fit-to-screen button beside it restores the fitted size after zooming, and the slideshow is toggled with a switch in the header; while it runs, a subtle 1 px progress line at the header's bottom edge shows the time until the next image.
 
 **Crop mode (JPEG)**
 
@@ -87,9 +87,9 @@ Zoom is also controlled with the mouse: the wheel (dolly for 3D models, scale fo
 
 | Shortcut | Action |
 | --- | --- |
-| `Ctrl` + `+` / `=` | Larger tiles |
-| `Ctrl` + `-` | Smaller tiles |
-| `Ctrl` + `0` | Reset tile size |
+| `+` / `=` | Larger tiles |
+| `-` | Smaller tiles |
+| `0` | Reset tile size |
 | `Ctrl` + mouse wheel | Zoom tiles in / out |
 | `Enter` | Open the selected tile |
 
