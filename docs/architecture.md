@@ -26,6 +26,7 @@ they cannot be ESM.
 │ src/fsIpc.js       filesystem IPC handlers (fs:*)                             │
 │ src/thumbnails.js  thumbnail cache (sharp, freedesktop, EXIF)                 │
 │ src/rotate.js      lossless JPEG rotation via @chimok/jpegtran-js             │
+│ src/crop.js        lossless JPEG crop via @chimok/jpegtran-js                 │
 │ src/settingsStore.js  settings.json in userData (settings:*)                  │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
                 │ ipcRenderer.invoke / handle                  │ protocol.handle
@@ -57,7 +58,9 @@ they cannot be ESM.
 | `src/dialogs.js` | About + shortcuts dialogs without a menu bar (plain windows), `dialog:close` IPC |
 | `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
 | `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
-| `src/rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory with the `@chimok/jpegtran-js` WebAssembly module, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
+| `src/jpegTransform.js` | Shared JPEG plumbing: lazy `@chimok/jpegtran-js` transformer, reading a file with its stat, atomic writes and error mapping |
+| `src/rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
+| `src/crop.js` | Lossless JPEG crop: writes the selected region to a new `<name>-crop-<n>.jpg` next to the source and leaves it untouched; registers `crop:jpeg` |
 | `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
 | `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
@@ -75,10 +78,13 @@ they cannot be ESM.
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
 | `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc) and grid zoom (Ctrl `+`/`-`/`0` and Ctrl + mouse wheel) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
+| `src/renderer/crop.js` | Pure crop geometry: iMCU size from the frame header, snapping onto the grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/crop-overlay.js` | Crop selection overlay: darkened layer, handles, pointer gestures; projects the selection through the image zoom and pan |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
-`thumbnails.js`, `rotate.js`, `renderer/utils.js` and the `renderer/three/` +
+`thumbnails.js`, `jpegTransform.js`, `rotate.js`, `crop.js`,
+`renderer/crop.js`, `renderer/utils.js` and the `renderer/three/` +
 `renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
 unit-tested without launching the app.
 
@@ -102,6 +108,7 @@ resize observer and the render-loop/dispose lifecycle for both.
 | `fs:getThumbnail` | renderer → main | Cached/generated JPEG data URL, or `null` |
 | `shell:openPath` | renderer → main | Open a file with the system handler |
 | `rotate:jpeg` | renderer → main | Rotate a JPEG losslessly in place (`@chimok/jpegtran-js`); returns the new size/mtime or an error code |
+| `crop:jpeg` | renderer → main | Crop a JPEG losslessly into a new file next to it; returns the new path and dimensions or an error code |
 | `settings:get` / `settings:save` | renderer → main | Read/validate/persist settings |
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |
 | `dialog:close` | dialog → main | Close the modal About/shortcuts dialog |

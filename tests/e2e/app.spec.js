@@ -544,3 +544,48 @@ test("rotate buttons are shown for JPEG files and hidden for other images", asyn
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("crops a JPEG into a new file from the large view", async () => {
+  const { electronApp, page } = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-crop-"));
+  const background = { r: 51, g: 102, b: 153 };
+  try {
+    await sharp({ create: { width: 512, height: 512, channels: 3, background } })
+      .jpeg()
+      .toFile(join(dir, "photo.jpg"));
+
+    const input = page.locator("#path-input");
+    await page.locator(".path-segment.active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".card")).toHaveCount(1);
+
+    await page.locator(".card", { hasText: "photo.jpg" }).dblclick();
+    await expect(page.locator("#large-view")).toBeVisible();
+    await expect(page.locator("#large-crop")).toBeVisible();
+
+    await page.locator("#large-crop").click();
+    await expect(page.locator("#crop-tools")).toBeVisible();
+    await expect(page.locator(".crop-layer")).toBeVisible();
+    await expect(page.locator("#crop-readout")).toHaveText(/0, 0 — 512 × 512/);
+
+    const canvas = await page.locator("#large-canvas").boundingBox();
+    await page.mouse.move(canvas.x + 120, canvas.y + 120);
+    await page.mouse.down();
+    await page.mouse.move(canvas.x + 300, canvas.y + 260, { steps: 8 });
+    await page.mouse.up();
+
+    await expect(page.locator("#crop-readout")).not.toHaveText(/512 × 512/);
+
+    await page.locator("#crop-apply").click();
+
+    await expect(page.locator("#large-file-info")).toHaveText(/photo-crop-1\.jpg/);
+    await expect(page.locator(".card", { hasText: "photo-crop-1.jpg" })).toHaveCount(1);
+    await expect(page.locator("#crop-tools")).toBeHidden();
+    await expect(page.locator("#large-crop")).toBeVisible();
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});

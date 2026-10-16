@@ -3,13 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { normalizeAngle, registerRotateIpc, rotateJpeg } from "../../src/rotate.js";
-
-/**
- * Frame-header markers that are not an SOF: the Huffman tables, the JPG
- * extension and the arithmetic conditioning table.
- * @type {Set<number>}
- */
-const SOF_EXCEPTIONS = new Set([0xc4, 0xc8, 0xcc]);
+import { hasJfif, jpegSize } from "./helpers/jpeg.js";
 
 /**
  * Lenna, a 512x512 baseline JPEG, used by the tests that exercise the real
@@ -55,38 +49,6 @@ function recordingStep() {
     return { data: new Uint8Array([1]), perfect: true };
   };
   return { rotate, angles };
-}
-
-/**
- * Reads the pixel dimensions from the frame header of a JPEG.
- * @param {Buffer} bytes - JPEG file content.
- * @returns {{width: number, height: number}} Dimensions stored in the frame header.
- */
-function jpegSize(bytes) {
-  let offset = 2;
-  while (offset + 9 < bytes.length) {
-    if (bytes[offset] !== 0xff) {
-      offset += 1;
-      continue;
-    }
-    const marker = bytes[offset + 1];
-    const length = bytes.readUInt16BE(offset + 2);
-    if (marker >= 0xc0 && marker <= 0xcf && !SOF_EXCEPTIONS.has(marker)) {
-      return { width: bytes.readUInt16BE(offset + 7), height: bytes.readUInt16BE(offset + 5) };
-    }
-    offset += 2 + length;
-  }
-  throw new Error("no JPEG frame header found");
-}
-
-/**
- * Reports whether a JPEG carries a JFIF block. The module keeps it only when it
- * is asked to copy every marker, so this also checks that `COPY.all` is used.
- * @param {Buffer} bytes - JPEG file content.
- * @returns {boolean} true when the JFIF marker is present.
- */
-function hasJfif(bytes) {
-  return bytes.includes("JFIF");
 }
 
 /**
