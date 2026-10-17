@@ -5,9 +5,9 @@ import {
   moveRegion,
   orientRegion,
   resizeRegion,
-} from "./crop.js";
+} from "./crop-geometry.js";
 import { createCropOverlay } from "./crop-overlay.js";
-import { isPixmap } from "./equirectangular/utils.js";
+import { isPixmap } from "./equirectangular/pano-utils.js";
 import { t } from "./i18n.js";
 import { createImageView } from "./image-view.js";
 import {
@@ -562,7 +562,7 @@ export function createLargeView({
     }
     let view = largeViewState.equirect;
     if (!view) {
-      const { createEquirectView } = await import("./equirectangular/view.js");
+      const { createEquirectView } = await import("./equirectangular/pano-view.js");
       view = createEquirectView({
         host: largeCanvas,
         image: imageEl,
@@ -735,7 +735,7 @@ export function createLargeView({
     const data = await window.api.readFile(file.path);
     if (largeViewState?.token !== token) return;
 
-    const { createGlbView } = await import("./3d/view.js");
+    const { createGlbView } = await import("./3d/glb-view.js");
     const glb = createGlbView({
       host: largeCanvas,
       onZoomChange: (percent) => syncZoomControl(percent / 100),

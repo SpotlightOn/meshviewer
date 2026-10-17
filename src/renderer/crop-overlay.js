@@ -1,4 +1,4 @@
-import { moveRegion, regionFromPoints, resizeRegion, snapRegion } from "./crop.js";
+import { moveRegion, regionFromPoints, resizeRegion, snapRegion } from "./crop-geometry.js";
 
 /**
  * The eight resize handles of the selection, named by the edges they move.

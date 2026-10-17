@@ -5,7 +5,7 @@ import {
   fovForPercent,
   isPixmap,
   percentForFov,
-} from "../../../src/renderer/equirectangular/utils.js";
+} from "../../../src/renderer/equirectangular/pano-utils.js";
 
 describe("isPixmap", () => {
   it("accepts raster image formats", () => {

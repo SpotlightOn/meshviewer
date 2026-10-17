@@ -3,7 +3,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { readExif } from "./exif.js";
-import { getThumbnail } from "./thumbnails.js";
+import { getThumbnail } from "./thumbnail-cache.js";
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",

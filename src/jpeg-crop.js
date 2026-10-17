@@ -1,7 +1,7 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { COPY, STATUS } from "@chimok/jpegtran-js";
-import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpegTransform.js";
+import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpeg-transform.js";
 
 /** Highest number appended to a crop file name before giving up. */
 const MAX_CROP_SUFFIX = 999;

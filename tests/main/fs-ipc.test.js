@@ -24,7 +24,7 @@ import {
   readFileBuffer,
   registerFsIpc,
   trashFiles,
-} from "../../src/fsIpc.js";
+} from "../../src/fs-ipc.js";
 
 let fixtureDir;
 

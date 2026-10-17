@@ -1,17 +1,17 @@
 import path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from "electron";
 import i18next from "i18next";
-import { registerCropIpc } from "./crop.js";
 import { registerDialogIpc, showAbout, showUsage } from "./dialogs.js";
-import { registerEditorIpc } from "./editorIpc.js";
-import { registerFsIpc } from "./fsIpc.js";
+import { registerEditorIpc } from "./editor-ipc.js";
+import { registerFsIpc } from "./fs-ipc.js";
+import { registerCropIpc } from "./jpeg-crop.js";
+import { registerRotateIpc } from "./jpeg-rotate.js";
 import i18nDe from "./locales/de.json" with { type: "json" };
 import i18nEn from "./locales/en.json" with { type: "json" };
 import { createMainWindow } from "./main-window.js";
 import { createAppMenu } from "./menu.js";
 import { registerAppProtocol } from "./protocol.js";
-import { registerRotateIpc } from "./rotate.js";
-import { loadSettings, registerSettingsIpc } from "./settingsStore.js";
+import { loadSettings, registerSettingsIpc } from "./settings-store.js";
 import { registerWindowIpc } from "./window-ipc.js";
 
 /**

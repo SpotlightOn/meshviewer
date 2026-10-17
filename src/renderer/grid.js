@@ -56,7 +56,7 @@ async function loadThumb(file, card) {
   const thumb = card.querySelector(".grid__thumb-img");
   try {
     if (file.type === "glb") {
-      const { renderGlbThumbnail } = await import("./3d/thumbnails.js");
+      const { renderGlbThumbnail } = await import("./3d/glb-thumbnails.js");
       thumb.src = await renderGlbThumbnail(toArrayBuffer(await window.api.readFile(file.path)));
       wrap.classList.remove("grid__thumb--loading");
     } else {

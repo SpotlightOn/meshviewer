@@ -2,7 +2,7 @@ import { chmod, copyFile, mkdtemp, readFile, rm, stat, writeFile } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { cropJpeg, registerCropIpc } from "../../src/crop.js";
+import { cropJpeg, registerCropIpc } from "../../src/jpeg-crop.js";
 import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
 import { dirEntries } from "./helpers/files.js";
 import { hasJfif } from "./helpers/jpeg.js";
