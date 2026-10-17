@@ -36,6 +36,7 @@ describe("formatSize", () => {
 describe("mimeFor", () => {
   it("maps known extensions to MIME types", () => {
     expect(mimeFor("photo.png")).toBe("image/png");
+    expect(mimeFor("anim.apng")).toBe("image/apng");
     expect(mimeFor("photo.jpg")).toBe("image/jpeg");
     expect(mimeFor("photo.jpeg")).toBe("image/jpeg");
     expect(mimeFor("photo.gif")).toBe("image/gif");

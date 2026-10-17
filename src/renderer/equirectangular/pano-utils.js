@@ -5,7 +5,16 @@ import { clampZoomPercent, MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from "../utils.j
  * equirectangular sphere. Vector (SVG) and icon (ICO) formats are excluded.
  * @type {Set<string>}
  */
-const PIXMAP_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".bmp"]);
+const PIXMAP_EXTENSIONS = new Set([
+  ".png",
+  ".apng",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".avif",
+  ".bmp",
+]);
 
 /**
  * Whether a file name has a raster image extension that supports the

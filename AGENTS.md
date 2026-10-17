@@ -96,4 +96,4 @@ Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup 
 
 ## Formats
 
-- 3D: `.glb` only. Images: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails fill the tile with `object-fit` set from the “Thumbnail fit” setting (`cover` by default, `contain` optional); transparent areas show the configured transparency background.
+- 3D: `.glb` only. Images: `.png`, `.apng`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.avif`, `.bmp`, `.svg`, `.ico`. Thumbnails fill the tile with `object-fit` set from the “Thumbnail fit” setting (`cover` by default, `contain` optional); transparent areas show the configured transparency background.

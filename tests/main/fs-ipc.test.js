@@ -34,6 +34,7 @@ beforeAll(async () => {
   await mkdir(join(fixtureDir, ".hidden"));
   const files = [
     "foto.png",
+    "foto.apng",
     "foto.jpg",
     "model.glb",
     "sub/inner.webp",
@@ -59,7 +60,7 @@ describe("listMediaFiles", () => {
   it("lists media files directly in the directory, ignoring non-media files", async () => {
     const result = await listMediaFiles(fixtureDir);
     const names = result.map((f) => f.path.slice(fixtureDir.length + 1)).sort();
-    expect(names).toEqual(["foto.jpg", "foto.png", "link.png", "model.glb"]);
+    expect(names).toEqual(["foto.apng", "foto.jpg", "foto.png", "link.png", "model.glb"]);
     expect(result.every((f) => f.type === "glb" || f.type === "image")).toBe(true);
     const glb = result.find((f) => f.name === "model.glb");
     expect(glb.type).toBe("glb");
@@ -119,7 +120,12 @@ describe("listImageFiles", () => {
 
   it("skips GLB files and non-media files", async () => {
     const result = await listImageFiles(fixtureDir, 10);
-    expect(result.map((f) => f.name).sort()).toEqual(["foto.jpg", "foto.png", "link.png"]);
+    expect(result.map((f) => f.name).sort()).toEqual([
+      "foto.apng",
+      "foto.jpg",
+      "foto.png",
+      "link.png",
+    ]);
   });
 
   it("returns an empty array when the limit is zero", async () => {
