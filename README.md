@@ -85,6 +85,7 @@ The UI is English by default; German is provided as a translation via i18next. T
 
 - [`docs/usage.md`](./docs/usage.md) – keyboard shortcuts and mouse gestures
 - [`docs/architecture.md`](./docs/architecture.md) – modules and design notes
+- [`docs/conventions.md`](./docs/conventions.md) – naming and module conventions
 
 ## Structure
 
