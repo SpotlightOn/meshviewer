@@ -64,9 +64,9 @@ test file 5.02).
 
 ### Thumbnails (all variants)
 
-- `src/fsIpc.js` `listMediaFiles()`: add `.blend` as a new `type: "blend"`
+- `src/fs-ipc.js` `listMediaFiles()`: add `.blend` as a new `type: "blend"`
   (skip `.blend1` backup files).
-- `src/thumbnails.js`: new `extractBlendThumbnail(path)` — decompress with
+- `src/thumbnail-cache.js`: new `extractBlendThumbnail(path)` — decompress with
   `fzstd`/`zlib`, find the `TEST` block, feed the RGBA payload through the
   existing `sharp` pipeline (`generateThumbnail`, 256 px JPEG). Fallback order:
   own cache → embedded preview → existing `readFreedesktopThumbnail()` →
@@ -86,13 +86,13 @@ Options:
   hint for files without preview.
 - B) Interactive 3D like GLB: run `jsblender` in the renderer and build a
   three.js scene (meshes + Principled materials + object world matrices) using
-  the existing GLB viewer contract (`src/renderer/3d/view.js`). Only works for
+  the existing GLB viewer contract (`src/renderer/3d/glb-view.js`). Only works for
   files saved in the modern layout (Blender 5 or re-saved); fall back to A and
   a hint for old files.
 - C) B plus an optional “Convert with Blender” action that spawns
   `blender --background <file> --python-expr "bpy.ops.wm.save_as_mainfile(...)"`
   into a temp file (new IPC, same pattern as the existing `shell:openPath` in
-  `src/fsIpc.js`) and then loads the meshes from the temp copy. Closes the gap
+  `src/fs-ipc.js`) and then loads the meshes from the temp copy. Closes the gap
   for old files; takes seconds, one-time per file, needs Blender installed.
 
 ### Follow-ups when implementing
@@ -101,36 +101,3 @@ Options:
   convention): `grid.typeBlend`, large-view hints/placeholder.
 - `README.md` formats list, `CHANGELOG.md` entry, tests in `tests/main/` for
   the blend parsing logic (pure logic → no Electron needed).
-
-## Clean-up after the JPEG crop and rotation work
-
-Findings from the review; none of it is a bug, all of it is hygiene.
-
-### Tests
-
-- `tests/main/rotate.test.js` and `tests/main/crop.test.js` define `succeedWith`,
-  `recordingStep` and `dirEntries` twice → move them into `tests/main/helpers/`.
-- `regionFromPoints`, `moveRegion` and `resizeRegion` (the drag geometry in
-  `src/renderer/crop.js`) have no direct tests, only indirectly through the E2E
-  crop test.
-
-### One JPEG frame header parser instead of two
-
-- `tests/main/helpers/jpeg.js` (`jpegSize`) and `src/renderer/crop.js`
-  (`imcuSize`) both walk the JPEG marker chain. Merge them into one
-  `readJpegFrame(bytes)` → `{width, height, imcu}` that both use. It has to live
-  under `src/renderer/`: the `app://` protocol only serves `src/renderer`,
-  `node_modules` and `locales`, so the renderer cannot import from `src/`.
-
-### Structure
-
-- `src/renderer/large-view.js` grew to 1236 lines and 58 functions.
-  `createImageView` (zoom, pan, swipe, ~330 lines) is still inline while the
-  other two view modes are their own modules → move it to
-  `src/renderer/image-view.js`, mirroring `3d/view.js` and
-  `equirectangular/view.js`.
-
-### Small things
-
-- `src/renderer/crop-overlay.js` returns an `element` that nobody uses.
-- `src/jpegTransform.js` exports `isJpegPath`, which is only used internally.

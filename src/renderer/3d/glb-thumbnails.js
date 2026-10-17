@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { disposeObject } from "./utils.js";
+import { disposeObject } from "./glb-utils.js";
 
 const THUMB_SIZE = 256;
 

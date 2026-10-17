@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { createRenderSurface } from "../three/render-surface.js";
-import { EQUIRECT_FOV_MAX, EQUIRECT_FOV_MIN, fovForPercent, percentForFov } from "./utils.js";
+import { EQUIRECT_FOV_MAX, EQUIRECT_FOV_MIN, fovForPercent, percentForFov } from "./pano-utils.js";
 
 const SPHERE_RADIUS = 500;
 const SPHERE_SEGMENTS = 60;

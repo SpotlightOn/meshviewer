@@ -9,7 +9,7 @@ import {
   getThumbnail,
   thumbnailKey,
   thumbnailMatchesImage,
-} from "../../src/thumbnails.js";
+} from "../../src/thumbnail-cache.js";
 
 let fixtureDir;
 let cacheDir;

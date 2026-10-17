@@ -12,7 +12,7 @@ import {
   getThumbnail,
   readEmbeddedThumbnail,
   thumbnailKey,
-} from "../../src/thumbnails.js";
+} from "../../src/thumbnail-cache.js";
 import { makeExifJpeg, makeOrientedJpeg, makePlainJpeg } from "./fixtures/make-exif-jpeg.mjs";
 
 let dir;

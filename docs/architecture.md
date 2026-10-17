@@ -11,7 +11,7 @@ It is plain JavaScript — no framework, no bundler. The whole app runs as ES
 modules (`"type": "module"` in `package.json`): the main process is ESM, the
 renderer loads ES modules directly through a custom `app://` protocol. The only
 CommonJS files are the sandboxed preloads (`src/preload.js`,
-`src/dialogPreload.js`) — sandboxed preload scripts always run as CommonJS, so
+`src/dialog-preload.js`) — sandboxed preload scripts always run as CommonJS, so
 they cannot be ESM.
 
 ## Process model
@@ -19,15 +19,15 @@ they cannot be ESM.
 ```
 ┌──────────────────────────── Electron main process (ESM) ─────────────────────┐
 │ src/main.js        entry: app lifecycle, i18next init, module wiring         │
-│ src/protocol.js    app:// protocol handler (CSP, MIME map, path routing)      │
-│ src/main-window.js main BrowserWindow (preload, icon)                         │
-│ src/menu.js        application menu (Edit roles, Help → dialogs)              │
-│ src/dialogs.js     About + shortcuts dialogs, dialog:close IPC                │
-│ src/fsIpc.js       filesystem IPC handlers (fs:*)                             │
-│ src/thumbnails.js  thumbnail cache (sharp, freedesktop, EXIF)                 │
-│ src/rotate.js      lossless JPEG rotation via @chimok/jpegtran-js             │
-│ src/crop.js        lossless JPEG crop via @chimok/jpegtran-js                 │
-│ src/settingsStore.js  settings.json in userData (settings:*)                  │
+│ src/protocol.js    app:// protocol handler (CSP, MIME map, path routing)     │
+│ src/main-window.js main BrowserWindow (preload, icon)                        │
+│ src/menu.js        application menu (Edit roles, Help → dialogs)             │
+│ src/dialogs.js     About + shortcuts dialogs, dialog:close IPC               │
+│ src/fs-ipc.js       filesystem IPC handlers (fs:*)                           │
+│ src/thumbnail-cache.js  thumbnail cache (sharp, freedesktop, EXIF)           │
+│ src/jpeg-rotate.js      lossless JPEG rotation via @chimok/jpegtran-js       │
+│ src/jpeg-crop.js        lossless JPEG crop via @chimok/jpegtran-js           │
+│ src/settings-store.js  settings.json in userData (settings:*)                │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
                 │ ipcRenderer.invoke / handle                  │ protocol.handle
 ┌───────────────┴───────────────┐   ┌──────────────────────────┴───────────────┐
@@ -35,7 +35,7 @@ they cannot be ESM.
 │ contextBridge → window.api    │   │ index.html, renderer.js (entry), tree.js,│
 │ contextIsolation: true        │   │ grid.js, large-view.js, settings.js,     │
 │ nodeIntegration: false        │   │ keyboard.js, i18n.js, utils.js,          │
-│                               │   │ styles.css → styles/ (CSS modules)      │
+│                               │   │ styles.css → styles/ (CSS modules)       │
 │                               │   │ 3d/ (GLB viewer, thumbnails),            │
 │                               │   │ equirectangular/ (panorama view),        │
 │                               │   │ three/ (shared render surface)           │
@@ -56,42 +56,44 @@ they cannot be ESM.
 | `src/main-window.js` | Creates the main `BrowserWindow` (sandboxed preload, window icon) |
 | `src/menu.js` | Application menu with fully i18n labels (Edit roles, Help → dialogs) |
 | `src/dialogs.js` | About + shortcuts dialogs without a menu bar (plain windows), `dialog:close` IPC |
-| `src/fsIpc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
-| `src/thumbnails.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
-| `src/jpegTransform.js` | Shared JPEG plumbing: lazy `@chimok/jpegtran-js` transformer, reading a file with its stat, atomic writes and error mapping |
-| `src/rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
-| `src/crop.js` | Lossless JPEG crop: writes the selected region to a new `<name>-crop-<n>.jpg` next to the source and leaves it untouched; registers `crop:jpeg` |
-| `src/settingsStore.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
+| `src/fs-ipc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
+| `src/thumbnail-cache.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
+| `src/jpeg-transform.js` | Shared JPEG plumbing: lazy `@chimok/jpegtran-js` transformer, reading a file with its stat, atomic writes and error mapping |
+| `src/jpeg-rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
+| `src/jpeg-crop.js` | Lossless JPEG crop: writes the selected region to a new `<name>-crop-<n>.jpg` next to the source and leaves it untouched; registers `crop:jpeg` |
+| `src/settings-store.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
-| `src/dialogPreload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
+| `src/dialog-preload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
 | `src/renderer/renderer.js` | Entry: wires tree/grid/settings/keyboard/path bar, boot |
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
 | `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
-| `src/renderer/large-view.js` | Large view: zoom, navigation, slideshow; delegates GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate and crop; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/image-view.js` | Interactive image large view: zoom, pan, drag-to-throw navigation, fit/100% toggles; same role for images as `3d/glb-view.js` and `equirectangular/pano-view.js` for GLB and panoramas |
 | `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
-| `src/renderer/3d/view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
-| `src/renderer/3d/thumbnails.js` | Off-screen 256 px GLB thumbnail renderer |
-| `src/renderer/3d/utils.js` | three.js helpers (`disposeObject`, GLB zoom mapping) |
-| `src/renderer/equirectangular/view.js` | Equirectangular panorama view (drag to look around, wheel/FOV zoom); same controller contract as the GLB viewer |
-| `src/renderer/equirectangular/utils.js` | `isPixmap` and zoom↔field-of-view mapping |
+| `src/renderer/3d/glb-view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
+| `src/renderer/3d/glb-thumbnails.js` | Off-screen 256 px GLB thumbnail renderer |
+| `src/renderer/3d/glb-utils.js` | three.js helpers (`disposeObject`, GLB zoom mapping) |
+| `src/renderer/equirectangular/pano-view.js` | Equirectangular panorama view (drag to look around, wheel/FOV zoom); same controller contract as the GLB viewer |
+| `src/renderer/equirectangular/pano-utils.js` | `isPixmap` and zoom↔field-of-view mapping |
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
 | `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc) and grid zoom (Ctrl `+`/`-`/`0` and Ctrl + mouse wheel) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
 | `src/renderer/styles.css` | Stylesheet entry point: `@import`s the CSS modules in cascade order |
 | `src/renderer/styles/<block>.css` | One CSS module (BEM block) per UI area, named after its block; see AGENTS.md, "CSS modules" |
-| `src/renderer/crop.js` | Pure crop geometry: iMCU size from the frame header, snapping onto the grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/crop-geometry.js` | Pure crop geometry: snapping onto the iMCU grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/jpeg-frame.js` | Reads the frame header of a JPEG (pixel dimensions and iMCU grid); shared by the crop geometry and the transform tests |
 | `src/renderer/crop-overlay.js` | Crop selection overlay: darkened layer, handles, pointer gestures; projects the selection through the image zoom and pan |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
-Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
-`thumbnails.js`, `jpegTransform.js`, `rotate.js`, `crop.js`,
-`renderer/crop.js`, `renderer/utils.js` and the `renderer/three/` +
-`renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
-unit-tested without launching the app.
+Pure, Electron-independent logic lives in `fs-ipc.js`, `settings-store.js`,
+`thumbnail-cache.js`, `jpeg-transform.js`, `jpeg-rotate.js`, `jpeg-crop.js`,
+`renderer/crop-geometry.js`, `renderer/jpeg-frame.js`, `renderer/utils.js` and the
+`renderer/three/` + `renderer/3d/` + `renderer/equirectangular/` helper modules
+so it can be unit-tested without launching the app.
 
-The two three.js view controllers (`renderer/3d/view.js` and
-`renderer/equirectangular/view.js`) share one contract and one render surface:
+The two three.js view controllers (`renderer/3d/glb-view.js` and
+`renderer/equirectangular/pano-view.js`) share one contract and one render surface:
 `activate`/`deactivate`, `setZoomPercent`, `zoomIn`/`zoomOut`, `reset` and
 `dispose` (the GLB viewer adds `load`); the `onChange` callback always reports
 the zoom percentage. `renderer/three/render-surface.js` owns the renderer, the
@@ -121,7 +123,7 @@ demand.
 
 ## Thumbnail pipeline
 
-`src/thumbnails.js` resolves an image preview in this order:
+`src/thumbnail-cache.js` resolves an image preview in this order:
 
 1. **Own cache** — `userData/thumbnails/<sha1(path + size + mtimeMs)>.jpg`,
    256 px JPEG produced by `sharp` (N-API, no ABI rebuild on Electron upgrades).
@@ -134,7 +136,7 @@ demand.
 If `sharp` is unavailable or decoding fails, `null` is returned and the renderer
 falls back to displaying the file itself.
 
-GLB thumbnails take a different path: `renderer/3d/thumbnails.js` loads the
+GLB thumbnails take a different path: `renderer/3d/glb-thumbnails.js` loads the
 model with `GLTFLoader`, renders it once into an off-screen `WebGLRenderer` at
 256 px and disposes the scene afterwards.
 
@@ -178,7 +180,7 @@ directory tree (sidebar)          grid (content area)
 
 ## Settings
 
-`src/settingsStore.js` normalizes untrusted input against defaults
+`src/settings-store.js` normalizes untrusted input against defaults
 (`slideshowIntervalSeconds`, `slideshowTransition`, `animationDurationMs`), clamps
 the interval to 1–3600 seconds and the animation duration to 0–5000 ms, and rejects
 unknown transitions. The duration is applied through the `--transition-duration` CSS
@@ -224,8 +226,8 @@ fall back to defaults instead of failing.
 
 | Project | Location | Scope |
 | --- | --- | --- |
-| `unit` | `tests/unit/` | Pure helpers (`utils.js`, `3d/utils.js`, `equirectangular/utils.js`) |
-| `main` | `tests/main/` | Real temp fixtures against `fsIpc`, `settingsStore`, `thumbnails` |
+| `unit` | `tests/unit/` | Pure helpers (`utils.js`, `3d/glb-utils.js`, `equirectangular/pano-utils.js`) |
+| `main` | `tests/main/` | Real temp fixtures against `fs-ipc`, `settings-store`, `thumbnail-cache` |
 | `renderer` | `tests/renderer/` | jsdom tests (directory tree) |
 | e2e | `tests/e2e/` | Playwright `_electron` runs against the real app |
 

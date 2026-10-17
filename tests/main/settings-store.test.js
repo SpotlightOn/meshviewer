@@ -7,7 +7,7 @@ import {
   loadSettings,
   normalizeSettings,
   saveSettings,
-} from "../../src/settingsStore.js";
+} from "../../src/settings-store.js";
 
 let fixtureDir;
 
