@@ -4,6 +4,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- APNG (`*.apng`) images are listed like PNG and displayed in the grid, the large view and the panorama mode
+
 ## [0.9.0] - 2026-10-17
 
 ### Added
