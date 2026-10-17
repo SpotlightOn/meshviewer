@@ -1,0 +1,88 @@
+/**
+ * Breadcrumb path bar.
+ *
+ * Block: `.pathbar`. Every class in this file is either the block
+ * itself, `pathbar__element` or `pathbar--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.pathbar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 14px;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: text;
+  overflow: hidden;
+}
+
+.pathbar:hover {
+  border-color: var(--border);
+}
+
+.pathbar--editing {
+  border-color: var(--accent);
+  background: var(--bg);
+  color: var(--text);
+  cursor: auto;
+}
+
+.pathbar__segments {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pathbar__segment {
+  padding: 2px 6px;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pathbar__segment:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.pathbar__segment--active {
+  color: var(--accent);
+}
+
+.pathbar__segment + .pathbar__segment::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--text-dim);
+  opacity: 0.5;
+}
+
+.pathbar__input {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.pathbar--editing .pathbar__segments {
+  display: none;
+}
+
+.pathbar--editing .pathbar__input {
+  display: block;
+}

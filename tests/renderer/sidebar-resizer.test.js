@@ -33,7 +33,7 @@ describe("clampSidebarWidth", () => {
 describe("createSidebarResizer", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
-    document.documentElement.classList.remove("resizing");
+    document.documentElement.removeAttribute("data-resizing");
   });
 
   it("updates live while dragging and commits on release", () => {
@@ -52,14 +52,14 @@ describe("createSidebarResizer", () => {
     });
 
     handle.dispatchEvent(pointer("pointerdown", 280));
-    expect(document.documentElement.classList.contains("resizing")).toBe(true);
+    expect(document.documentElement.getAttribute("data-resizing")).toBe("true");
     handle.dispatchEvent(pointer("pointermove", 340));
     expect(onResize).toHaveBeenLastCalledWith(340);
     expect(onCommit).not.toHaveBeenCalled();
 
     handle.dispatchEvent(pointer("pointerup", 340));
     expect(onCommit).toHaveBeenLastCalledWith(340);
-    expect(document.documentElement.classList.contains("resizing")).toBe(false);
+    expect(document.documentElement.getAttribute("data-resizing")).toBeNull();
   });
 
   it("clamps the dragged width to the allowed range", () => {

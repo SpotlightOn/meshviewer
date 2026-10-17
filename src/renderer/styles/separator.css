@@ -1,0 +1,21 @@
+/**
+ * Shared toolbar separator.
+ *
+ * Block: `.separator`. Every class in this file is either the block
+ * itself, `separator__element` or `separator--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.separator {
+  width: 1px;
+  height: 26px;
+  background: var(--text-dim);
+  opacity: 0.55;
+  flex: none;
+}
+
+/* The crop tools have a separator on each side so the group reads on its own
+   while cropping; with the tools hidden they would sit next to each other. */
+.separator:has(+ .crop__tools[hidden]) {
+  display: none;
+}

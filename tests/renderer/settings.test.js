@@ -43,8 +43,8 @@ function makeSettings({ initial = {}, pick = null } = {}) {
     },
   };
   document.body.innerHTML = `
-    <div id="settings-overlay" class="hidden">
-      <div class="settings-dialog">
+    <div id="settings-overlay" class="dialog dialog--hidden">
+      <div class="dialog__panel">
         <input id="settings-interval" type="number" />
         <select id="settings-transition">
           <option value="fade">fade</option>
@@ -53,7 +53,7 @@ function makeSettings({ initial = {}, pick = null } = {}) {
         <input id="settings-duration" type="number" />
         <input id="settings-editor" type="text" placeholder="/usr/bin/gimp" />
         <button id="settings-editor-browse" type="button">Browse…</button>
-        <input id="settings-verify-checksum" type="checkbox" class="switch-input" />
+        <input id="settings-verify-checksum" type="checkbox" class="switch__input" />
         <select id="settings-open-behavior">
           <option value="double">double</option>
           <option value="single">single</option>
@@ -72,7 +72,7 @@ function makeSettings({ initial = {}, pick = null } = {}) {
           <option value="white">white</option>
           <option value="custom">custom</option>
         </select>
-        <div class="settings-row">
+        <div class="dialog__row">
           <input id="settings-transparency-color" type="color" value="#ffffff" />
         </div>
         <button id="settings-save" type="button">Save</button>
@@ -251,7 +251,7 @@ describe("createSettings transparency background", () => {
     settings.open();
     expect(transparency.value).toBe("white");
     expect(transparencyColor.value).toBe("#123456");
-    expect(transparencyColor.closest(".settings-row").hidden).toBe(true);
+    expect(transparencyColor.closest(".dialog__row").hidden).toBe(true);
   });
 
   it("shows the color picker for the custom mode", async () => {
@@ -260,7 +260,7 @@ describe("createSettings transparency background", () => {
     });
     await settings.load();
     settings.open();
-    expect(transparencyColor.closest(".settings-row").hidden).toBe(false);
+    expect(transparencyColor.closest(".dialog__row").hidden).toBe(false);
   });
 
   it("persists the transparency background and color on save", async () => {

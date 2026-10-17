@@ -52,16 +52,16 @@ async function loadImageThumbnail(file) {
  * @returns {Promise<void>}
  */
 async function loadThumb(file, card) {
-  const wrap = card.querySelector(".thumb-wrap");
-  const thumb = card.querySelector(".thumb");
+  const wrap = card.querySelector(".grid__thumb");
+  const thumb = card.querySelector(".grid__thumb-img");
   try {
     if (file.type === "glb") {
       const { renderGlbThumbnail } = await import("./3d/thumbnails.js");
       thumb.src = await renderGlbThumbnail(toArrayBuffer(await window.api.readFile(file.path)));
-      wrap.classList.remove("loading");
+      wrap.classList.remove("grid__thumb--loading");
     } else {
       thumb.src = await loadImageThumbnail(file);
-      const markLoaded = () => wrap.classList.remove("loading");
+      const markLoaded = () => wrap.classList.remove("grid__thumb--loading");
       if (thumb.complete) {
         markLoaded();
       } else {
@@ -72,7 +72,7 @@ async function loadThumb(file, card) {
     console.error(`${t("console.previewFailed")} ${file.name}`, error);
     wrap.remove();
     const errorBox = document.createElement("div");
-    errorBox.className = "error";
+    errorBox.className = "grid__error";
     errorBox.textContent = t("grid.previewFailed");
     card.prepend(errorBox);
   }
@@ -124,21 +124,21 @@ export function createGrid({
    */
   function createCard(entry) {
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "grid__card";
     card.dataset.kind = entry.kind;
     card.title = entry.path;
 
     const wrap = document.createElement("div");
-    wrap.className = "thumb-wrap";
+    wrap.className = "grid__thumb";
 
     if (entry.kind === "folder") {
       const frame = document.createElement("div");
-      frame.className = "folder-frame";
+      frame.className = "grid__folder";
       wrap.append(frame);
     } else {
-      wrap.classList.add("loading");
+      wrap.classList.add("grid__thumb--loading");
       const img = document.createElement("img");
-      img.className = "thumb";
+      img.className = "grid__thumb-img";
       img.alt = entry.name;
       img.decoding = "async";
       img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -146,14 +146,14 @@ export function createGrid({
     }
 
     const meta = document.createElement("div");
-    meta.className = "meta";
+    meta.className = "grid__meta";
 
     const name = document.createElement("div");
-    name.className = "name";
+    name.className = "grid__name";
     name.textContent = entry.name;
 
     const size = document.createElement("div");
-    size.className = "size";
+    size.className = "grid__size";
     size.textContent =
       entry.kind === "folder"
         ? t("grid.typeFolder")
@@ -188,7 +188,10 @@ export function createGrid({
   function renderSelection() {
     for (const card of grid.children) {
       const index = Number(card.dataset.index);
-      card.classList.toggle("selected", Number.isFinite(index) && selectedIndices.has(index));
+      card.classList.toggle(
+        "grid__card--selected",
+        Number.isFinite(index) && selectedIndices.has(index),
+      );
     }
     updateSelectionInfo();
   }
@@ -428,7 +431,7 @@ export function createGrid({
   function startMarquee(event) {
     const baseRect = grid.getBoundingClientRect();
     const overlay = document.createElement("div");
-    overlay.className = "marquee";
+    overlay.className = "grid__marquee";
     grid.append(overlay);
     const startX = event.clientX;
     const startY = event.clientY;
@@ -450,7 +453,7 @@ export function createGrid({
         Math.abs(moveEvent.clientX - startX),
         Math.abs(moveEvent.clientY - startY),
       );
-      const indices = cardIndexesInRect(grid.querySelectorAll(".card"), rect);
+      const indices = cardIndexesInRect(grid.querySelectorAll(".grid__card"), rect);
       if (moveEvent.ctrlKey || moveEvent.metaKey) {
         selectedIndices = new Set(startSelection);
         for (const index of indices) selectedIndices.add(index);
@@ -516,10 +519,10 @@ export function createGrid({
    */
   function applyPreview(wrap, url) {
     if (!url || !wrap.isConnected) return;
-    const frame = wrap.querySelector(".folder-frame");
+    const frame = wrap.querySelector(".grid__folder");
     if (!frame) return;
     const img = document.createElement("img");
-    img.className = "folder-preview-img";
+    img.className = "grid__folder-preview";
     img.alt = "";
     img.decoding = "async";
     img.src = url;
@@ -657,7 +660,7 @@ export function createGrid({
       { root: contentEl },
     );
     for (let i = 0; i < cards.length; i++) {
-      const wrap = cards[i].querySelector(".thumb-wrap");
+      const wrap = cards[i].querySelector(".grid__thumb");
       wrap.dataset.index = String(i);
       if (entries[i].kind === "folder") folderObserver.observe(wrap);
       else thumbnailObserver.observe(wrap);
@@ -710,21 +713,21 @@ export function createGrid({
     if (typeof file.mtimeMs === "number") entry.mtimeMs = file.mtimeMs;
     const card = grid.children[index];
     if (!card) return;
-    const size = card.querySelector(".size");
+    const size = card.querySelector(".grid__size");
     if (size) {
       size.textContent = `${entry.kind === "glb" ? t("grid.typeGlb") : t("grid.typeImage")} · ${formatSize(entry.size)}`;
     }
-    const thumb = card.querySelector(".thumb");
-    const wrap = card.querySelector(".thumb-wrap");
+    const thumb = card.querySelector(".grid__thumb-img");
+    const wrap = card.querySelector(".grid__thumb");
     if (!thumb || !wrap) return;
-    wrap.classList.add("loading");
+    wrap.classList.add("grid__thumb--loading");
     try {
       thumb.src = await loadImageThumbnail(entry);
-      const markLoaded = () => wrap.classList.remove("loading");
+      const markLoaded = () => wrap.classList.remove("grid__thumb--loading");
       if (thumb.complete) markLoaded();
       else thumb.addEventListener("load", markLoaded, { once: true });
     } catch (error) {
-      wrap.classList.remove("loading");
+      wrap.classList.remove("grid__thumb--loading");
       console.error(`${t("console.previewFailed")} ${entry.name}`, error);
     }
   }
@@ -743,7 +746,7 @@ export function createGrid({
   }
 
   grid.addEventListener("contextmenu", (event) => {
-    const card = event.target.closest?.(".card");
+    const card = event.target.closest?.(".grid__card");
     if (!card || card.dataset.index === undefined) return;
     const index = Number(card.dataset.index);
     if (!selectedIndices.has(index)) selectOnly(index);
@@ -758,7 +761,7 @@ export function createGrid({
   contentEl.addEventListener("mousedown", (event) => {
     if (event.button !== 0) return;
     if (event.target.closest?.("#selection-info")) return;
-    if (event.target.closest?.(".card")) {
+    if (event.target.closest?.(".grid__card")) {
       event.preventDefault();
       return;
     }

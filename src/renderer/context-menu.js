@@ -141,7 +141,7 @@ export function createContextMenu({ host, menuEl, resolveTarget }) {
    */
   function createSeparator() {
     const separator = document.createElement("hr");
-    separator.className = "context-separator";
+    separator.className = "context-menu__separator";
     return separator;
   }
 
@@ -167,18 +167,18 @@ export function createContextMenu({ host, menuEl, resolveTarget }) {
       }
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "context-item";
+      button.className = "context-menu__item";
       button.dataset.action = item.id;
       button.setAttribute("role", "menuitem");
       const icon = item.icon && MENU_ICONS[item.icon];
       if (icon) {
         const iconEl = document.createElement("span");
-        iconEl.className = "context-icon";
+        iconEl.className = "context-menu__icon";
         iconEl.innerHTML = icon;
         button.append(iconEl);
       }
       const label = document.createElement("span");
-      label.className = "context-label";
+      label.className = "context-menu__label";
       label.textContent = labelOf(item);
       button.append(label);
       button.addEventListener("click", () => {

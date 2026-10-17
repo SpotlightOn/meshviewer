@@ -53,7 +53,7 @@ export function createSidebarResizer({ handle, getWidth, onResize, onCommit }) {
     startWidth = clampSidebarWidth(getWidth());
     current = startWidth;
     handle.setPointerCapture?.(event.pointerId);
-    document.documentElement.classList.add("resizing");
+    document.documentElement.setAttribute("data-resizing", "true");
     event.preventDefault();
   }
 
@@ -74,7 +74,7 @@ export function createSidebarResizer({ handle, getWidth, onResize, onCommit }) {
     if (!dragging) return;
     dragging = false;
     handle.releasePointerCapture?.(event.pointerId);
-    document.documentElement.classList.remove("resizing");
+    document.documentElement.removeAttribute("data-resizing");
     onCommit(current);
   }
 

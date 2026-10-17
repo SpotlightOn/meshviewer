@@ -120,18 +120,18 @@ const contextMenu = createContextMenu({
   host: document.body,
   menuEl: document.getElementById("context-menu"),
   resolveTarget: (target) => {
-    const card = target.closest?.(".card");
+    const card = target.closest?.(".grid__card");
     if (card?.dataset.index !== undefined) {
       const entry = grid?.getEntry(Number(card.dataset.index));
       if (entry?.kind === "folder") return { kind: "folder", path: entry.path, origin: "grid" };
       if (entry) return { kind: "file", file: entry };
     }
-    const row = target.closest?.(".tree-row");
+    const row = target.closest?.(".tree__row");
     if (row) {
       const dirPath = row.closest("li")?.dataset.path;
       if (dirPath) return { kind: "folder", path: dirPath, origin: "tree" };
     }
-    if (target.closest?.(".content")) {
+    if (target.closest?.(".layout__content")) {
       const dirPath = grid?.getPath();
       if (dirPath) return { kind: "folder", path: dirPath, origin: "content" };
     }
@@ -240,7 +240,7 @@ grid = createGrid({
     grid: document.getElementById("grid"),
     emptyState: document.getElementById("empty-state"),
     emptyMessage: document.getElementById("empty-message"),
-    contentEl: document.querySelector(".content"),
+    contentEl: document.querySelector(".layout__content"),
     selectionInfo: document.getElementById("selection-info"),
   },
   onOpenFile: (file) => largeViewRef.current?.show(file),
@@ -260,7 +260,7 @@ createKeyboard({
   confirmDialog,
   largeView,
   grid,
-  contentEl: document.querySelector(".content"),
+  contentEl: document.querySelector(".layout__content"),
 });
 
 const pathBar = createPathBar({

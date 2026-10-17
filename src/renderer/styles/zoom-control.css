@@ -1,0 +1,59 @@
+/**
+ * Zoom control.
+ *
+ * Block: `.zoom-control`. Every class in this file is either the block
+ * itself, `zoom-control__element` or `zoom-control--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.zoom-control__btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.zoom-control__btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zoom-control input[type="range"] {
+  width: 180px;
+  accent-color: var(--accent);
+}
+
+.zoom-control__value {
+  width: 64px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 6px;
+  text-align: right;
+}
+
+.zoom-control__value:hover {
+  border-color: var(--accent);
+}
+
+.zoom-control__value:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* The header gives the other icon buttons a hover glow; the zoom buttons
+   carry their own class, so they need it here. */
+.zoom-control__btn:hover {
+  filter: brightness(1.1);
+}

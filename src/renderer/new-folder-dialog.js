@@ -53,7 +53,7 @@ export function createNewFolderDialog({ dom, onCreated }) {
     input.value = t("newFolder.defaultName");
     error.hidden = true;
     error.textContent = "";
-    overlay.classList.remove("hidden");
+    overlay.classList.remove("dialog--hidden");
     input.focus();
     input.select();
   }
@@ -62,7 +62,7 @@ export function createNewFolderDialog({ dom, onCreated }) {
    * Closes the dialog without creating a folder.
    */
   function close() {
-    overlay.classList.add("hidden");
+    overlay.classList.add("dialog--hidden");
     parentPath = null;
   }
 
@@ -80,6 +80,6 @@ export function createNewFolderDialog({ dom, onCreated }) {
   return {
     open,
     close,
-    isOpen: () => !overlay.classList.contains("hidden"),
+    isOpen: () => !overlay.classList.contains("dialog--hidden"),
   };
 }
