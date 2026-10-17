@@ -4,6 +4,7 @@
  */
 const IMAGE_MIME = {
   ".png": "image/png",
+  ".apng": "image/apng",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
   ".gif": "image/gif",
@@ -12,6 +13,7 @@ const IMAGE_MIME = {
   ".bmp": "image/bmp",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".jxl": "image/jxl",
 };
 
 /**

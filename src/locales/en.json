@@ -16,7 +16,7 @@
     "typeImage": "Image",
     "typeFolder": "Folder",
     "loadError": "Error reading folder",
-    "noMedia": "No *.glb, *.png, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files found in this folder.",
+    "noMedia": "No *.glb, *.png, *.apng, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg, *.ico or *.jxl files found in this folder.",
     "previewFailed": "Preview failed",
     "nSelected": "{{count}} selected",
     "copyBuffer": "{{count}} copied to clipboard",
