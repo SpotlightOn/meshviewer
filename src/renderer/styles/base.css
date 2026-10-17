@@ -1,0 +1,62 @@
+/**
+ * Design tokens, resets and page scaffolding.
+ *
+ * No block: only element selectors, at-rules and custom properties live here.
+ * See AGENTS.md, "CSS modules".
+ */
+
+:root {
+  color-scheme: dark;
+  --bg: #1e1e1e;
+  --surface: #2b2b2b;
+  --surface-hover: #333333;
+  --border: #3c3c3c;
+  --text: #e0e0e0;
+  --text-dim: #9a9a9a;
+  --accent: #4f9cf9;
+  --tile-size: 200px;
+  --transition-duration: 300ms;
+  --checker-a: #4a4a4a;
+  --checker-b: #333333;
+  --transparency-background:
+    linear-gradient(45deg, var(--checker-a) 25%, transparent 25%) 0 0 / 24px 24px,
+    linear-gradient(-45deg, var(--checker-a) 25%, transparent 25%) 0 12px / 24px 24px,
+    linear-gradient(45deg, transparent 75%, var(--checker-a) 75%) 12px -12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, var(--checker-a) 75%) -12px 0 / 24px 24px,
+    var(--checker-b);
+}
+
+/* Light scheme, used when the operating system is light or the theme is set
+   to "light" (both surface as prefers-color-scheme via nativeTheme). */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f4f4;
+    --surface: #ffffff;
+    --surface-hover: #e6e6e6;
+    --border: #cfcfcf;
+    --text: #1f1f1f;
+    --text-dim: #6b6b6b;
+    --accent: #2f7fe0;
+    --checker-a: #dcdcdc;
+    --checker-b: #f2f2f2;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}

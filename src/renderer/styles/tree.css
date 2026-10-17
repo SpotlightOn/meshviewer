@@ -1,0 +1,74 @@
+/**
+ * Directory tree.
+ *
+ * Block: `.tree`. Every class in this file is either the block
+ * itself, `tree__element` or `tree--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.tree {
+  font-size: 13px;
+  outline: none;
+}
+
+.tree ul,
+.tree__root {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree .tree__children {
+  display: none;
+  padding-left: 14px;
+}
+
+.tree__node--expanded > .tree__children {
+  display: block;
+}
+
+.tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tree__row:hover {
+  background: var(--surface-hover);
+}
+
+.tree__node--selected > .tree__row {
+  background: var(--accent);
+  color: #fff;
+}
+
+.tree__node--focused > .tree__row {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.tree__twisty {
+  width: 16px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-dim);
+}
+
+.tree__twisty--hidden {
+  visibility: hidden;
+}
+
+.tree__twisty--loading {
+  opacity: 0.4;
+}
+
+.tree__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

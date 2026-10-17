@@ -30,7 +30,7 @@ describe("createDirectoryTree", () => {
 
   it("renders the root node with its label", () => {
     const { tree } = makeTree({});
-    const label = tree.el.querySelector(".tree-label");
+    const label = tree.el.querySelector(".tree__label");
     expect(label.textContent).toBe("Root");
     expect(label.title).toBe("/");
   });
@@ -43,14 +43,16 @@ describe("createDirectoryTree", () => {
       ],
     });
     await flush();
-    const labels = Array.from(tree.el.querySelectorAll(".tree-label")).map((el) => el.textContent);
+    const labels = Array.from(tree.el.querySelectorAll(".tree__label")).map((el) => el.textContent);
     expect(labels).toEqual(["Root", "home", "media"]);
   });
 
   it("hides the twisty when a node has no children", async () => {
     const { tree } = makeTree({ "/": [] });
     await flush();
-    expect(tree.el.querySelector(".tree-twisty").classList.contains("hidden")).toBe(true);
+    expect(tree.el.querySelector(".tree__twisty").classList.contains("tree__twisty--hidden")).toBe(
+      true,
+    );
   });
 
   it("expands and collapses a node on toggle", async () => {
@@ -60,18 +62,18 @@ describe("createDirectoryTree", () => {
     });
     await flush();
 
-    const homeRow = Array.from(tree.el.querySelectorAll(".tree-row")).find(
-      (row) => row.querySelector(".tree-label").textContent === "home",
+    const homeRow = Array.from(tree.el.querySelectorAll(".tree__row")).find(
+      (row) => row.querySelector(".tree__label").textContent === "home",
     );
     homeRow.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     await flush();
-    expect(homeRow.closest("li").classList.contains("expanded")).toBe(true);
+    expect(homeRow.closest("li").classList.contains("tree__node--expanded")).toBe(true);
     expect(homeRow.closest("li").getAttribute("aria-expanded")).toBe("true");
     expect(tree.el.textContent).toContain("Desktop");
 
     homeRow.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     await flush();
-    expect(homeRow.closest("li").classList.contains("expanded")).toBe(false);
+    expect(homeRow.closest("li").classList.contains("tree__node--expanded")).toBe(false);
   });
 
   it("selects a node on click and reports it", async () => {
@@ -80,14 +82,14 @@ describe("createDirectoryTree", () => {
     });
     await flush();
 
-    const homeRow = Array.from(tree.el.querySelectorAll(".tree-row")).find(
-      (row) => row.querySelector(".tree-label").textContent === "home",
+    const homeRow = Array.from(tree.el.querySelectorAll(".tree__row")).find(
+      (row) => row.querySelector(".tree__label").textContent === "home",
     );
     homeRow.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flush();
     expect(selected).toEqual(["/home"]);
     expect(tree.getSelectedPath()).toBe("/home");
-    expect(homeRow.closest("li").classList.contains("selected")).toBe(true);
+    expect(homeRow.closest("li").classList.contains("tree__node--selected")).toBe(true);
   });
 
   it("selects a nested path and expands its ancestors via selectPath", async () => {
@@ -101,7 +103,7 @@ describe("createDirectoryTree", () => {
     expect(ok).toBe(true);
     expect(selected).toEqual(["/home/Desktop"]);
     expect(tree.getSelectedPath()).toBe("/home/Desktop");
-    const expandedLis = tree.el.querySelectorAll("li.expanded");
+    const expandedLis = tree.el.querySelectorAll("li.tree__node--expanded");
     expect(expandedLis.length).toBe(3);
   });
 
@@ -143,7 +145,7 @@ describe("createDirectoryTree", () => {
     expect(ok).toBe(true);
     expect(tree.getSelectedPath()).toBe("C:\\Users\\Photos");
     expect(selected).toEqual(["C:\\Users\\Photos"]);
-    expect(tree.el.querySelectorAll("li.expanded").length).toBe(3);
+    expect(tree.el.querySelectorAll("li.tree__node--expanded").length).toBe(3);
 
     const okForward = await tree.selectPath("C:/Users/Photos");
     expect(okForward).toBe(true);
@@ -158,7 +160,7 @@ describe("createDirectoryTree", () => {
     await flush();
     expect(tree.el.textContent).toContain("b");
     const bLi = Array.from(tree.el.querySelectorAll("li")).find(
-      (li) => li.querySelector(".tree-label").textContent === "b",
+      (li) => li.querySelector(".tree__label").textContent === "b",
     );
     expect(bLi).toBeTruthy();
   });
@@ -192,17 +194,21 @@ describe("createDirectoryTree", () => {
     });
     await flush();
 
-    const rows = Array.from(tree.el.querySelectorAll(".tree-row"));
-    expect(rows.map((r) => r.querySelector(".tree-label").textContent)).toEqual(["Root", "a", "b"]);
+    const rows = Array.from(tree.el.querySelectorAll(".tree__row"));
+    expect(rows.map((r) => r.querySelector(".tree__label").textContent)).toEqual([
+      "Root",
+      "a",
+      "b",
+    ]);
 
     tree.el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-    expect(rows[0].closest("li").classList.contains("focused")).toBe(true);
+    expect(rows[0].closest("li").classList.contains("tree__node--focused")).toBe(true);
 
     tree.el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-    expect(rows[1].closest("li").classList.contains("focused")).toBe(true);
+    expect(rows[1].closest("li").classList.contains("tree__node--focused")).toBe(true);
 
     tree.el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
-    expect(rows[2].closest("li").classList.contains("focused")).toBe(true);
+    expect(rows[2].closest("li").classList.contains("tree__node--focused")).toBe(true);
 
     tree.el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     await flush();
@@ -216,14 +222,14 @@ describe("createDirectoryTree", () => {
     };
     const { tree } = makeTree(entries);
     await flush();
-    expect(tree.el.querySelectorAll(".tree-row")).toHaveLength(2);
+    expect(tree.el.querySelectorAll(".tree__row")).toHaveLength(2);
 
     entries["/"] = [
       { path: "/home", name: "home" },
       { path: "/new", name: "new" },
     ];
     await tree.refresh("/");
-    const labels = Array.from(tree.el.querySelectorAll(".tree-label")).map((el) => el.textContent);
+    const labels = Array.from(tree.el.querySelectorAll(".tree__label")).map((el) => el.textContent);
     expect(labels).toEqual(["Root", "home", "new"]);
   });
 
@@ -236,8 +242,10 @@ describe("createDirectoryTree", () => {
 
     entries["/"] = [];
     await tree.refresh("/");
-    expect(tree.el.querySelectorAll(".tree-row")).toHaveLength(1);
-    expect(tree.el.querySelector(".tree-twisty").classList.contains("hidden")).toBe(true);
+    expect(tree.el.querySelectorAll(".tree__row")).toHaveLength(1);
+    expect(tree.el.querySelector(".tree__twisty").classList.contains("tree__twisty--hidden")).toBe(
+      true,
+    );
   });
 
   it("leaves unloaded nodes untouched on refresh", async () => {

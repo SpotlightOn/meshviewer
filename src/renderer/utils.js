@@ -373,7 +373,7 @@ function parseZoomPercent(value) {
 }
 
 /**
- * Starts the exit animation of the `.large-frame` elements left in a container
+ * Starts the exit animation of the `.large-view__frame` elements left in a container
  * and removes each of them when its animation ended, or after the configured
  * duration plus a grace period as a safety net. The frame that was just added
  * is passed as `keep` and is never retired.
@@ -383,11 +383,13 @@ function parseZoomPercent(value) {
  */
 function retireFrames(container, { direction, slide, durationMs, keep = null }) {
   const leaving = [
-    ...container.querySelectorAll(".large-frame:not(.leave-slide):not(.leave-fade)"),
+    ...container.querySelectorAll(
+      ".large-view__frame:not(.large-view__frame--leave-slide):not(.large-view__frame--leave-fade)",
+    ),
   ].filter((frame) => frame !== keep);
   for (const frame of leaving) {
-    frame.classList.remove("enter-slide", "enter-fade");
-    frame.classList.add(slide ? "leave-slide" : "leave-fade");
+    frame.classList.remove("large-view__frame--enter-slide", "large-view__frame--enter-fade");
+    frame.classList.add(slide ? "large-view__frame--leave-slide" : "large-view__frame--leave-fade");
     if (slide) frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
     const remove = () => frame.remove();
     frame.addEventListener(

@@ -51,18 +51,18 @@ export function createInfoDialog({ dom }) {
   function renderSection(container, heading, rows) {
     if (rows.length === 0) return;
     const section = document.createElement("section");
-    section.className = "info-section";
+    section.className = "dialog__section";
     const title = document.createElement("h3");
     title.textContent = heading;
     const list = document.createElement("dl");
-    list.className = "info-rows";
+    list.className = "dialog__rows";
     for (const row of rows) {
       const term = document.createElement("dt");
       term.textContent = row.label ?? t(row.labelKey);
       const detail = document.createElement("dd");
       if (row.image) {
         const img = document.createElement("img");
-        img.className = "info-image";
+        img.className = "dialog__image";
         img.src = row.image;
         img.alt = row.label;
         detail.append(img);
@@ -98,10 +98,10 @@ export function createInfoDialog({ dom }) {
     const token = ++requestToken;
     render(file, imageSize, null);
     const loading = document.createElement("p");
-    loading.className = "info-loading";
+    loading.className = "dialog__loading";
     loading.textContent = t("info.loading");
     content.append(loading);
-    overlay.classList.remove("hidden");
+    overlay.classList.remove("dialog--hidden");
     closeBtn.focus();
     window.api.exif(file.path).then(
       (tags) => {
@@ -119,7 +119,7 @@ export function createInfoDialog({ dom }) {
    */
   function close() {
     requestToken += 1;
-    overlay.classList.add("hidden");
+    overlay.classList.add("dialog--hidden");
     content.replaceChildren();
   }
 
@@ -128,7 +128,7 @@ export function createInfoDialog({ dom }) {
    * @returns {boolean} true while the overlay is visible.
    */
   function isOpen() {
-    return !overlay.classList.contains("hidden");
+    return !overlay.classList.contains("dialog--hidden");
   }
 
   closeBtn.addEventListener("click", close);

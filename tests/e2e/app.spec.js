@@ -10,36 +10,39 @@ test("app boots and renders the directory tree", async () => {
   const { electronApp, page } = await launchApp();
   await expect(page).toHaveTitle("MeshViewer");
   await expect(page.locator(".tree")).toBeVisible();
-  await expect(page.locator(".tree-label").first()).toHaveText("/");
-  await expect(page.locator(".empty-logo")).toBeVisible();
+  await expect(page.locator(".tree__label").first()).toHaveText("/");
+  await expect(page.locator(".empty-state__logo")).toBeVisible();
   await electronApp.close();
 });
 
 test("navigates to a folder and displays media thumbnails", async () => {
   const { electronApp, page } = await launchApp();
 
-  await expect(page.locator(".path-segment.active")).toHaveText(basename(process.cwd()));
+  await expect(page.locator(".pathbar__segment.pathbar__segment--active")).toHaveText(
+    basename(process.cwd()),
+  );
 
-  const tmpRow = page.locator(".tree-row", { has: page.getByText("tmp", { exact: true }) }).first();
-  await tmpRow.locator(".tree-twisty").click();
-  const opencodeRow = page.locator(".tree-row", { hasText: "opencode" }).first();
+  const tmpRow = page
+    .locator(".tree__row", { has: page.getByText("tmp", { exact: true }) })
+    .first();
+  await tmpRow.locator(".tree__twisty").click();
+  const opencodeRow = page.locator(".tree__row", { hasText: "opencode" }).first();
   await expect(opencodeRow).toBeVisible();
-  await opencodeRow.locator(".tree-twisty").click();
-  const glbtestRow = page.locator(".tree-row", { hasText: "glbtest" }).first();
+  await opencodeRow.locator(".tree__twisty").click();
+  const glbtestRow = page.locator(".tree__row", { hasText: "glbtest" }).first();
   await expect(glbtestRow).toBeVisible();
   await glbtestRow.click();
 
-  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
-  await expect(page.locator(".card")).toHaveCount(4);
-  await expect(page.locator(".card", { hasText: "test.glb" })).toBeVisible();
-  await expect(page.locator(".card", { hasText: "textured.glb" })).toBeVisible();
-  await expect(page.locator(".card", { hasText: "foto.png" })).toBeVisible();
-  await expect(page.locator(".card", { hasText: "foto2.png" })).toBeVisible();
+  await expect(page.locator(".pathbar__segment.pathbar__segment--active")).toHaveText("glbtest");
+  await expect(page.locator(".grid__card")).toHaveCount(4);
+  await expect(page.locator(".grid__card", { hasText: "test.glb" })).toBeVisible();
+  await expect(page.locator(".grid__card", { hasText: "textured.glb" })).toBeVisible();
+  await expect(page.locator(".grid__card", { hasText: "foto.png" })).toBeVisible();
+  await expect(page.locator(".grid__card", { hasText: "foto2.png" })).toBeVisible();
 
-  await expect(page.locator(".card", { hasText: "foto.png" }).locator(".thumb")).toHaveAttribute(
-    "src",
-    /^(blob:|data:image\/jpeg;)/,
-  );
+  await expect(
+    page.locator(".grid__card", { hasText: "foto.png" }).locator(".grid__thumb-img"),
+  ).toHaveAttribute("src", /^(blob:|data:image\/jpeg;)/);
   await electronApp.close();
 });
 
@@ -47,19 +50,19 @@ test("opens a folder via the path input", async () => {
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".pathbar__segment.pathbar__segment--active")).toHaveText("glbtest");
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await input.fill("/nonexistent/path/xyz");
   await input.press("Enter");
-  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
+  await expect(page.locator(".pathbar__segment.pathbar__segment--active")).toHaveText("glbtest");
   await expect(page.locator("#empty-state")).toBeVisible();
-  await expect(page.locator(".empty-logo")).toBeVisible();
+  await expect(page.locator(".empty-state__logo")).toBeVisible();
   await expect(page.locator("#empty-message")).not.toBeEmpty();
 
   await electronApp.close();
@@ -69,18 +72,18 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).dblclick();
+  await page.locator(".grid__card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
-  await expect(page.locator(".info-loading")).toBeHidden();
-  await expect(page.locator(".info-section:first-child .info-rows dd")).toHaveCount(4);
+  await expect(page.locator(".dialog__loading")).toBeHidden();
+  await expect(page.locator(".dialog__section:first-child .dialog__rows dd")).toHaveCount(4);
   const title = (await page.locator("#info-dialog-title").textContent()) ?? "";
   expect(title.includes("info.title")).toBe(false);
   await page.keyboard.press("Escape");
@@ -88,11 +91,11 @@ test("file information dialog shows basic info and closes with Esc", async () =>
   await expect(page.locator("#large-view")).toBeVisible();
 
   await page.locator("#large-back").click();
-  await page.locator(".card", { hasText: "test.glb" }).dblclick();
+  await page.locator(".grid__card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
-  await expect(page.locator(".info-section:first-child .info-rows dd")).toHaveCount(3);
+  await expect(page.locator(".dialog__section:first-child .dialog__rows dd")).toHaveCount(3);
   await page.keyboard.press("Escape");
   await expect(page.locator("#info-overlay")).toBeHidden();
 
@@ -103,19 +106,19 @@ test("file information dialog renders the embedded preview image and hides raw m
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/exiftest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(1);
+  await expect(page.locator(".grid__card")).toHaveCount(1);
 
-  await page.locator(".card").dblclick();
+  await page.locator(".grid__card").dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await page.locator("#large-details").click();
   await expect(page.locator("#info-overlay")).toBeVisible();
-  await expect(page.locator(".info-loading")).toBeHidden();
+  await expect(page.locator(".dialog__loading")).toBeHidden();
 
-  const image = page.locator(".info-image");
+  const image = page.locator(".dialog__image");
   await expect(image).toBeVisible();
   const src = (await image.getAttribute("src")) ?? "";
   expect(src.startsWith("data:image/jpeg;base64,")).toBe(true);
@@ -138,7 +141,7 @@ async function expectImageCentered(page) {
   await page.waitForFunction(() => {
     const canvas = document.querySelector("#large-canvas");
     if (!canvas) return false;
-    const frames = canvas.querySelectorAll(".large-frame");
+    const frames = canvas.querySelectorAll(".large-view__frame");
     if (frames.length !== 1) return false;
     const img = frames[0].querySelector("img");
     if (!img) return false;
@@ -155,44 +158,50 @@ test("right-clicking a thumbnail opens the context menu", async () => {
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).click({ button: "right" });
+  await page.locator(".grid__card", { hasText: "foto.png" }).click({ button: "right" });
   await expect(page.locator("#context-menu")).toBeVisible();
   // The "edit with" entry only appears when an editor command is configured,
   // which depends on the persisted user settings; assert the stable entries.
-  await expect(page.locator('#context-menu .context-item[data-action="open-with"]')).toBeVisible();
-  await expect(page.locator('#context-menu .context-item[data-action="file-info"]')).toBeVisible();
+  await expect(
+    page.locator('#context-menu .context-menu__item[data-action="open-with"]'),
+  ).toBeVisible();
+  await expect(
+    page.locator('#context-menu .context-menu__item[data-action="file-info"]'),
+  ).toBeVisible();
 
   // The file information entry reuses the EXIF dialog.
-  await page.locator('#context-menu .context-item[data-action="file-info"]').click();
+  await page.locator('#context-menu .context-menu__item[data-action="file-info"]').click();
   await expect(page.locator("#info-overlay")).toBeVisible();
   await expect(page.locator("#context-menu")).toBeHidden();
   await page.keyboard.press("Escape");
   await expect(page.locator("#info-overlay")).toBeHidden();
 
   // Right-click again and close with Escape.
-  await page.locator(".card", { hasText: "foto.png" }).click({ button: "right" });
+  await page.locator(".grid__card", { hasText: "foto.png" }).click({ button: "right" });
   await expect(page.locator("#context-menu")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.locator("#context-menu")).toBeHidden();
 
   // Right-clicking empty grid space (below the tiles) opens the folder menu.
-  const lastCard = await page.locator(".card", { hasText: "foto2.png" }).boundingBox();
+  const lastCard = await page.locator(".grid__card", { hasText: "foto2.png" }).boundingBox();
   if (lastCard) {
     await page.mouse.click(lastCard.x + lastCard.width / 2, lastCard.y + lastCard.height + 30, {
       button: "right",
     });
     await expect(page.locator("#context-menu")).toBeVisible();
     await expect(
-      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+      page.locator('#context-menu .context-menu__item[data-action="new-folder"]'),
     ).toBeVisible();
     // The paste entry stays hidden while the clipboard is empty.
-    await expect(page.locator('#context-menu .context-item[data-action="paste"]')).toHaveCount(0);
+    await expect(
+      page.locator('#context-menu .context-menu__item[data-action="paste"]'),
+    ).toHaveCount(0);
   }
 
   await electronApp.close();
@@ -203,7 +212,7 @@ test("creates a new folder from the content context menu", async () => {
   const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-"));
   try {
     const input = page.locator("#path-input");
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await expect(input).toBeVisible();
     await input.fill(dir);
     await input.press("Enter");
@@ -213,9 +222,9 @@ test("creates a new folder from the content context menu", async () => {
     await page.locator("#empty-state").click({ button: "right" });
     await expect(page.locator("#context-menu")).toBeVisible();
     await expect(
-      page.locator('#context-menu .context-item[data-action="new-folder"]'),
+      page.locator('#context-menu .context-menu__item[data-action="new-folder"]'),
     ).toBeVisible();
-    await page.locator('#context-menu .context-item[data-action="new-folder"]').click();
+    await page.locator('#context-menu .context-menu__item[data-action="new-folder"]').click();
 
     const nameInput = page.locator("#new-folder-input");
     await expect(nameInput).toBeVisible();
@@ -233,13 +242,13 @@ test("actual-size button resets the large view zoom to 100 percent", async () =>
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).dblclick();
+  await page.locator(".grid__card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -259,15 +268,15 @@ test("zoom slider zooms the 3D view", async () => {
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "test.glb" }).dblclick();
+  await page.locator(".grid__card", { hasText: "test.glb" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
-  await page.waitForSelector(".large-canvas canvas");
+  await page.waitForSelector(".large-view__canvas canvas");
 
   // The GLB state is only set once the model finished loading; retry until
   // the slider input reaches the 3D view so the assertion is stable.
@@ -291,13 +300,13 @@ test("status bar shows file info and the arrow buttons navigate", async () => {
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).dblclick();
+  await page.locator(".grid__card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -318,13 +327,13 @@ test("swiping the image navigates to the previous and next image", async () => {
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).dblclick();
+  await page.locator(".grid__card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -370,13 +379,13 @@ test("middle mouse click toggles the image between 100 percent and fit", async (
   const { electronApp, page } = await launchApp();
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".grid__card")).toHaveCount(4);
 
-  await page.locator(".card", { hasText: "foto.png" }).dblclick();
+  await page.locator(".grid__card", { hasText: "foto.png" }).dblclick();
   await expect(page.locator("#large-view")).toBeVisible();
   await expect(page.locator("#large-file-info")).toHaveText(
     /^foto\.png \| [0-9]+x[0-9]+ \| \d+(\.\d+)? (B|KB|MB)$/,
@@ -414,58 +423,58 @@ test("selects, copies, pastes, cuts and trashes files", async () => {
   await writeFile(join(dir, "c.png"), "c");
   try {
     const input = page.locator("#path-input");
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await expect(input).toBeVisible();
     await input.fill(dir);
     await input.press("Enter");
-    await expect(page.locator(".card")).toHaveCount(3);
+    await expect(page.locator(".grid__card")).toHaveCount(3);
 
     // Ctrl-clicking builds a selection without opening the large view.
-    const cards = page.locator(".card");
+    const cards = page.locator(".grid__card");
     await cards.nth(0).click({ modifiers: ["Control"] });
     await cards.nth(1).click({ modifiers: ["Control"] });
-    await expect(page.locator(".card.selected")).toHaveCount(2);
+    await expect(page.locator(".grid__card.grid__card--selected")).toHaveCount(2);
     await expect(page.locator("#selection-info")).toBeVisible();
     await expect(page.locator("#large-view")).toBeHidden();
 
     // Copy and paste inside the folder: the copies are renamed and the grid reloads.
     await page.keyboard.press("Control+c");
     await page.keyboard.press("Control+v");
-    await expect(page.locator(".card")).toHaveCount(5);
-    await expect(page.locator(".card.selected")).toHaveCount(0);
+    await expect(page.locator(".grid__card")).toHaveCount(5);
+    await expect(page.locator(".grid__card.grid__card--selected")).toHaveCount(0);
 
     // Move one of the copies to the OS trash.
-    const copy = page.locator(".card", { hasText: "a (1).png" });
+    const copy = page.locator(".grid__card", { hasText: "a (1).png" });
     await expect(copy).toHaveCount(1);
     await copy.click({ modifiers: ["Control"] });
     await page.keyboard.press("Delete");
-    await expect(page.locator(".card")).toHaveCount(4);
+    await expect(page.locator(".grid__card")).toHaveCount(4);
     await expect(copy).toHaveCount(0);
 
     // Cut c.png, then move it into a subfolder by pasting there.
     await mkdir(join(dir, "sub"));
-    const c = page.locator(".card", { hasText: "c.png" });
+    const c = page.locator(".grid__card", { hasText: "c.png" });
     await c.click({ modifiers: ["Control"] });
     await page.keyboard.press("Control+x");
-    await expect(page.locator(".card.selected")).toHaveCount(1);
+    await expect(page.locator(".grid__card.grid__card--selected")).toHaveCount(1);
 
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await input.fill(join(dir, "sub"));
     await input.press("Enter");
-    await expect(page.locator(".card")).toHaveCount(0);
+    await expect(page.locator(".grid__card")).toHaveCount(0);
     // The path field keeps focus until navigation completes; only then do
     // selection shortkeys apply instead of being typed into the input.
     await expect(input).toBeHidden();
     await page.keyboard.press("Control+v");
-    await expect(page.locator(".card")).toHaveCount(1);
-    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(1);
+    await expect(page.locator(".grid__card")).toHaveCount(1);
+    await expect(page.locator(".grid__card", { hasText: "c.png" })).toHaveCount(1);
 
     // Back in the source folder, c.png is gone.
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await input.fill(dir);
     await input.press("Enter");
-    await expect(page.locator(".card")).toHaveCount(3);
-    await expect(page.locator(".card", { hasText: "c.png" })).toHaveCount(0);
+    await expect(page.locator(".grid__card")).toHaveCount(3);
+    await expect(page.locator(".grid__card", { hasText: "c.png" })).toHaveCount(0);
   } finally {
     await electronApp.close();
     await rm(dir, { recursive: true, force: true });
@@ -482,17 +491,17 @@ test("trashes a folder from the tree context menu after confirmation", async () 
   await writeFile(join(victim, "inner.png"), "inner");
   try {
     const input = page.locator("#path-input");
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await expect(input).toBeVisible();
     await input.fill(dir);
     await input.press("Enter");
     await expect(input).toBeHidden();
 
-    const row = page.locator(".tree-row", { hasText: "trashme" });
+    const row = page.locator(".tree__row", { hasText: "trashme" });
     await expect(row).toHaveCount(1);
     await row.click({ button: "right" });
     await expect(page.locator("#context-menu")).toBeVisible();
-    await page.locator('#context-menu .context-item[data-action="trash"]').click();
+    await page.locator('#context-menu .context-menu__item[data-action="trash"]').click();
 
     // The folder is only removed after the confirmation is accepted.
     await expect(page.locator("#confirm-overlay")).toBeVisible();
@@ -521,13 +530,13 @@ test("rotate buttons are shown for JPEG files and hidden for other images", asyn
       .toFile(join(dir, "photo.png"));
 
     const input = page.locator("#path-input");
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await expect(input).toBeVisible();
     await input.fill(dir);
     await input.press("Enter");
-    await expect(page.locator(".card")).toHaveCount(2);
+    await expect(page.locator(".grid__card")).toHaveCount(2);
 
-    await page.locator(".card", { hasText: "photo.jpg" }).dblclick();
+    await page.locator(".grid__card", { hasText: "photo.jpg" }).dblclick();
     await expect(page.locator("#large-view")).toBeVisible();
     await expect(page.locator("#large-rotate-left")).toBeVisible();
     await expect(page.locator("#large-rotate-left")).toBeEnabled();
@@ -535,7 +544,7 @@ test("rotate buttons are shown for JPEG files and hidden for other images", asyn
     await expect(page.locator("#large-rotate-right")).toBeEnabled();
 
     await page.locator("#large-back").click();
-    await page.locator(".card", { hasText: "photo.png" }).dblclick();
+    await page.locator(".grid__card", { hasText: "photo.png" }).dblclick();
     await expect(page.locator("#large-view")).toBeVisible();
     await expect(page.locator("#large-rotate-left")).toBeHidden();
     await expect(page.locator("#large-rotate-right")).toBeHidden();
@@ -555,19 +564,19 @@ test("crops a JPEG into a new file from the large view", async () => {
       .toFile(join(dir, "photo.jpg"));
 
     const input = page.locator("#path-input");
-    await page.locator(".path-segment.active").click();
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
     await expect(input).toBeVisible();
     await input.fill(dir);
     await input.press("Enter");
-    await expect(page.locator(".card")).toHaveCount(1);
+    await expect(page.locator(".grid__card")).toHaveCount(1);
 
-    await page.locator(".card", { hasText: "photo.jpg" }).dblclick();
+    await page.locator(".grid__card", { hasText: "photo.jpg" }).dblclick();
     await expect(page.locator("#large-view")).toBeVisible();
     await expect(page.locator("#large-crop")).toBeVisible();
 
     await page.locator("#large-crop").click();
     await expect(page.locator("#crop-tools")).toBeVisible();
-    await expect(page.locator(".crop-layer")).toBeVisible();
+    await expect(page.locator(".crop__layer")).toBeVisible();
     await expect(page.locator("#crop-readout")).toHaveText(/0, 0 — 512 × 512/);
 
     const canvas = await page.locator("#large-canvas").boundingBox();
@@ -581,7 +590,7 @@ test("crops a JPEG into a new file from the large view", async () => {
     await page.locator("#crop-apply").click();
 
     await expect(page.locator("#large-file-info")).toHaveText(/photo-crop-1\.jpg/);
-    await expect(page.locator(".card", { hasText: "photo-crop-1.jpg" })).toHaveCount(1);
+    await expect(page.locator(".grid__card", { hasText: "photo-crop-1.jpg" })).toHaveCount(1);
     await expect(page.locator("#crop-tools")).toBeHidden();
     await expect(page.locator("#large-crop")).toBeVisible();
   } finally {

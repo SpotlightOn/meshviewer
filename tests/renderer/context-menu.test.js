@@ -16,8 +16,8 @@ function makeMenu(extraItems = []) {
   const calls = [];
   document.body.innerHTML = `
     <div id="grid" class="grid">
-      <div class="card" data-index="0"><span>foto.png</span></div>
-      <div class="card" data-index="1"><span>model.glb</span></div>
+      <div class="grid__card" data-index="0"><span>foto.png</span></div>
+      <div class="grid__card" data-index="1"><span>model.glb</span></div>
     </div>
     <div id="context-menu" class="context-menu" role="menu" hidden></div>`;
   const grid = document.getElementById("grid");
@@ -26,7 +26,7 @@ function makeMenu(extraItems = []) {
     host: grid,
     menuEl,
     resolveTarget: (target) => {
-      const card = target.closest(".card");
+      const card = target.closest(".grid__card");
       if (!card || card.dataset.index === undefined) return null;
       return FILES[Number(card.dataset.index)] ?? null;
     },
@@ -68,7 +68,7 @@ describe("createContextMenu", () => {
     const { menu, menuEl, grid } = makeMenu();
     expect(menu.isOpen()).toBe(false);
 
-    rightClick(grid.querySelector(".card"), 120, 60);
+    rightClick(grid.querySelector(".grid__card"), 120, 60);
 
     expect(menu.isOpen()).toBe(true);
     const buttons = [...menuEl.querySelectorAll("button[data-action]")];
@@ -81,7 +81,7 @@ describe("createContextMenu", () => {
 
   it("clamps the position to the window edges", () => {
     const { menuEl, grid } = makeMenu();
-    rightClick(grid.querySelector(".card"), 5000, 5000);
+    rightClick(grid.querySelector(".grid__card"), 5000, 5000);
     expect(menuEl.style.left).toBe("1016px");
     expect(menuEl.style.top).toBe("760px");
   });
@@ -97,14 +97,14 @@ describe("createContextMenu", () => {
       },
     ]);
     label = "Final";
-    rightClick(grid.querySelector(".card[data-index='1']"));
-    const items = [...menuEl.querySelectorAll(".context-item span.context-label")].map(
+    rightClick(grid.querySelector(".grid__card[data-index='1']"));
+    const items = [...menuEl.querySelectorAll(".context-menu__item span.context-menu__label")].map(
       (el) => el.textContent,
     );
     expect(items).toEqual(["Open with default application", "File information", "Final"]);
 
-    rightClick(grid.querySelector(".card[data-index='0']"));
-    const labels = [...menuEl.querySelectorAll(".context-item span.context-label")].map(
+    rightClick(grid.querySelector(".grid__card[data-index='0']"));
+    const labels = [...menuEl.querySelectorAll(".context-menu__item span.context-menu__label")].map(
       (el) => el.textContent,
     );
     expect(labels).not.toContain("Final");
@@ -112,7 +112,7 @@ describe("createContextMenu", () => {
 
   it("calls the action with the file and closes on click", () => {
     const { menu, menuEl, grid, calls } = makeMenu();
-    rightClick(grid.querySelector(".card[data-index='1']"));
+    rightClick(grid.querySelector(".grid__card[data-index='1']"));
     menuEl.querySelector('[data-action="file-info"]').click();
     expect(calls).toEqual([{ id: "file-info", fileId: 2 }]);
     expect(menu.isOpen()).toBe(false);
@@ -123,7 +123,7 @@ describe("createContextMenu", () => {
     const { menu, grid } = makeMenu();
     const seen = [];
     document.addEventListener("keydown", (event) => seen.push(event.key));
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
     const focused = document.activeElement;
     focused.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(menu.isOpen()).toBe(false);
@@ -132,7 +132,7 @@ describe("createContextMenu", () => {
 
   it("moves the focus with the arrow keys", () => {
     const { menuEl, grid } = makeMenu();
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
     const buttons = [...menuEl.querySelectorAll("button[data-action]")];
     buttons[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
     expect(document.activeElement).toBe(buttons[1]);
@@ -142,11 +142,11 @@ describe("createContextMenu", () => {
 
   it("closes on pointer presses outside but stays open on the menu itself", () => {
     const { menu, menuEl, grid } = makeMenu();
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
     document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
     expect(menu.isOpen()).toBe(false);
 
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
     menuEl
       .querySelector('[data-action="open-with"]')
       .dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
@@ -165,10 +165,15 @@ describe("createContextMenu", () => {
       { id: "sep", order: 1, separator: true },
       { id: "cut", order: 2, label: "Cut", action: () => {} },
     ]);
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
 
     const classes = [...menuEl.children].map((el) => el.className);
-    expect(classes).toEqual(["context-item", "context-item", "context-separator", "context-item"]);
+    expect(classes).toEqual([
+      "context-menu__item",
+      "context-menu__item",
+      "context-menu__separator",
+      "context-menu__item",
+    ]);
 
     const buttons = [...menuEl.querySelectorAll("button[data-action]")];
     expect(buttons.map((b) => b.dataset.action)).toEqual(["open-with", "file-info", "cut"]);
@@ -186,15 +191,15 @@ describe("createContextMenu", () => {
       { id: "delete", order: 4, label: "Delete", action: () => {} },
       { id: "s4", order: 5, separator: true },
     ]);
-    rightClick(grid.querySelector(".card"));
+    rightClick(grid.querySelector(".grid__card"));
 
     const classes = [...menuEl.children].map((el) => el.className);
     expect(classes).toEqual([
-      "context-item",
-      "context-item",
-      "context-item",
-      "context-separator",
-      "context-item",
+      "context-menu__item",
+      "context-menu__item",
+      "context-menu__item",
+      "context-menu__separator",
+      "context-menu__item",
     ]);
   });
 
@@ -204,11 +209,11 @@ describe("createContextMenu", () => {
       { id: "cut", order: 2, label: "Cut", action: () => {} },
     ]);
 
-    rightClick(grid.querySelector(".card[data-index='0']"));
-    expect(menuEl.querySelectorAll(".context-separator")).toHaveLength(0);
+    rightClick(grid.querySelector(".grid__card[data-index='0']"));
+    expect(menuEl.querySelectorAll(".context-menu__separator")).toHaveLength(0);
 
-    rightClick(grid.querySelector(".card[data-index='1']"));
-    expect(menuEl.querySelectorAll(".context-separator")).toHaveLength(1);
+    rightClick(grid.querySelector(".grid__card[data-index='1']"));
+    expect(menuEl.querySelectorAll(".context-menu__separator")).toHaveLength(1);
   });
 
   it("sorts visible entries by order and skips disabled contexts", () => {

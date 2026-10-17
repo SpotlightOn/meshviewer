@@ -122,17 +122,17 @@ function showAbout() {
     height: 600,
     extraCss: `
     h1 { font-size: 18px; margin: 0 0 4px; }
-    .meta { font-size: 13px; color: #9a9a9a; margin: 2px 0; }
-    .license { white-space: pre-wrap; font-size: 11px; background: #2b2b2b;
+    .about__meta { font-size: 13px; color: #9a9a9a; margin: 2px 0; }
+    .about__license { white-space: pre-wrap; font-size: 11px; background: #2b2b2b;
                border: 1px solid #3c3c3c; border-radius: 6px; padding: 10px;
                max-height: 220px; overflow: auto; margin-top: 14px; }
   `,
     bodyHtml: `
   <h1>MeshViewer</h1>
-  <div class="meta">${escapeHtml(i18next.t("about.version"))} ${escapeHtml(APP_INFO.version)}</div>
-  <div class="meta">${escapeHtml(i18next.t("about.copyright"))} &copy; ${year} ${escapeHtml(APP_INFO.author)}</div>
-  <div class="meta">${escapeHtml(i18next.t("about.license"))}: ${escapeHtml(APP_INFO.license)}</div>
-  <div class="license">${escapeHtml(licenseText())}</div>
+  <div class="about__meta">${escapeHtml(i18next.t("about.version"))} ${escapeHtml(APP_INFO.version)}</div>
+  <div class="about__meta">${escapeHtml(i18next.t("about.copyright"))} &copy; ${year} ${escapeHtml(APP_INFO.author)}</div>
+  <div class="about__meta">${escapeHtml(i18next.t("about.license"))}: ${escapeHtml(APP_INFO.license)}</div>
+  <div class="about__license">${escapeHtml(licenseText())}</div>
   <p><a href="https://github.com/SpotlightOn/meshviewer" target="_blank">github.com/SpotlightOn/meshviewer</a></p>
 `,
   });

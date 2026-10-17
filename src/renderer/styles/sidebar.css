@@ -1,0 +1,41 @@
+/**
+ * Sidebar and its resizer.
+ *
+ * Block: `.sidebar`. Every class in this file is either the block
+ * itself, `sidebar__element` or `sidebar--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.sidebar {
+  width: var(--sidebar-width, 280px);
+  flex-shrink: 0;
+  overflow: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 8px;
+}
+
+.sidebar__resizer {
+  flex: none;
+  width: 6px;
+  height: auto;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+  transition: background 120ms ease;
+}
+
+.sidebar__resizer:hover,
+.sidebar__resizer:focus-visible,
+html[data-resizing="true"] .sidebar__resizer {
+  background: var(--accent);
+  outline: none;
+}
+
+html[data-resizing="true"],
+html[data-resizing="true"] * {
+  cursor: col-resize;
+  user-select: none;
+}
