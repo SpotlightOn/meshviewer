@@ -105,7 +105,7 @@ if (!globalThis.ResizeObserver) {
   };
 }
 
-import { createGlbView } from "../../../src/renderer/3d/view.js";
+import { createGlbView } from "../../../src/renderer/3d/glb-view.js";
 
 /** Creates a host element with a fixed client size. */
 function createHost() {

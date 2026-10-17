@@ -46,7 +46,7 @@ if (!HTMLElement.prototype.setPointerCapture) {
   };
 }
 
-import { createEquirectView } from "../../../src/renderer/equirectangular/view.js";
+import { createEquirectView } from "../../../src/renderer/equirectangular/pano-view.js";
 
 /** Creates an activated panorama view on its own host element. */
 function createView() {

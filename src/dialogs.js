@@ -93,7 +93,7 @@ function createDialog({ title, width, height, bodyHtml, extraCss = "", onOpenUrl
     title,
     backgroundColor: "#1e1e1e",
     webPreferences: {
-      preload: path.join(import.meta.dirname, "dialogPreload.js"),
+      preload: path.join(import.meta.dirname, "dialog-preload.js"),
     },
   });
   win.removeMenu(); // dialogs are plain windows (like window.open()): no menu bar

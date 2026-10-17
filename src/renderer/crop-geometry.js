@@ -2,27 +2,9 @@
  * Pure geometry for the lossless JPEG crop: the iMCU grid of an image, snapping
  * a selection onto it and mapping the selection from the displayed image back
  * to the stored pixels.
- *
- * A lossless crop can only start on an iMCU boundary. The iMCU is
- * `8 * max horizontal sampling factor` by `8 * max vertical sampling factor`,
- * which is 8x8 for 4:4:4, 16x8 for 4:2:2 and 16x16 for the common 4:2:0.
  */
 
-/**
- * Frame header markers (SOF), which carry the component sampling factors.
- * @type {Set<number>}
- */
-const SOF_MARKERS = new Set([
-  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
-]);
-
-/**
- * Markers that stand alone, without a length field.
- * @type {Set<number>}
- */
-const STANDALONE_MARKERS = new Set([
-  0x01, 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9,
-]);
+import { readJpegFrame } from "./jpeg-frame.js";
 
 /** Grid assumed when the frame header cannot be read. */
 const DEFAULT_IMCU = Object.freeze({ width: 8, height: 8 });
@@ -75,40 +57,7 @@ function roundTo(value, step) {
  * @returns {{width: number, height: number}} iMCU size in pixels.
  */
 function imcuSize(bytes) {
-  if (!bytes || bytes.length < 4) return { ...DEFAULT_IMCU };
-
-  let offset = 2;
-  while (offset + 9 < bytes.length) {
-    if (bytes[offset] !== 0xff) {
-      offset += 1;
-      continue;
-    }
-    const marker = bytes[offset + 1];
-    if (STANDALONE_MARKERS.has(marker)) {
-      offset += 2;
-      continue;
-    }
-    const length = (bytes[offset + 2] << 8) | bytes[offset + 3];
-    if (length < 2) {
-      offset += 2;
-      continue;
-    }
-    if (SOF_MARKERS.has(marker)) {
-      const components = bytes[offset + 9];
-      if (components === 0) return { ...DEFAULT_IMCU };
-      let maxHorizontal = 0;
-      let maxVertical = 0;
-      for (let index = 0; index < components; index += 1) {
-        const sampling = bytes[offset + 11 + index * 3];
-        maxHorizontal = Math.max(maxHorizontal, sampling >> 4);
-        maxVertical = Math.max(maxVertical, sampling & 0x0f);
-      }
-      if (maxHorizontal === 0 || maxVertical === 0) return { ...DEFAULT_IMCU };
-      return { width: 8 * maxHorizontal, height: 8 * maxVertical };
-    }
-    offset += 2 + length;
-  }
-  return { ...DEFAULT_IMCU };
+  return readJpegFrame(bytes)?.imcu ?? { ...DEFAULT_IMCU };
 }
 
 /**
