@@ -7,6 +7,7 @@ import { getThumbnail } from "./thumbnail-cache.js";
 
 const IMAGE_EXTENSIONS = new Set([
   ".png",
+  ".apng",
   ".jpg",
   ".jpeg",
   ".gif",
@@ -15,6 +16,7 @@ const IMAGE_EXTENSIONS = new Set([
   ".bmp",
   ".svg",
   ".ico",
+  ".jxl",
 ]);
 
 /**

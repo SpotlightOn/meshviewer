@@ -11,6 +11,8 @@ describe("isPixmap", () => {
   it("accepts raster image formats", () => {
     for (const name of [
       "photo.png",
+      "photo.apng",
+      "photo.jxl",
       "photo.jpg",
       "photo.jpeg",
       "photo.gif",
