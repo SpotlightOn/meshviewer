@@ -42,7 +42,7 @@ file information dialog.
 
 When there are no images, the app currently shows:
 
-No *.glb, *.png, *.apng, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg or *.ico files were found in this folder.
+No *.glb, *.png, *.apng, *.jpg, *.webp, *.gif, *.avif, *.bmp, *.svg, *.ico or *.jxl files were found in this folder.
 
 It would be better to show an SVG logo instead, followed by the text, but somewhat larger:
 

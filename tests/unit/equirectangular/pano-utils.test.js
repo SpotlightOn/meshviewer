@@ -12,6 +12,7 @@ describe("isPixmap", () => {
     for (const name of [
       "photo.png",
       "photo.apng",
+      "photo.jxl",
       "photo.jpg",
       "photo.jpeg",
       "photo.gif",

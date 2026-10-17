@@ -16,6 +16,7 @@ const IMAGE_EXTENSIONS = new Set([
   ".bmp",
   ".svg",
   ".ico",
+  ".jxl",
 ]);
 
 /**

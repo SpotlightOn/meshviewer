@@ -51,7 +51,7 @@ they cannot be ESM.
 
 | File | Responsibility |
 | --- | --- |
-| `src/main.js` | Entry: app lifecycle, i18next init, wires all modules together |
+| `src/main.js` | Entry: app lifecycle (enables the Chromium `JXLImageFormat` feature), i18next init, wires all modules together |
 | `src/protocol.js` | Custom `app://` protocol: CSP header, MIME map, path routing (renderer root, `node_modules`, `locales`) |
 | `src/main-window.js` | Creates the main `BrowserWindow` (sandboxed preload, window icon) |
 | `src/menu.js` | Application menu with fully i18n labels (Edit roles, Help → dialogs) |

@@ -27,7 +27,7 @@ An Electron app that renders local .glb files as thumbnails using Three.js and G
 
 - **3D models (`.glb`)** — grid thumbnails rendered with three.js/GLTFLoader; the large view is an interactive scene (orbit, pan, zoom)
 - **360° panoramas** — equirectangular images get a panorama mode from the switch in the header: drag to look around, the wheel or the zoom slider changes the field of view
-- **Many image formats** — PNG, APNG, JPEG, GIF, WebP, AVIF, BMP, SVG and ICO
+- **Many image formats** — PNG, APNG, JPEG, GIF, WebP, AVIF, BMP, SVG, ICO and JPEG XL
 - **Fast thumbnails** — 256 px JPEGs from `sharp`, reusing the freedesktop thumbnail cache and embedded EXIF thumbnails; loaded lazily as they scroll into view, with EXIF orientation applied
 - **Folder tiles** — subdirectories are listed first, each tile showing the folder's first image inside a folder-shaped frame
 - **Directory tree** — rooted at `/`, children loaded lazily with a bounded prefetch, resizable sidebar with a remembered width
@@ -73,9 +73,9 @@ app under *Help → Usage*.
 ## Supported Formats
 
 - **3D models**: `*.glb` (GLTF Binary), rendered with three.js/GLTFLoader
-- **Images**: `*.png`, `*.apng`, `*.jpg`, `*.jpeg`, `*.gif`, `*.webp`, `*.avif`, `*.bmp`, `*.svg`, `*.ico`
+- **Images**: `*.png`, `*.apng`, `*.jpg`, `*.jpeg`, `*.gif`, `*.webp`, `*.avif`, `*.bmp`, `*.svg`, `*.ico`, `*.jxl`
 
-Image formats are decoded directly by the Chromium/Electron image decoder; additional formats (e.g. HEIC/HEIF or JPEG XL) are not supported by Electron on Linux/Windows.
+Image formats are decoded directly by the Chromium/Electron image decoder. JPEG XL (`*.jxl`) is gated behind the Chromium `JXLImageFormat` feature, which the app switches on (Chromium 155 enables it by default). HEIC/HEIF is not supported by Electron on Linux/Windows.
 
 ## Localization
 
