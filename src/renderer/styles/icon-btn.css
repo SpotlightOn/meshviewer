@@ -1,0 +1,48 @@
+/**
+ * Shared icon button.
+ *
+ * Block: `.icon-btn`. Every class in this file is either the block
+ * itself, `icon-btn__element` or `icon-btn--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+/* One square icon button, shared by the toolbar, the large view header,
+   the crop tools and the status bar. Contexts that need another size or
+   colour mix in their own class instead of restyling this one. */
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--surface-hover);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.icon-btn:hover:disabled {
+  background: transparent;
+}
+
+.icon-btn[hidden] {
+  display: none;
+}
+
+.icon-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}

@@ -1,0 +1,16 @@
+/**
+ * Top toolbar.
+ *
+ * Block: `.toolbar`. Every class in this file is either the block
+ * itself, `toolbar__element` or `toolbar--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}

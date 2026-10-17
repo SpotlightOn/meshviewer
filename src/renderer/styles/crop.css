@@ -1,0 +1,105 @@
+/**
+ * Crop overlay and crop tools.
+ *
+ * Block: `.crop`. Every class in this file is either the block
+ * itself, `crop__element` or `crop--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.crop__tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.crop__tools[hidden] {
+  display: none;
+}
+
+.crop__readout {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  white-space: nowrap;
+  padding-right: 4px;
+}
+
+.crop__layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.crop__layer[hidden] {
+  display: none;
+}
+
+.crop__box {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #fff;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55);
+  cursor: move;
+}
+
+.crop__handle {
+  position: absolute;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+}
+
+.crop__handle--nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+
+.crop__handle--n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+
+.crop__handle--ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+
+.crop__handle--e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+.crop__handle--se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+
+.crop__handle--s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+
+.crop__handle--sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+
+.crop__handle--w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}

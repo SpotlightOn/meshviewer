@@ -1,0 +1,25 @@
+/**
+ * Layout and content area.
+ *
+ * Block: `.layout`. Every class in this file is either the block
+ * itself, `layout__element` or `layout--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.layout {
+  display: flex;
+  height: 100%;
+}
+
+.layout__content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 16px;
+}

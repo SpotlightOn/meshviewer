@@ -1,0 +1,224 @@
+/**
+ * Large view (image and 3D).
+ *
+ * Block: `.large-view`. Every class in this file is either the block
+ * itself, `large-view__element` or `large-view--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.large-view {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.large-view--hidden {
+  display: none;
+}
+
+.large-view__header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.large-view__icon:hover {
+  filter: brightness(1.1);
+}
+
+.large-view__exit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.large-view__exit:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.large-view__exit--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.large-view__exit svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.large-view__file-info {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.large-view__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.large-view__statusbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 5px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.large-view__nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.large-view__nav-btn {
+  width: 26px;
+  height: 26px;
+  color: var(--text-dim);
+}
+
+.large-view--fullscreen .large-view__header,
+.large-view--fullscreen .large-view__statusbar {
+  display: none;
+}
+
+.large-view__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  background: var(--accent);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@keyframes large-view__progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.large-view__canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: none;
+  overflow: hidden;
+  touch-action: none;
+  background: #000;
+}
+
+.large-view__canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.large-view__frame {
+  position: absolute;
+  inset: 0;
+}
+
+.large-view__frame--equirect {
+  display: none;
+}
+
+.large-view__equirect-canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+.large-view__image {
+  background: var(--transparency-background);
+}
+
+@keyframes large-view__fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes large-view__fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes large-view__slide-in {
+  from {
+    transform: translateX(calc(100% * var(--slide-dir, 1)));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes large-view__slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% * var(--slide-dir, 1)));
+  }
+}
+
+.large-view__frame--enter-fade {
+  animation: large-view__fade-in var(--transition-duration, 1000ms) ease;
+}
+
+.large-view__frame--leave-fade {
+  animation: large-view__fade-out var(--transition-duration, 1000ms) ease forwards;
+}
+
+.large-view__frame--enter-slide {
+  animation: large-view__slide-in var(--transition-duration, 1000ms) ease;
+}
+
+.large-view__frame--leave-slide {
+  animation: large-view__slide-out var(--transition-duration, 1000ms) ease forwards;
+  pointer-events: none;
+}

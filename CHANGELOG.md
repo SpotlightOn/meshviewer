@@ -12,6 +12,7 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ### Changed
 - Zoom keys: `+` / `-` / `0` zoom the large view and the tile grid, while `Ctrl` + `+` / `-` / `0` keeps scaling the whole UI as Electron does by default (the menu accelerators used to swallow the keys, so the content zoom never fired)
+- Renderer styles split into one CSS module per UI block (no visual change)
 
 ### Fixed
 - Packaged builds were missing the app icons and three.js' add-ons: the empty-state logo, GLB thumbnails and the 3D and panorama views failed with 404s

@@ -33,7 +33,7 @@ function createEquirectView({ host, image, onChange }) {
     },
   });
   const canvas = surface.canvas;
-  canvas.className = "equirect-canvas";
+  canvas.className = "large-view__equirect-canvas";
   canvas.style.display = "none";
 
   const texture = new THREE.Texture(image);

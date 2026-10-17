@@ -19,8 +19,8 @@ test("packaged app serves the icons and the three.js add-ons", async () => {
     }
   });
   await page.reload();
-  await page.waitForFunction(() => document.querySelector(".empty-logo")?.complete === true);
-  const logoWidth = await page.locator(".empty-logo").evaluate((img) => img.naturalWidth);
+  await page.waitForFunction(() => document.querySelector(".empty-state__logo")?.complete === true);
+  const logoWidth = await page.locator(".empty-state__logo").evaluate((img) => img.naturalWidth);
   expect(logoWidth).toBeGreaterThan(0);
 
   const addons = await page.evaluate(async () => {
@@ -39,14 +39,14 @@ test("packaged app serves the icons and the three.js add-ons", async () => {
 test("packaged app renders the directory tree and media grid", async () => {
   const { electronApp, page } = await launchApp({ executablePath: BINARY });
   await expect(page).toHaveTitle("MeshViewer");
-  await expect(page.locator(".tree-label").first()).toHaveText("/");
+  await expect(page.locator(".tree__label").first()).toHaveText("/");
 
   const input = page.locator("#path-input");
-  await page.locator(".path-segment.active").click();
+  await page.locator(".pathbar__segment.pathbar__segment--active").click();
   await expect(input).toBeVisible();
   await input.fill("/tmp/opencode/glbtest");
   await input.press("Enter");
-  await expect(page.locator(".path-segment.active")).toHaveText("glbtest");
-  await expect(page.locator(".card")).toHaveCount(4);
+  await expect(page.locator(".pathbar__segment.pathbar__segment--active")).toHaveText("glbtest");
+  await expect(page.locator(".grid__card")).toHaveCount(4);
   await electronApp.close();
 });

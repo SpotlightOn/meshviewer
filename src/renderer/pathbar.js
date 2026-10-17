@@ -61,7 +61,7 @@ function createPathBar({ dom, navigate }) {
       ...pathSegments(currentPath, treeRoot).map((crumb) => {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = `path-segment${crumb.path === currentPath ? " active" : ""}`;
+        button.className = `pathbar__segment${crumb.path === currentPath ? " pathbar__segment--active" : ""}`;
         button.textContent = crumb.name;
         button.title = crumb.path;
         button.addEventListener("click", () => selectCrumb(crumb.path));
@@ -89,7 +89,7 @@ function createPathBar({ dom, navigate }) {
   function startEdit() {
     if (editing) return;
     editing = true;
-    root.classList.add("editing");
+    root.classList.add("pathbar--editing");
     input.value = currentPath;
     input.focus();
     input.select();
@@ -104,7 +104,7 @@ function createPathBar({ dom, navigate }) {
   function endEdit() {
     if (!editing) return;
     editing = false;
-    root.classList.remove("editing");
+    root.classList.remove("pathbar--editing");
     if (document.activeElement === input) input.blur();
     render();
   }
@@ -141,7 +141,7 @@ function createPathBar({ dom, navigate }) {
   });
 
   root.addEventListener("click", (event) => {
-    if (event.target.closest(".path-segment")) return; // handled by the segment
+    if (event.target.closest(".pathbar__segment")) return; // handled by the segment
     if (editing) return;
     startEdit();
   });

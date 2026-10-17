@@ -1,0 +1,160 @@
+/**
+ * Media grid, cards and selection.
+ *
+ * Block: `.grid`. Every class in this file is either the block
+ * itself, `grid__element` or `grid--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--tile-size), 1fr));
+  gap: 14px;
+}
+
+.grid__card--selected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.grid__marquee {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  pointer-events: none;
+}
+
+.grid__selection-info {
+  position: fixed;
+  z-index: 20;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.grid__card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  content-visibility: auto;
+  contain-intrinsic-size: var(--tile-size) 260px;
+}
+
+.grid__card:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+}
+
+.grid__thumb {
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--transparency-background);
+}
+
+.grid__thumb--loading {
+  background: none;
+}
+
+.grid__thumb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: var(--thumb-fit, cover);
+}
+
+.grid__card[data-kind="folder"] .grid__thumb {
+  background: var(--checker-a);
+}
+
+.grid__card[data-kind="folder"]:hover .grid__thumb {
+  background: var(--accent);
+}
+
+.grid__folder {
+  position: relative;
+  width: 80%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  background: var(--text-dim);
+}
+
+.grid__folder::before {
+  content: "";
+  position: absolute;
+  left: 5%;
+  top: -14%;
+  width: 42%;
+  height: 16%;
+  border-radius: 5px 5px 0 0;
+  background: var(--text-dim);
+}
+
+.grid__folder-preview {
+  position: absolute;
+  top: 7%;
+  left: 7%;
+  width: 86%;
+  height: 86%;
+  object-fit: cover;
+  border-radius: 5px;
+  animation: grid__folder-preview-in 0.18s ease-out;
+}
+
+@keyframes grid__folder-preview-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.grid__meta {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+
+.grid__name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid__size {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.grid__error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #e06c75;
+  font-size: 12px;
+  padding: 8px;
+}

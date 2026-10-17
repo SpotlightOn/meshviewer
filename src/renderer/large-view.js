@@ -529,11 +529,11 @@ export function createLargeView({
   function revealFullscreenExit() {
     if (!fullscreen || fullscreenExitVisible) return;
     fullscreenExitVisible = true;
-    largeFullscreenExit.classList.add("visible");
+    largeFullscreenExit.classList.add("large-view__exit--visible");
     clearTimeout(fullscreenIdleTimer);
     fullscreenIdleTimer = setTimeout(() => {
       fullscreenExitVisible = false;
-      largeFullscreenExit.classList.remove("visible");
+      largeFullscreenExit.classList.remove("large-view__exit--visible");
     }, 2500);
   }
 
@@ -543,7 +543,7 @@ export function createLargeView({
   function hideFullscreenExit() {
     fullscreenExitVisible = false;
     clearTimeout(fullscreenIdleTimer);
-    largeFullscreenExit.classList.remove("visible");
+    largeFullscreenExit.classList.remove("large-view__exit--visible");
   }
 
   /**
@@ -553,7 +553,7 @@ export function createLargeView({
    */
   function setFullscreen(active) {
     fullscreen = active;
-    largeView.classList.toggle("fullscreen", active);
+    largeView.classList.toggle("large-view--fullscreen", active);
     if (active) {
       revealFullscreenExit();
     } else {
@@ -813,7 +813,7 @@ export function createLargeView({
     if (fullscreen) window.api.setFullScreen(false);
     dispose();
     stopSlideshow();
-    largeView.classList.add("hidden");
+    largeView.classList.add("large-view--hidden");
     largeInfo.textContent = "";
     largePrev.disabled = true;
     largeNext.disabled = true;
@@ -829,7 +829,7 @@ export function createLargeView({
   function startProgressBar(intervalMs) {
     slideshowProgress.style.animation = "none";
     void slideshowProgress.offsetWidth;
-    slideshowProgress.style.animation = `slideshow-progress ${intervalMs}ms linear forwards`;
+    slideshowProgress.style.animation = `large-view__progress ${intervalMs}ms linear forwards`;
   }
 
   /**
@@ -917,7 +917,7 @@ export function createLargeView({
     }
     view.activate();
     view.setZoomPercent(currentZoomPercent);
-    frame.classList.add("equirect-hidden");
+    frame.classList.add("large-view__frame--equirect");
     largeViewState.mode = "equirect";
     updateToolButtons();
   }
@@ -930,7 +930,7 @@ export function createLargeView({
     const { equirect, frame, imageView } = largeViewState ?? {};
     if (!equirect) return;
     equirect.deactivate();
-    frame.classList.remove("equirect-hidden");
+    frame.classList.remove("large-view__frame--equirect");
     largeViewState.mode = "image";
     if (imageView) syncZoomControl(imageView.getScale());
     updateToolButtons();
@@ -966,7 +966,7 @@ export function createLargeView({
     infoDialog.close();
     disposeResources();
     largeViewState = { token, file };
-    largeView.classList.remove("hidden");
+    largeView.classList.remove("large-view--hidden");
     updateStatusBar(file);
     updateNavButtons();
     updateToolButtons();
@@ -992,7 +992,7 @@ export function createLargeView({
    * @returns {boolean} true while the large view is shown.
    */
   function isActive() {
-    return !largeView.classList.contains("hidden");
+    return !largeView.classList.contains("large-view--hidden");
   }
 
   /**
@@ -1011,11 +1011,11 @@ export function createLargeView({
     const url = URL.createObjectURL(blob);
 
     const img = document.createElement("img");
-    img.className = "large-image";
+    img.className = "large-view__image";
     img.alt = file.name;
     img.src = url;
     const frame = document.createElement("div");
-    frame.className = "large-frame";
+    frame.className = "large-view__frame";
     if (settings.get().slideshowTransition === "slide") {
       frame.style.setProperty("--slide-dir", direction < 0 ? "-1" : "1");
     }
@@ -1045,7 +1045,9 @@ export function createLargeView({
     updateStatusBar(file, { width: img.naturalWidth, height: img.naturalHeight });
 
     frame.classList.add(
-      settings.get().slideshowTransition === "slide" ? "enter-slide" : "enter-fade",
+      settings.get().slideshowTransition === "slide"
+        ? "large-view__frame--enter-slide"
+        : "large-view__frame--enter-fade",
     );
     largeCanvas.append(frame);
     retireLargeFrames(direction, frame);
@@ -1107,7 +1109,7 @@ export function createLargeView({
    * @returns {boolean} true if the event was handled.
    */
   function onKeydown(event) {
-    if (largeView.classList.contains("hidden") || !largeViewState) return false;
+    if (largeView.classList.contains("large-view--hidden") || !largeViewState) return false;
     if (crop !== null && handleCropKey(event)) return true;
     const target = event.target;
     if (target instanceof HTMLElement) {
