@@ -106,6 +106,12 @@ body {
   display: none;
 }
 
+/* The crop tools have a separator on each side so the group reads on its own
+   while cropping; with the tools hidden they would sit next to each other. */
+.toolbar-separator:has(+ .crop-tools[hidden]) {
+  display: none;
+}
+
 .crop-readout {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
