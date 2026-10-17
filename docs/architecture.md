@@ -68,7 +68,8 @@ they cannot be ESM.
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
 | `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
-| `src/renderer/large-view.js` | Large view: zoom, navigation, slideshow; delegates GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate and crop; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/image-view.js` | Interactive image large view: zoom, pan, drag-to-throw navigation, fit/100% toggles; same role for images as `3d/view.js` and `equirectangular/view.js` for GLB and panoramas |
 | `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
 | `src/renderer/3d/view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
 | `src/renderer/3d/thumbnails.js` | Off-screen 256 px GLB thumbnail renderer |
@@ -80,15 +81,16 @@ they cannot be ESM.
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
 | `src/renderer/styles.css` | Stylesheet entry point: `@import`s the CSS modules in cascade order |
 | `src/renderer/styles/<block>.css` | One CSS module (BEM block) per UI area, named after its block; see AGENTS.md, "CSS modules" |
-| `src/renderer/crop.js` | Pure crop geometry: iMCU size from the frame header, snapping onto the grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/crop.js` | Pure crop geometry: snapping onto the iMCU grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/jpeg-frame.js` | Reads the frame header of a JPEG (pixel dimensions and iMCU grid); shared by the crop geometry and the transform tests |
 | `src/renderer/crop-overlay.js` | Crop selection overlay: darkened layer, handles, pointer gestures; projects the selection through the image zoom and pan |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fsIpc.js`, `settingsStore.js`,
 `thumbnails.js`, `jpegTransform.js`, `rotate.js`, `crop.js`,
-`renderer/crop.js`, `renderer/utils.js` and the `renderer/three/` +
-`renderer/3d/` + `renderer/equirectangular/` helper modules so it can be
-unit-tested without launching the app.
+`renderer/crop.js`, `renderer/jpeg-frame.js`, `renderer/utils.js` and the
+`renderer/three/` + `renderer/3d/` + `renderer/equirectangular/` helper modules
+so it can be unit-tested without launching the app.
 
 The two three.js view controllers (`renderer/3d/view.js` and
 `renderer/equirectangular/view.js`) share one contract and one render surface:

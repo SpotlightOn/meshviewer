@@ -1,9 +1,12 @@
-import { chmod, copyFile, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, copyFile, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { cropJpeg, registerCropIpc } from "../../src/crop.js";
-import { hasJfif, jpegSize } from "./helpers/jpeg.js";
+import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
+import { dirEntries } from "./helpers/files.js";
+import { hasJfif } from "./helpers/jpeg.js";
+import { recordingStep, succeedWith } from "./helpers/steps.js";
 
 /**
  * Lenna, a 512x512 baseline JPEG, used by the tests that exercise the real
@@ -13,40 +16,11 @@ import { hasJfif, jpegSize } from "./helpers/jpeg.js";
  */
 const FIXTURE = new URL("./fixtures/lenna.jpg", import.meta.url);
 
+/** Extra result fields of a crop step. */
+const CROPPED = { width: 8, height: 8 };
+
 let dir;
 let filePath;
-
-/**
- * Builds a crop step that returns fixed bytes, like the real module does.
- * @param {string|Uint8Array} data - Bytes the step reports as the cropped output.
- * @param {{width?: number, height?: number}} [size] - Dimensions the step reports.
- * @returns {(bytes: Uint8Array, rect: object) => {data: Uint8Array, width: number, height: number}} Crop step.
- */
-function succeedWith(data, size = {}) {
-  const bytes = typeof data === "string" ? new TextEncoder().encode(data) : data;
-  return () => ({ data: bytes, width: size.width ?? 8, height: size.height ?? 8 });
-}
-
-/**
- * Builds a crop step that records the regions it is called with.
- * @returns {{crop: Function, regions: Array<object>}} Recording crop step.
- */
-function recordingStep() {
-  const regions = [];
-  const crop = (_bytes, rect) => {
-    regions.push(rect);
-    return { data: new Uint8Array([1]), width: 8, height: 8 };
-  };
-  return { crop, regions };
-}
-
-/**
- * Returns the names inside the fixture directory, sorted.
- * @returns {Promise<Array<string>>} Directory entries.
- */
-async function dirEntries() {
-  return (await readdir(dir)).sort();
-}
 
 beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "meshviewer-crop-"));
@@ -57,7 +31,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  for (const name of await dirEntries()) {
+  for (const name of await dirEntries(dir)) {
     await rm(join(dir, name), { force: true, recursive: true });
   }
   filePath = join(dir, "photo.jpg");
@@ -70,7 +44,7 @@ describe("cropJpeg", () => {
     const result = await cropJpeg(
       filePath,
       { x: 0, y: 0, width: 8, height: 8 },
-      { crop: succeedWith("cropped-bytes") },
+      { crop: succeedWith("cropped-bytes", CROPPED) },
     );
 
     expect(result).toMatchObject({
@@ -89,17 +63,29 @@ describe("cropJpeg", () => {
     await cropJpeg(
       filePath,
       { x: 0, y: 0, width: 8, height: 8 },
-      { crop: succeedWith("cropped-bytes") },
+      { crop: succeedWith("cropped-bytes", CROPPED) },
     );
     expect((await stat(join(dir, "photo-crop-1.jpg"))).mode & 0o7777).toBe(0o640);
   });
 
   it("numbers the files upward", async () => {
-    await cropJpeg(filePath, { x: 0, y: 0, width: 8, height: 8 }, { crop: succeedWith("one") });
-    await cropJpeg(filePath, { x: 0, y: 0, width: 8, height: 8 }, { crop: succeedWith("two") });
-    await cropJpeg(filePath, { x: 0, y: 0, width: 8, height: 8 }, { crop: succeedWith("three") });
+    await cropJpeg(
+      filePath,
+      { x: 0, y: 0, width: 8, height: 8 },
+      { crop: succeedWith("one", CROPPED) },
+    );
+    await cropJpeg(
+      filePath,
+      { x: 0, y: 0, width: 8, height: 8 },
+      { crop: succeedWith("two", CROPPED) },
+    );
+    await cropJpeg(
+      filePath,
+      { x: 0, y: 0, width: 8, height: 8 },
+      { crop: succeedWith("three", CROPPED) },
+    );
 
-    expect(await dirEntries()).toEqual([
+    expect(await dirEntries(dir)).toEqual([
       "photo-crop-1.jpg",
       "photo-crop-2.jpg",
       "photo-crop-3.jpg",
@@ -109,23 +95,23 @@ describe("cropJpeg", () => {
   });
 
   it("passes the requested region on unchanged", async () => {
-    const step = recordingStep();
-    await cropJpeg(filePath, { x: 32, y: 16, width: 64, height: 48 }, { crop: step.crop });
-    expect(step.regions).toEqual([{ x: 32, y: 16, width: 64, height: 48 }]);
+    const { step, calls } = recordingStep(CROPPED);
+    await cropJpeg(filePath, { x: 32, y: 16, width: 64, height: 48 }, { crop: step });
+    expect(calls.map(([, rect]) => rect)).toEqual([{ x: 32, y: 16, width: 64, height: 48 }]);
   });
 
   it("leaves no temporary file behind", async () => {
     await cropJpeg(
       filePath,
       { x: 0, y: 0, width: 8, height: 8 },
-      { crop: succeedWith("cropped-bytes") },
+      { crop: succeedWith("cropped-bytes", CROPPED) },
     );
-    expect(await dirEntries()).toEqual(["photo-crop-1.jpg", "photo.jpg"]);
+    expect(await dirEntries(dir)).toEqual(["photo-crop-1.jpg", "photo.jpg"]);
   });
 
   it("rejects a region that is not a positive integer rectangle", async () => {
-    const step = recordingStep();
-    const options = { crop: step.crop };
+    const { step, calls } = recordingStep(CROPPED);
+    const options = { crop: step };
 
     await expect(cropJpeg(filePath, { x: 0, y: 0, width: 0, height: 8 }, options)).resolves.toEqual(
       {
@@ -153,26 +139,26 @@ describe("cropJpeg", () => {
       ok: false,
       code: "invalid-rect",
     });
-    expect(step.regions).toEqual([]);
+    expect(calls).toEqual([]);
   });
 
   it("rejects files that are not JPEGs", async () => {
-    const step = recordingStep();
+    const { step, calls } = recordingStep(CROPPED);
     await expect(
-      cropJpeg(join(dir, "photo.png"), { x: 0, y: 0, width: 8, height: 8 }, { crop: step.crop }),
+      cropJpeg(join(dir, "photo.png"), { x: 0, y: 0, width: 8, height: 8 }, { crop: step }),
     ).resolves.toEqual({ ok: false, code: "not-jpeg" });
-    expect(step.regions).toEqual([]);
+    expect(calls).toEqual([]);
   });
 
   it("reports a missing input file", async () => {
-    const step = recordingStep();
+    const { step, calls } = recordingStep(CROPPED);
     const result = await cropJpeg(
       join(dir, "missing.jpg"),
       { x: 0, y: 0, width: 8, height: 8 },
-      { crop: step.crop },
+      { crop: step },
     );
     expect(result).toMatchObject({ ok: false, code: "io" });
-    expect(step.regions).toEqual([]);
+    expect(calls).toEqual([]);
   });
 
   it("reports a region the module refuses", async () => {
@@ -198,7 +184,7 @@ describe("cropJpeg", () => {
     const crop = () => ({ data: new Uint8Array(0), width: 8, height: 8 });
     const result = await cropJpeg(filePath, { x: 0, y: 0, width: 8, height: 8 }, { crop });
     expect(result).toMatchObject({ ok: false, code: "transform" });
-    expect(await dirEntries()).toEqual(["photo.jpg"]);
+    expect(await dirEntries(dir)).toEqual(["photo.jpg"]);
   });
 });
 
@@ -217,7 +203,7 @@ describe("cropJpeg with the WebAssembly module", () => {
     });
     expect(await readFile(filePath)).toEqual(before);
     const cropped = await readFile(join(dir, "photo-crop-1.jpg"));
-    expect(jpegSize(cropped)).toEqual({ width: 128, height: 96 });
+    expect(readJpegFrame(cropped)).toMatchObject({ width: 128, height: 96 });
     expect(hasJfif(cropped)).toBe(true);
   });
 
@@ -225,7 +211,7 @@ describe("cropJpeg with the WebAssembly module", () => {
     await copyFile(FIXTURE, filePath);
     const result = await cropJpeg(filePath, { x: 480, y: 480, width: 64, height: 64 });
     expect(result).toMatchObject({ ok: false, code: "bad-crop" });
-    expect(await dirEntries()).toEqual(["photo.jpg"]);
+    expect(await dirEntries(dir)).toEqual(["photo.jpg"]);
   });
 
   it("reports a file with a JPEG extension that is not a JPEG", async () => {

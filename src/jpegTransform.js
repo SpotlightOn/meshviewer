@@ -119,4 +119,4 @@ async function writeAtomically(fileSystem, targetPath, data, mode) {
   }
 }
 
-export { isJpegPath, loadTransformer, readJpeg, transformFailure, writeAtomically };
+export { loadTransformer, readJpeg, transformFailure, writeAtomically };

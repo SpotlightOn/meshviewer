@@ -18,7 +18,7 @@ const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
  * @param {() => {width: number, height: number}} options.getBounds - Size of the displayed image in pixels.
  * @param {() => {width: number, height: number}} options.getGrid - Grid steps in displayed pixels.
  * @param {(region: {x: number, y: number, width: number, height: number}) => void} [options.onChange] - Called after every change with the snapped selection.
- * @returns {{element: HTMLElement, render: () => void, setRegion: (region: object|null) => void, getRegion: () => object|null, dispose: () => void}} Overlay handle.
+ * @returns {{render: () => void, setRegion: (region: object|null) => void, getRegion: () => object|null, dispose: () => void}} Overlay handle.
  */
 function createCropOverlay(canvas, options) {
   const layer = document.createElement("div");
@@ -142,7 +142,6 @@ function createCropOverlay(canvas, options) {
   layer.addEventListener("pointercancel", pointerup);
 
   return {
-    element: layer,
     render,
     setRegion,
     getRegion: () => (region === null ? null : { ...region }),
