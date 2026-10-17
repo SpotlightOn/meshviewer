@@ -56,7 +56,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
   tree.setAttribute("tabindex", "0");
 
   const rootList = document.createElement("ul");
-  rootList.className = "tree-root";
+  rootList.className = "tree__root";
   tree.append(rootList);
 
   /** @type {Map<string, NodeState>} */
@@ -86,27 +86,28 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   function createNode(nodePath, label) {
     const li = document.createElement("li");
+    li.className = "tree__node";
     li.setAttribute("role", "treeitem");
     li.setAttribute("data-path", nodePath);
     li.setAttribute("aria-expanded", "false");
 
     const row = document.createElement("div");
-    row.className = "tree-row";
+    row.className = "tree__row";
 
     const twisty = document.createElement("span");
-    twisty.className = "tree-twisty";
+    twisty.className = "tree__twisty";
     twisty.textContent = "\u25b8";
     twisty.setAttribute("aria-hidden", "true");
 
     const text = document.createElement("span");
-    text.className = "tree-label";
+    text.className = "tree__label";
     text.textContent = label;
     text.title = nodePath;
 
     row.append(twisty, text);
 
     const childrenUl = document.createElement("ul");
-    childrenUl.className = "tree-children";
+    childrenUl.className = "tree__children";
     childrenUl.setAttribute("role", "group");
 
     li.append(row, childrenUl);
@@ -145,7 +146,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
     if (state.loaded) return state.children;
     if (state.loadPromise) return state.loadPromise;
     state.loading = true;
-    state.twisty.classList.add("loading");
+    state.twisty.classList.add("tree__twisty--loading");
     state.loadPromise = (async () => {
       const children = await getChildren(state.path).catch(() => []);
       state.children = children;
@@ -155,7 +156,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
         state.childStates.push(childState);
       }
       state.loading = false;
-      state.twisty.classList.remove("loading");
+      state.twisty.classList.remove("tree__twisty--loading");
       state.loadPromise = null;
       state.loaded = true;
       return children;
@@ -170,12 +171,12 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   async function expand(state) {
     state.expanded = true;
-    state.li.classList.add("expanded");
+    state.li.classList.add("tree__node--expanded");
     state.li.setAttribute("aria-expanded", "true");
     updateTwisty(state);
     await ensureLoaded(state);
     if (state.children.length === 0) {
-      state.twisty.classList.add("hidden");
+      state.twisty.classList.add("tree__twisty--hidden");
     }
     prefetch(state);
   }
@@ -186,7 +187,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   function collapse(state) {
     state.expanded = false;
-    state.li.classList.remove("expanded");
+    state.li.classList.remove("tree__node--expanded");
     state.li.setAttribute("aria-expanded", "false");
     updateTwisty(state);
   }
@@ -210,10 +211,10 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   function updateTwisty(state) {
     if (state.children.length === 0 && state.loaded) {
-      state.twisty.classList.add("hidden");
+      state.twisty.classList.add("tree__twisty--hidden");
       return;
     }
-    state.twisty.classList.remove("hidden");
+    state.twisty.classList.remove("tree__twisty--hidden");
     state.twisty.textContent = state.expanded ? "\u25be" : "\u25b8";
   }
 
@@ -225,10 +226,10 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
   function activate(state, notify = true) {
     if (selectedPath) {
       const previous = states.get(selectedPath);
-      if (previous) previous.li.classList.remove("selected");
+      if (previous) previous.li.classList.remove("tree__node--selected");
     }
     selectedPath = state.path;
-    state.li.classList.add("selected");
+    state.li.classList.add("tree__node--selected");
     if (onSelect && notify) onSelect(state.path);
   }
 
@@ -238,7 +239,7 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
    */
   function visibleNodes() {
     return Array.from(
-      rootList.querySelectorAll(':scope > li, li[aria-expanded="true"] > .tree-children > li'),
+      rootList.querySelectorAll(':scope > li, li[aria-expanded="true"] > .tree__children > li'),
     );
   }
 
@@ -252,16 +253,16 @@ export function createDirectoryTree({ rootPath, rootLabel, getChildren, onSelect
       tree.focus();
     }
     for (const other of rootList.querySelectorAll("li")) {
-      other.classList.remove("focused");
+      other.classList.remove("tree__node--focused");
     }
-    node.classList.add("focused");
+    node.classList.add("tree__node--focused");
   }
 
   tree.addEventListener("keydown", (event) => {
     const nodes = visibleNodes();
     if (nodes.length === 0) return;
 
-    const focusedIndex = nodes.findIndex((li) => li.classList.contains("focused"));
+    const focusedIndex = nodes.findIndex((li) => li.classList.contains("tree__node--focused"));
     const current =
       focusedIndex >= 0 ? states.get(nodes[focusedIndex].getAttribute("data-path")) : null;
 

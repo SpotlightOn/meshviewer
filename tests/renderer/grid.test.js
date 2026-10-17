@@ -122,12 +122,12 @@ function dir(name) {
 async function makeGrid(listFiles, options = {}) {
   document.body.innerHTML = `
     <div id="empty-state" class="empty-state">
-      <img class="empty-logo" src="app://app/icons/meshviewer.svg" alt="MeshViewer" />
-      <p id="empty-message" class="empty-message"></p>
+      <img class="empty-state__logo" src="app://app/icons/meshviewer.svg" alt="MeshViewer" />
+      <p id="empty-message" class="empty-state__message"></p>
     </div>
     <div id="grid" class="grid"></div>
-    <div id="selection-info" class="selection-info" hidden></div>
-    <div id="content" class="content"></div>`;
+    <div id="selection-info" class="grid__selection-info" hidden></div>
+    <div id="content" class="layout__content"></div>`;
   const onOpenFile = options.onOpenFile ?? (() => {});
   const onOpenFolder = options.onOpenFolder ?? (() => {});
   const onDirectoriesChanged = options.onDirectoriesChanged ?? (() => {});
@@ -199,7 +199,7 @@ describe("grid empty state", () => {
     expect(await loadFolder("/tmp/empty")).toBe(true);
     expect(emptyState.style.display).toBe("flex");
     expect(emptyMessage.textContent).toBe("No media files in this folder");
-    expect(emptyState.querySelector(".empty-logo")).not.toBeNull();
+    expect(emptyState.querySelector(".empty-state__logo")).not.toBeNull();
   });
 
   it("shows the load-error message when listing fails", async () => {
@@ -228,7 +228,7 @@ describe("grid selection", () => {
     );
     await loadFolder("/tmp/folder");
 
-    const card = document.querySelectorAll(".card")[1];
+    const card = document.querySelectorAll(".grid__card")[1];
     clickCard(card);
 
     expect(onOpenFile).not.toHaveBeenCalled();
@@ -249,7 +249,7 @@ describe("grid selection", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[1]);
+    clickCard(document.querySelectorAll(".grid__card")[1]);
 
     expect(onOpenFile).toHaveBeenCalledTimes(1);
     expect(onOpenFile.mock.calls[0][0].name).toBe("b.png");
@@ -265,7 +265,7 @@ describe("grid selection", () => {
     );
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0]);
+    clickCard(document.querySelectorAll(".grid__card")[0]);
     expect(grid.openActive()).toBe(true);
     expect(onOpenFile.mock.calls[0][0].name).toBe("a.png");
   });
@@ -277,7 +277,7 @@ describe("grid selection", () => {
       { onOpenFile },
     );
     await loadFolder("/tmp/folder");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
 
     clickCard(cards[0], { ctrlKey: true });
     clickCard(cards[1], { ctrlKey: true });
@@ -303,7 +303,7 @@ describe("grid selection", () => {
       media("d.png", 3),
     ]);
     await loadFolder("/tmp/folder");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
 
     clickCard(cards[0], { ctrlKey: true });
     clickCard(cards[2], { shiftKey: true });
@@ -318,7 +318,7 @@ describe("grid selection", () => {
       media("c.png", 2),
     ]);
     await loadFolder("/tmp/folder");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
 
     clickCard(cards[0], { ctrlKey: true });
     clickCard(cards[1], { ctrlKey: true });
@@ -364,7 +364,7 @@ describe("grid selection", () => {
 
     expect(grid.hasSelection()).toBe(false);
     expect(selectionInfo.hidden).toBe(true);
-    expect(document.querySelector(".marquee")).toBeNull();
+    expect(document.querySelector(".grid__marquee")).toBeNull();
   });
 
   it("buffers the selected files and shows the copy message", async () => {
@@ -373,7 +373,7 @@ describe("grid selection", () => {
       media("b.png", 1),
     ]);
     await loadFolder("/tmp/folder");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
 
     clickCard(cards[0], { ctrlKey: true });
     clickCard(cards[1], { ctrlKey: true });
@@ -393,7 +393,7 @@ describe("grid selection", () => {
     );
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.copySelection();
     const copied = await grid.paste();
 
@@ -410,7 +410,7 @@ describe("grid selection", () => {
     const { loadFolder, grid, selectionInfo } = await makeGrid(listFiles, { copyFiles });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.copySelection();
     const copied = await grid.paste("/tmp/other");
 
@@ -428,7 +428,7 @@ describe("grid selection", () => {
       media("b.png", 1),
     ]);
     await loadFolder("/tmp/folder");
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
 
     clickCard(cards[0], { ctrlKey: true });
     clickCard(cards[1], { ctrlKey: true });
@@ -446,7 +446,7 @@ describe("grid selection", () => {
     const { loadFolder, grid, selectionInfo } = await makeGrid(listFiles, { moveFiles });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.cutSelection();
     const moved = await grid.paste("/tmp/other");
 
@@ -469,7 +469,7 @@ describe("grid selection", () => {
     const { loadFolder, grid } = await makeGrid(listFiles, { moveFiles });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.cutSelection();
     const moved = await grid.paste();
 
@@ -491,7 +491,7 @@ describe("grid selection", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.cutSelection();
     await grid.paste("/tmp/other");
 
@@ -511,7 +511,7 @@ describe("grid selection", () => {
     );
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     const trashed = await grid.trashSelection();
 
     expect(trashed).toBe(true);
@@ -525,7 +525,7 @@ describe("grid selection", () => {
       media("b.png", 1),
     ]);
     await loadFolder("/tmp/folder");
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     expect(grid.hasSelection()).toBe(true);
 
     await loadFolder("/tmp/folder");
@@ -549,7 +549,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    const cards = document.querySelectorAll(".card");
+    const cards = document.querySelectorAll(".grid__card");
     expect([...cards].map((card) => card.dataset.kind)).toEqual(["folder", "folder", "image"]);
     expect(grid.getFiles().map((file) => file.name)).toEqual(["a.png"]);
     expect(grid.getEntry(0)).toMatchObject({ kind: "folder", name: "sub" });
@@ -565,7 +565,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    const card = document.querySelectorAll(".card")[0];
+    const card = document.querySelectorAll(".grid__card")[0];
     clickCard(card);
     expect(onOpenFolder).not.toHaveBeenCalled();
 
@@ -596,7 +596,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.copySelection();
     const copied = await grid.paste("/tmp/other");
 
@@ -612,7 +612,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     await grid.trashSelection();
 
     expect(trashFiles).toHaveBeenCalledWith(["/tmp/folder/sub"]);
@@ -624,7 +624,7 @@ describe("grid folder tiles", () => {
     });
     expect(await loadFolder("/tmp/folder")).toBe(true);
     expect(emptyState.style.display).toBe("none");
-    expect(document.querySelectorAll(".card")).toHaveLength(1);
+    expect(document.querySelectorAll(".grid__card")).toHaveLength(1);
   });
 
   it("signals a directory change after trashing a folder", async () => {
@@ -637,7 +637,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     await grid.trashSelection();
 
     expect(onDirectoriesChanged).toHaveBeenCalledWith("/tmp/folder");
@@ -655,7 +655,7 @@ describe("grid folder tiles", () => {
     });
     await loadFolder("/tmp/folder");
 
-    clickCard(document.querySelectorAll(".card")[0], { ctrlKey: true });
+    clickCard(document.querySelectorAll(".grid__card")[0], { ctrlKey: true });
     grid.copySelection();
     await grid.paste("/tmp/other");
 
@@ -676,7 +676,7 @@ describe("grid folder previews", () => {
    * @returns {HTMLElement} Folder thumb wrapper.
    */
   function folderWrap() {
-    return document.querySelector('.card[data-kind="folder"] .thumb-wrap');
+    return document.querySelector('.grid__card[data-kind="folder"] .grid__thumb');
   }
 
   it("shows the folder's first image inside a folder-shaped frame", async () => {
@@ -695,8 +695,8 @@ describe("grid folder previews", () => {
     await settle();
 
     // The frame keeps the folder shape, so the tile still reads as a directory.
-    expect(wrap.querySelector(".folder-frame")).not.toBeNull();
-    const img = wrap.querySelector(".folder-frame .folder-preview-img");
+    expect(wrap.querySelector(".grid__folder")).not.toBeNull();
+    const img = wrap.querySelector(".grid__folder .grid__folder-preview");
     expect(img?.src).toBe("data:image/png;base64,a.png");
     // Only the first image is used, so only its thumbnail is generated.
     expect(getThumbnail).toHaveBeenCalledTimes(1);
@@ -714,8 +714,8 @@ describe("grid folder previews", () => {
     intersect([wrap]);
     await settle();
 
-    expect(wrap.querySelector(".folder-frame")).not.toBeNull();
-    expect(wrap.querySelector(".folder-preview-img")).toBeNull();
+    expect(wrap.querySelector(".grid__folder")).not.toBeNull();
+    expect(wrap.querySelector(".grid__folder-preview")).toBeNull();
     // GLB previews need an offscreen 3D render and are skipped.
     expect(getThumbnail).not.toHaveBeenCalled();
   });
@@ -742,7 +742,7 @@ describe("grid folder previews", () => {
     );
     expect(subfolderScans).toHaveLength(1);
     expect(getThumbnail).toHaveBeenCalledTimes(1);
-    expect(document.querySelector(".card .folder-preview-img")).not.toBeNull();
+    expect(document.querySelector(".grid__card .grid__folder-preview")).not.toBeNull();
   });
 });
 

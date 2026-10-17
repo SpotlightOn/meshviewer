@@ -33,6 +33,14 @@ Guidance for AI coding agents working in this repository.
 - Icons: `icons/meshviewer.svg` is the single source of truth. `pnpm run icons` regenerates `icons/meshviewer.png`, `icons/meshviewer.ico` and `icons/meshviewer-1024.png` (macOS icon) from it via `scripts/generate-icons.js` (sharp + ImageMagick). Always rerun it after changing the SVG.
 - Never install into `~/.local/share` — only create files inside the project directory.
 
+## CSS modules
+
+- `src/renderer/styles.css` is the single entry point; it only `@import`s the modules in cascade order (base → shared components → feature areas).
+- `src/renderer/styles/<block>.css` owns exactly one BEM block named after the file. Every class in a module is `block`, `block__element` or `block--modifier`; foreign classes are allowed only inside `:has()`, `:not()` and `:is()` conditions.
+- An element carries at most two classes, and a modifier is always a second class on the same element (`class="grid__card grid__card--selected"`), never a bare `--modifier`.
+- States are modifiers of their block (`dialog--hidden`, `large-view--hidden`), not global `hidden`/`is-…` classes. Root state lives on the root element itself (`html[data-resizing="true"]`).
+- `tests/unit/css-modules.test.js` enforces the convention: every class in a module must carry its block prefix, every class used by the HTML/scripts must be defined, and every defined class must be used.
+
 ## Commands
 
 - `pnpm start` – run the app
@@ -61,6 +69,7 @@ Guidance for AI coding agents working in this repository.
 - Vitest config lives in `vitest.config.mjs` (three projects: `unit` = pure helpers, `main` = Node + real temp fixtures, `renderer` = jsdom). Tests live in `tests/unit/`, `tests/main/`, `tests/renderer/`.
 - E2E tests (Playwright, `_electron`) live in `tests/e2e/` with config `playwright.config.mjs`; they launch the real app through `tests/e2e/launch.js` and need a display. The helper sets `MESHVIEWER_E2E_HEADLESS=1` (honoured in `src/main-window.js`), so the app creates an unmapped window and a test run never takes the desktop focus. `packaged.spec.js` runs the `pnpm run pack` build from `dist/linux-unpacked` and is skipped when that build is missing. Playwright was installed with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (no browsers needed for Electron).
 - Testable code is kept out of the Electron runtime where possible: filesystem IPC logic lives in `src/fsIpc.js` (takes `ipcMain`/`app`/`shell` as arguments), renderer helpers in `src/renderer/utils.js`. Keep new pure logic there or in `tests/*` rather than in `main.js`/`renderer.js`.
+- The e2e specs expect two fixture directories outside the repo: `/tmp/opencode/glbtest` (`test.glb`, `textured.glb`, `foto.png`, `foto2.png`) and `/tmp/opencode/exiftest` (a single JPEG with an embedded EXIF preview, e.g. via `tests/main/fixtures/make-exif-jpeg.mjs`). `app.spec.js` fails with "element(s) not found" when they are missing.
 
 ## Architecture
 
@@ -70,7 +79,7 @@ Guidance for AI coding agents working in this repository.
 
 Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup whenever it runs inside Electron on Linux (see `node_modules/sharp/dist/sharp.cjs`, `process.emitWarning` with code `SharpElectronLinux`). It warns that Electron's Linux binaries dynamically link a globally-installed glib whose symbols leak into the process, which can collide with the glib bundled in sharp's libvips and in rare cases cause `GLib-GObject: g_object_ref/g_object_unref: assertion 'G_IS_OBJECT (object)' failed` crashes (see https://sharp.pixelplumbing.com/install#electron-and-linux, tracking issue electron/electron#46323). It is informational and expected; sharp works fine unless the app actually crashes with a GLib assertion.
 - `src/preload.js` – `contextBridge` API exposed as `window.api` (typed via `@typedef {MeshViewerApi}`)
-- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), resizable sidebar (`sidebar-resizer.js`, drag or arrow keys, width persisted as `sidebarWidth`), content grid (`grid.js`: folder tiles for subdirectories before the media files, each folder tile showing the folder's first image inside a folder-shaped frame, built only once the app is idle and no media thumbnails are pending, plus lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, multi-selection with copy/cut/trash for files and folders), image display (thumbnail + large view), `styles.css`, `i18n.js` (i18next init + `t()`), `utils.js` (generic helpers: size/MIME, zoom, EXIF rows)
+- `src/renderer/` – UI: vanilla directory tree (`tree.js`, rooted at `/`, lazy per-node loading with bounded (4 concurrent) one-level lookahead prefetch), resizable sidebar (`sidebar-resizer.js`, drag or arrow keys, width persisted as `sidebarWidth`), content grid (`grid.js`: folder tiles for subdirectories before the media files, each folder tile showing the folder's first image inside a folder-shaped frame, built only once the app is idle and no media thumbnails are pending, plus lazy preview loading via `IntersectionObserver` and `content-visibility: auto`, multi-selection with copy/cut/trash for files and folders), image display (thumbnail + large view), `styles.css` (`@import` entry point for `styles/`), `styles/` (one CSS module per BEM block, see "CSS modules"), `i18n.js` (i18next init + `t()`), `utils.js` (generic helpers: size/MIME, zoom, EXIF rows)
 - `src/renderer/three/` – shared three.js plumbing used by `3d/` and `equirectangular/`: `render-surface.js` (renderer, pixel ratio, resize observer, start/stop loop, dispose). Both view controllers follow the same contract: `activate`/`deactivate`, `setZoomPercent`, `zoomIn`/`zoomOut`, `reset`, `dispose`, with an `onChange(percent)` callback (the GLB viewer adds `load`)
 - `src/renderer/3d/` – everything three.js/GLB: `view.js` (interactive large view: scene, camera, OrbitControls, render loop, zoom), `thumbnails.js` (off-screen 256 px GLB thumbnails), `utils.js` (`disposeObject`, GLB zoom mapping); three.js add-ons (GLTFLoader, OrbitControls) come from `three/addons` via the import map
 - `src/renderer/equirectangular/` – panorama mode: `view.js` (sphere view, drag to look around, wheel/FOV zoom), `utils.js` (`isPixmap`, zoom↔field-of-view mapping)

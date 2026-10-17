@@ -7,8 +7,8 @@ import { createConfirmDialog } from "../../src/renderer/confirm-dialog.js";
  */
 function makeDialog() {
   document.body.innerHTML = `
-    <div id="confirm-overlay" class="settings-overlay hidden">
-      <div class="settings-dialog">
+    <div id="confirm-overlay" class="dialog dialog--hidden">
+      <div class="dialog__panel">
         <h2 id="confirm-title"></h2>
         <p id="confirm-message"></p>
         <button id="confirm-cancel" type="button">Cancel</button>

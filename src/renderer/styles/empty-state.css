@@ -1,0 +1,27 @@
+/**
+ * Empty state.
+ *
+ * Block: `.empty-state`. Every class in this file is either the block
+ * itself, `empty-state__element` or `empty-state--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.empty-state {
+  margin-top: 15vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.empty-state__logo {
+  width: 230px;
+  height: 230px;
+}
+
+.empty-state__message {
+  margin: 0;
+  font-size: 1.2rem;
+}

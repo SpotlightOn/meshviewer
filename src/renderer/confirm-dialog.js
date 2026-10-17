@@ -19,7 +19,7 @@ export function createConfirmDialog({ dom }) {
    * @returns {boolean} true while the overlay is visible.
    */
   function isOpen() {
-    return !overlay.classList.contains("hidden");
+    return !overlay.classList.contains("dialog--hidden");
   }
 
   /**
@@ -28,7 +28,7 @@ export function createConfirmDialog({ dom }) {
    */
   function close(accepted = false) {
     if (!isOpen()) return;
-    overlay.classList.add("hidden");
+    overlay.classList.add("dialog--hidden");
     const resolve = resolvePending;
     resolvePending = null;
     resolve?.(accepted);
@@ -43,7 +43,7 @@ export function createConfirmDialog({ dom }) {
     title.textContent = titleText;
     message.textContent = messageText;
     accept.textContent = acceptLabel ?? t("dialog.confirm");
-    overlay.classList.remove("hidden");
+    overlay.classList.remove("dialog--hidden");
     cancel.focus();
     return new Promise((resolve) => {
       resolvePending = resolve;

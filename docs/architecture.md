@@ -35,7 +35,7 @@ they cannot be ESM.
 │ contextBridge → window.api    │   │ index.html, renderer.js (entry), tree.js,│
 │ contextIsolation: true        │   │ grid.js, large-view.js, settings.js,     │
 │ nodeIntegration: false        │   │ keyboard.js, i18n.js, utils.js,          │
-│                               │   │ styles.css                               │
+│                               │   │ styles.css → styles/ (CSS modules)      │
 │                               │   │ 3d/ (GLB viewer, thumbnails),            │
 │                               │   │ equirectangular/ (panorama view),        │
 │                               │   │ three/ (shared render surface)           │
@@ -78,6 +78,8 @@ they cannot be ESM.
 | `src/renderer/settings.js` | Settings dialog, persistence and `onSaved` callback |
 | `src/renderer/keyboard.js` | Global shortcuts (F11, settings Esc) and grid zoom (Ctrl `+`/`-`/`0` and Ctrl + mouse wheel) |
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
+| `src/renderer/styles.css` | Stylesheet entry point: `@import`s the CSS modules in cascade order |
+| `src/renderer/styles/<block>.css` | One CSS module (BEM block) per UI area, named after its block; see AGENTS.md, "CSS modules" |
 | `src/renderer/crop.js` | Pure crop geometry: iMCU size from the frame header, snapping onto the grid, moving/resizing the selection and mapping it through the EXIF orientation |
 | `src/renderer/crop-overlay.js` | Crop selection overlay: darkened layer, handles, pointer gestures; projects the selection through the image zoom and pan |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |

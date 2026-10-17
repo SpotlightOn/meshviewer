@@ -1,0 +1,237 @@
+/**
+ * Modal dialogs.
+ *
+ * Block: `.dialog`. Every class in this file is either the block
+ * itself, `dialog__element` or `dialog--modifier`.
+ * See AGENTS.md, "CSS modules".
+ */
+
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.dialog--hidden {
+  display: none;
+}
+
+.dialog__panel {
+  width: min(340px, calc(100vw - 32px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.dialog__panel--wide {
+  width: min(440px, calc(100vw - 32px));
+}
+
+.dialog__panel h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.dialog__panel fieldset {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
+
+.dialog__panel legend {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 0 4px;
+}
+
+.dialog__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.dialog__row--check {
+  justify-content: flex-start;
+}
+
+.dialog__row[hidden] {
+  display: none;
+}
+
+#settings-transparency,
+#settings-thumbnail-fit,
+#settings-theme,
+#settings-open-behavior {
+  width: auto;
+  max-width: 100%;
+}
+
+#settings-transparency-color {
+  width: 48px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.dialog__row input,
+.dialog__row select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 13px;
+  width: 90px;
+  max-width: 100%;
+}
+
+.dialog__editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 240px;
+}
+
+.dialog__editor input {
+  width: 150px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dialog__editor button {
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.dialog__editor button:hover {
+  filter: brightness(1.1);
+}
+
+.dialog__hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.dialog__row input.dialog__input {
+  width: 190px;
+}
+
+.dialog__hint--error {
+  color: #e06c75;
+}
+
+/* The confirmation message is the dialog's main text, so it reads at the
+   normal size and leaves room before the action buttons. */
+#confirm-message {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog__button {
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--accent);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dialog__button:hover {
+  filter: brightness(1.1);
+}
+
+.dialog__button--secondary {
+  background: var(--surface-hover);
+  border-color: var(--border);
+}
+
+.dialog__button--danger {
+  background: #b23b3b;
+}
+
+.dialog__content {
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  margin-bottom: 14px;
+  padding-right: 4px;
+}
+
+.dialog__section h3 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.dialog__section:first-child h3 {
+  margin-top: 0;
+}
+
+.dialog__rows {
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.dialog__rows dt {
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.dialog__rows dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dialog__rows .dialog__image {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin-top: 2px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #000;
+}
+
+.dialog__loading {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.dialog__button--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+}

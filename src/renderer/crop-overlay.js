@@ -22,15 +22,15 @@ const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
  */
 function createCropOverlay(canvas, options) {
   const layer = document.createElement("div");
-  layer.className = "crop-layer";
+  layer.className = "crop__layer";
 
   const box = document.createElement("div");
-  box.className = "crop-box";
+  box.className = "crop__box";
   layer.append(box);
 
   for (const name of HANDLES) {
     const handle = document.createElement("div");
-    handle.className = `crop-handle crop-handle-${name}`;
+    handle.className = `crop__handle crop__handle--${name}`;
     handle.dataset.handle = name;
     box.append(handle);
   }
@@ -93,7 +93,7 @@ function createCropOverlay(canvas, options) {
     const handle = event.target instanceof HTMLElement ? event.target.dataset.handle : undefined;
     if (handle !== undefined) {
       gesture = { type: "resize", handle, start: point, region: { ...region } };
-    } else if (event.target instanceof HTMLElement && event.target.closest(".crop-box") !== null) {
+    } else if (event.target instanceof HTMLElement && event.target.closest(".crop__box") !== null) {
       gesture = { type: "move", start: point, region: { ...region } };
     } else {
       gesture = { type: "new", start: point };

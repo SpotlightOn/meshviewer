@@ -113,7 +113,7 @@ export function createSettings({ dom, onSaved }) {
    * Shows the color picker only for the "custom" transparency background.
    */
   function syncTransparencyColor() {
-    const row = transparencyColor.closest(".settings-row");
+    const row = transparencyColor.closest(".dialog__row");
     if (row) row.hidden = transparency.value !== "custom";
   }
 
@@ -139,7 +139,7 @@ export function createSettings({ dom, onSaved }) {
    * @returns {boolean} true while the overlay is visible.
    */
   function isOpen() {
-    return !overlay.classList.contains("hidden");
+    return !overlay.classList.contains("dialog--hidden");
   }
 
   /**
@@ -157,7 +157,7 @@ export function createSettings({ dom, onSaved }) {
     transparency.value = settings.transparencyBackground;
     transparencyColor.value = settings.transparencyColor;
     syncTransparencyColor();
-    overlay.classList.remove("hidden");
+    overlay.classList.remove("dialog--hidden");
     interval.focus();
     interval.select();
   }
@@ -166,7 +166,7 @@ export function createSettings({ dom, onSaved }) {
    * Closes the settings dialog.
    */
   function close() {
-    overlay.classList.add("hidden");
+    overlay.classList.add("dialog--hidden");
   }
 
   /**

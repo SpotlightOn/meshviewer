@@ -4,10 +4,10 @@ import { retireFrames } from "../../src/renderer/utils.js";
 function makeFrames() {
   const container = document.createElement("div");
   const oldFrame = document.createElement("div");
-  oldFrame.className = "large-frame enter-fade";
+  oldFrame.className = "large-view__frame large-view__frame--enter-fade";
   oldFrame.append(document.createElement("img"));
   const newFrame = document.createElement("div");
-  newFrame.className = "large-frame enter-fade";
+  newFrame.className = "large-view__frame large-view__frame--enter-fade";
   newFrame.append(document.createElement("img"));
   container.append(oldFrame, newFrame);
   document.body.append(container);
@@ -26,24 +26,24 @@ describe("retireFrames", () => {
   it("keeps the freshly added frame and retires the previous one", () => {
     const { container, oldFrame, newFrame } = makeFrames();
     retireFrames(container, { direction: 1, slide: false, durationMs: 350, keep: newFrame });
-    expect(newFrame.classList.contains("enter-fade")).toBe(true);
-    expect(newFrame.classList.contains("leave-fade")).toBe(false);
-    expect(oldFrame.classList.contains("enter-fade")).toBe(false);
-    expect(oldFrame.classList.contains("leave-fade")).toBe(true);
+    expect(newFrame.classList.contains("large-view__frame--enter-fade")).toBe(true);
+    expect(newFrame.classList.contains("large-view__frame--leave-fade")).toBe(false);
+    expect(oldFrame.classList.contains("large-view__frame--enter-fade")).toBe(false);
+    expect(oldFrame.classList.contains("large-view__frame--leave-fade")).toBe(true);
     expect(container.children).toHaveLength(2);
   });
 
   it("retires every frame when no frame is kept", () => {
     const { container, oldFrame, newFrame } = makeFrames();
     retireFrames(container, { direction: 1, slide: false, durationMs: 350 });
-    expect(oldFrame.classList.contains("leave-fade")).toBe(true);
-    expect(newFrame.classList.contains("leave-fade")).toBe(true);
+    expect(oldFrame.classList.contains("large-view__frame--leave-fade")).toBe(true);
+    expect(newFrame.classList.contains("large-view__frame--leave-fade")).toBe(true);
   });
 
   it("writes the navigation direction onto the outgoing frame", () => {
     const { container, oldFrame } = makeFrames();
     retireFrames(container, { direction: -1, slide: true, durationMs: 350 });
-    expect(oldFrame.classList.contains("leave-slide")).toBe(true);
+    expect(oldFrame.classList.contains("large-view__frame--leave-slide")).toBe(true);
     expect(oldFrame.style.getPropertyValue("--slide-dir")).toBe("-1");
   });
 
