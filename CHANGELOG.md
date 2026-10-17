@@ -4,18 +4,19 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
-### Added
-- APNG (`*.apng`) images are listed like PNG and displayed in the grid, the large view and the panorama mode
-
 ## [0.9.0] - 2026-10-17
 
 ### Added
 - Lossless JPEG rotation: rotate-left / rotate-right buttons in the large view rewrite `.jpg`/`.jpeg` in place through the bundled `@chimok/jpegtran-js` WebAssembly module (no recompression, EXIF preserved, no external binary required)
 - Lossless JPEG crop: a crop mode in the large view with a selection rectangle that snaps to the iMCU grid of the file, writes `<name>-crop-<n>.jpg` next to the source and leaves the original untouched (no recompression, EXIF preserved)
+- APNG (`*.apng`) images are listed like PNG and displayed in the grid, the large view and the panorama mode
+- JPEG XL (`*.jxl`) images are listed and displayed by enabling Chromium's `JXLImageFormat` feature (no `sharp` thumbnail, so the full file is loaded)
+- `docs/conventions.md`: naming and module rules (kebab-case files, unique basenames, module prefixes)
 
 ### Changed
 - Zoom keys: `+` / `-` / `0` zoom the large view and the tile grid, while `Ctrl` + `+` / `-` / `0` keeps scaling the whole UI as Electron does by default (the menu accelerators used to swallow the keys, so the content zoom never fired)
 - Renderer styles split into one CSS module per UI block (no visual change)
+- Module files renamed to kebab-case with a unique basename repo-wide (`fsIpc.js` → `fs-ipc.js`, `crop.js` → `jpeg-crop.js`, `equirectangular/view.js` → `pano-view.js`, tests mirror the source path)
 
 ### Fixed
 - Packaged builds were missing the app icons and three.js' add-ons: the empty-state logo, GLB thumbnails and the 3D and panorama views failed with 404s

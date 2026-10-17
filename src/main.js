@@ -14,6 +14,8 @@ import { registerAppProtocol } from "./protocol.js";
 import { loadSettings, registerSettingsIpc } from "./settings-store.js";
 import { registerWindowIpc } from "./window-ipc.js";
 
+app.commandLine.appendSwitch("enable-features", "JXLImageFormat");
+
 /**
  * Initializes i18next based on the system locale.
  */

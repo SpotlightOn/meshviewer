@@ -14,6 +14,7 @@ const PIXMAP_EXTENSIONS = new Set([
   ".webp",
   ".avif",
   ".bmp",
+  ".jxl",
 ]);
 
 /**

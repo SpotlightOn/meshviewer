@@ -13,6 +13,7 @@ const IMAGE_MIME = {
   ".bmp": "image/bmp",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
+  ".jxl": "image/jxl",
 };
 
 /**
