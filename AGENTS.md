@@ -27,6 +27,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Code style
 
+- File names, exports and data shapes follow `docs/conventions.md`: kebab-case module names that are unique across the repo, `createX` factories, `registerXIpc` handlers, `isX`/`hasX` predicates, `{ok: …}` results and `SCREAMING_SNAKE_CASE` constants.
 - Add **JSDoc** to every function (English, with `@param`/`@returns`). See `src/renderer/tree.js` for the `@typedef` pattern.
 - Do not add inline comments unless asked.
 - No hardcoded absolute paths in committed files. `meshviewer.desktop` is a template using the `@INSTALL_DIR@` placeholder; `scripts/install.sh` substitutes it at install time. Desktop-entry localization (freedesktop `Comment[de]` style) lives in two places: `meshviewer.desktop` (manual install) and `package.json` → `build.linux.desktop.entry` (electron-builder/AppImage).
