@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import i18next from "i18next";
 import { describe, expect, it } from "vitest";
-import { launchCommand, registerEditorIpc } from "../../src/editorIpc.js";
+import { launchCommand, registerEditorIpc } from "../../src/editor-ipc.js";
 
 i18next.init({ lng: "en" });
 

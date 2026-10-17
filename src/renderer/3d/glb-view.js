@@ -3,7 +3,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { createRenderSurface } from "../three/render-surface.js";
 import { clampZoomPercent, MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from "../utils.js";
-import { disposeObject, glbDistanceForPercent, glbPercentForDistance } from "./utils.js";
+import { disposeObject, glbDistanceForPercent, glbPercentForDistance } from "./glb-utils.js";
 
 const CAMERA_FOV = 45;
 const CAMERA_NEAR = 0.01;

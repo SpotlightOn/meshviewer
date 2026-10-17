@@ -64,9 +64,9 @@ test file 5.02).
 
 ### Thumbnails (all variants)
 
-- `src/fsIpc.js` `listMediaFiles()`: add `.blend` as a new `type: "blend"`
+- `src/fs-ipc.js` `listMediaFiles()`: add `.blend` as a new `type: "blend"`
   (skip `.blend1` backup files).
-- `src/thumbnails.js`: new `extractBlendThumbnail(path)` — decompress with
+- `src/thumbnail-cache.js`: new `extractBlendThumbnail(path)` — decompress with
   `fzstd`/`zlib`, find the `TEST` block, feed the RGBA payload through the
   existing `sharp` pipeline (`generateThumbnail`, 256 px JPEG). Fallback order:
   own cache → embedded preview → existing `readFreedesktopThumbnail()` →
@@ -86,13 +86,13 @@ Options:
   hint for files without preview.
 - B) Interactive 3D like GLB: run `jsblender` in the renderer and build a
   three.js scene (meshes + Principled materials + object world matrices) using
-  the existing GLB viewer contract (`src/renderer/3d/view.js`). Only works for
+  the existing GLB viewer contract (`src/renderer/3d/glb-view.js`). Only works for
   files saved in the modern layout (Blender 5 or re-saved); fall back to A and
   a hint for old files.
 - C) B plus an optional “Convert with Blender” action that spawns
   `blender --background <file> --python-expr "bpy.ops.wm.save_as_mainfile(...)"`
   into a temp file (new IPC, same pattern as the existing `shell:openPath` in
-  `src/fsIpc.js`) and then loads the meshes from the temp copy. Closes the gap
+  `src/fs-ipc.js`) and then loads the meshes from the temp copy. Closes the gap
   for old files; takes seconds, one-time per file, needs Blender installed.
 
 ### Follow-ups when implementing

@@ -8,7 +8,7 @@ import {
   regionFromPoints,
   resizeRegion,
   snapRegion,
-} from "../../src/renderer/crop.js";
+} from "../../src/renderer/crop-geometry.js";
 
 /** Grid steps and image size used by the selection geometry tests. */
 const grid = { width: 16, height: 16 };

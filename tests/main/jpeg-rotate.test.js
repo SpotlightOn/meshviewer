@@ -2,8 +2,8 @@ import { chmod, copyFile, mkdtemp, readFile, rm, stat, writeFile } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { normalizeAngle, registerRotateIpc, rotateJpeg } from "../../src/jpeg-rotate.js";
 import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
-import { normalizeAngle, registerRotateIpc, rotateJpeg } from "../../src/rotate.js";
 import { dirEntries } from "./helpers/files.js";
 import { hasJfif } from "./helpers/jpeg.js";
 import { recordingStep, succeedWith } from "./helpers/steps.js";

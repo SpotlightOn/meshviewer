@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { glbDistanceForPercent, glbPercentForDistance } from "../../../src/renderer/3d/utils.js";
+import {
+  glbDistanceForPercent,
+  glbPercentForDistance,
+} from "../../../src/renderer/3d/glb-utils.js";
 
 describe("GLB zoom helpers", () => {
   it("maps distance and percent inversely", () => {

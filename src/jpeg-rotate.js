@@ -1,6 +1,6 @@
 import fsp from "node:fs/promises";
 import { COPY } from "@chimok/jpegtran-js";
-import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpegTransform.js";
+import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpeg-transform.js";
 
 /**
  * Rotation angles the module can apply (clockwise turns of the stored pixels).

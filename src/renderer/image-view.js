@@ -1,7 +1,7 @@
 /**
  * Interactive image view for the large view: zoom, pan, drag-to-throw
  * navigation and the fit/100% toggles. Kept next to the other view modes
- * (`3d/view.js`, `equirectangular/view.js`) instead of inside the large view.
+ * (`3d/glb-view.js`, `equirectangular/pano-view.js`) instead of inside the large view.
  */
 
 import { clampZoom, zoomScale } from "./utils.js";
