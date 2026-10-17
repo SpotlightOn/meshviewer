@@ -9,6 +9,7 @@ Guidance for AI coding agents working in this repository.
 ## Git rules
 
 - **Never push to a remote without the user reviewing the exact changes first.** Commit locally, show the diff, wait for explicit approval. This covers every push — new files, docs, config, CI, "trivial" fixes, follow-ups to an already approved change — and every force-push. Approval for one push is not approval for the next one.
+- **Work on a branch, never on `main`.** Branch names: `feature/…` for features and `bugfix/…` for bug fixes (there is no `fix/…` prefix).
 
 ## Language conventions
 
@@ -81,6 +82,7 @@ Note: sharp's JS loader prints a `[SharpElectronLinux]` Node warning at startup 
 - `app.exit()` hangs while a modal window is open — tests must `destroy()` the About window first.
 - `console.log` from the main process is stdout-buffered and can be lost on kill; use `console.error` in probes.
 - The path bar is a breadcrumb by default: clicking a folder navigates to it, clicking the active folder or empty space switches to a text field (Enter opens the entered path — the tree is expanded if possible — Esc or blur reverts to the current directory).
+- electron-builder only packages what `build.files` lists (plus production dependencies) and silently drops two things this app serves at runtime: `icons/` and every top-level `examples/` directory of a production dependency. three.js' add-ons live in `node_modules/three/examples/jsm`, so `build.files` keeps `icons/meshviewer-transparent.svg`, `icons/meshviewer.png` and copies `node_modules/three/examples/jsm` in through a `from`/`to` entry. `tests/e2e/packaged.spec.js` fails when either of them is missing from `dist/linux-unpacked`.
 
 ## Formats
 
