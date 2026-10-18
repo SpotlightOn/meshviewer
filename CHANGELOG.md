@@ -4,6 +4,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- Lossless JPEG flip: flip-horizontal / flip-vertical buttons in the large view mirror `.jpg`/`.jpeg` in place through the bundled `@chimok/jpegtran-js` WebAssembly module (no recompression, EXIF preserved)
+
 ## [0.9.0] - 2026-10-17
 
 ### Added

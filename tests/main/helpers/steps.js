@@ -1,7 +1,7 @@
 /**
- * Step builders for the lossless transform tests: the real rotate/crop modules
- * take the transform step as an injectable dependency, so the tests hand them a
- * fixed or recording fake.
+ * Step builders for the lossless transform tests: the real rotate/flip/crop
+ * modules take the transform step as an injectable dependency, so the tests
+ * hand them a fixed or recording fake.
  */
 
 /** Bytes a recording step reports when it is not given any. */

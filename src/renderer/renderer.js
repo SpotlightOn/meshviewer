@@ -89,6 +89,8 @@ const largeView = createLargeView({
     infoButton: document.getElementById("large-details"),
     largeRotateLeft: document.getElementById("large-rotate-left"),
     largeRotateRight: document.getElementById("large-rotate-right"),
+    largeFlipHorizontal: document.getElementById("large-flip-horizontal"),
+    largeFlipVertical: document.getElementById("large-flip-vertical"),
     largeSlideshow: document.getElementById("large-slideshow"),
     largeEquirect: document.getElementById("large-equirect"),
     largeActual: document.getElementById("large-actual"),
