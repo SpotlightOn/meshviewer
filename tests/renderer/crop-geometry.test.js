@@ -4,6 +4,7 @@ import {
   displaySize,
   imcuSize,
   moveRegion,
+  orientFlipAxis,
   orientRegion,
   regionFromPoints,
   resizeRegion,
@@ -339,5 +340,26 @@ describe("displayGrid and displaySize", () => {
     expect(displayGrid({ width: 16, height: 8 }, 6)).toEqual({ width: 8, height: 16 });
     expect(displaySize({ width: 40, height: 24 }, 8)).toEqual({ width: 24, height: 40 });
     expect(displaySize({ width: 40, height: 24 }, 3)).toEqual({ width: 40, height: 24 });
+  });
+});
+
+describe("orientFlipAxis", () => {
+  it("keeps the picked axis for the orientations that do not turn the image", () => {
+    expect(orientFlipAxis("horizontal", 1)).toBe("horizontal");
+    expect(orientFlipAxis("vertical", 1)).toBe("vertical");
+    expect(orientFlipAxis("horizontal", 2)).toBe("horizontal");
+    expect(orientFlipAxis("horizontal", 3)).toBe("horizontal");
+    expect(orientFlipAxis("vertical", 4)).toBe("vertical");
+  });
+
+  it("swaps the axis for the orientations that turn the image by 90 or 270 degrees", () => {
+    expect(orientFlipAxis("horizontal", 5)).toBe("vertical");
+    expect(orientFlipAxis("horizontal", 6)).toBe("vertical");
+    expect(orientFlipAxis("vertical", 7)).toBe("horizontal");
+    expect(orientFlipAxis("vertical", 8)).toBe("horizontal");
+  });
+
+  it("keeps an axis that is not known", () => {
+    expect(orientFlipAxis("diagonal", 6)).toBe("diagonal");
   });
 });

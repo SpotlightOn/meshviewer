@@ -37,6 +37,8 @@
     "info": "Dateiinformationen",
     "rotateLeft": "Links drehen (verlustfrei)",
     "rotateRight": "Rechts drehen (verlustfrei)",
+    "flipHorizontal": "Horizontal spiegeln (verlustfrei)",
+    "flipVertical": "Vertikal spiegeln (verlustfrei)",
     "fullscreen": "Vollbild",
     "fullscreenExit": "Vollbild beenden",
     "crop": "Zuschneiden (verlustfrei)",
@@ -227,6 +229,8 @@
     "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:",
     "rotateFailed": "Fehler beim Drehen der JPEG-Datei:",
     "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
+    "flipFailed": "Fehler beim Spiegeln der JPEG-Datei:",
+    "flipImperfect": "Gespiegelt, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
     "cropFailed": "Fehler beim Zuschneiden der JPEG-Datei:"
   }
 }

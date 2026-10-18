@@ -100,12 +100,12 @@ In fullscreen the header and the status bar hide; moving the mouse reveals the
 exit button, which fades again after a moment. `Esc` leaves the fullscreen
 first, a second `Esc` closes the large view.
 
-## Rotate and crop (JPEG)
+## Rotate, flip and crop (JPEG)
 
-The rotate and crop buttons appear in the header while a `.jpg`/`.jpeg` file is
-shown. Both run losslessly through the bundled jpegtran WebAssembly module:
-rotation rewrites the file in place, the crop is written next to it as
-`<name>-crop-<n>.jpg` and the source stays untouched.
+The rotate, flip and crop buttons appear in the header while a `.jpg`/`.jpeg`
+file is shown. All of them run losslessly through the bundled jpegtran
+WebAssembly module: rotation and flip rewrite the file in place, the crop is
+written next to it as `<name>-crop-<n>.jpg` and the source stays untouched.
 
 | Input | Action |
 | --- | --- |

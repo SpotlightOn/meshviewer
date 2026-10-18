@@ -1,7 +1,7 @@
 /**
- * Pure geometry for the lossless JPEG crop: the iMCU grid of an image, snapping
- * a selection onto it and mapping the selection from the displayed image back
- * to the stored pixels.
+ * Pure geometry for the lossless JPEG tools: the iMCU grid of an image,
+ * snapping a selection onto it and mapping what is picked on the displayed
+ * image (the crop selection, the flip axis) back to the stored pixels.
  */
 
 import { readJpegFrame } from "./jpeg-frame.js";
@@ -88,6 +88,22 @@ function displaySize(stored, orientation) {
  */
 function displayGrid(imcu, orientation) {
   return swapsAxes(orientation) ? { width: imcu.height, height: imcu.width } : { ...imcu };
+}
+
+/**
+ * Maps a flip axis picked on the displayed image back to the stored pixels.
+ * The orientations that turn the image by 90 or 270 degrees turn the mirror
+ * axes with them, so a horizontal mirror on screen is a vertical mirror in the
+ * file.
+ * @param {string} axis - "horizontal" or "vertical", as picked on the display; any other value passes through unchanged.
+ * @param {number} orientation - EXIF orientation value (1-8).
+ * @returns {string} "horizontal" or "vertical", as the pixels are stored.
+ */
+function orientFlipAxis(axis, orientation) {
+  if (!swapsAxes(orientation)) return axis;
+  if (axis === "horizontal") return "vertical";
+  if (axis === "vertical") return "horizontal";
+  return axis;
 }
 
 /**
@@ -240,6 +256,7 @@ export {
   displaySize,
   imcuSize,
   moveRegion,
+  orientFlipAxis,
   orientRegion,
   regionFromPoints,
   resizeRegion,

@@ -37,6 +37,8 @@
     "info": "File information",
     "rotateLeft": "Rotate left (lossless)",
     "rotateRight": "Rotate right (lossless)",
+    "flipHorizontal": "Flip horizontally (lossless)",
+    "flipVertical": "Flip vertically (lossless)",
     "fullscreen": "Fullscreen",
     "fullscreenExit": "Exit fullscreen",
     "crop": "Crop (lossless)",
@@ -227,6 +229,8 @@
     "trashFailed": "Some files could not be moved to trash:",
     "rotateFailed": "Error rotating the JPEG:",
     "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):",
+    "flipFailed": "Error flipping the JPEG:",
+    "flipImperfect": "Flipped, but the image edges could not be transformed perfectly (edge blocks may be missing):",
     "cropFailed": "Error cropping the JPEG:"
   }
 }
