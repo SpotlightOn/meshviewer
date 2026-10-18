@@ -27,9 +27,9 @@ neighbouring file disagree, follow the rule and fix the file.
 - **Factories** are `createX()` and return an object of closures:
   `createGrid()`, `createLargeView()`, `createContextMenu()`.
 - **IPC registration** is `registerXIpc(ipcMain)`: `registerFsIpc()`,
-  `registerRotateIpc()`, `registerEditorIpc()`.
+  `registerImageIpc()`, `registerEditorIpc()`.
 - **Predicates** are `isX` / `hasX` / `canX`: `isJpeg()`, `isPixmap()`,
-  `hasSelection()`, `canEditJpeg()`.
+  `hasSelection()`, `canEditImage()`.
 - **Accessors** are `getX`: `getFiles()`, `getEntry()`, `getRegion()`.
 - **Event handlers** are named after the event they handle: `onKeydown`,
   `pointerdown`, `pointermove`, `onSelect`, `onSaved`, `onChange`.

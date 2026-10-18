@@ -38,8 +38,8 @@ An Electron app that renders local .glb files as thumbnails using Three.js and G
 - **Large view** — keyboard navigation, previous/next arrows, horizontal swipe, middle-click toggles 100 %/fit, zoom slider 10–800 % with typed values, fit-to-screen and 1:1 buttons, fullscreen, status bar with name, dimensions and size
 - **Slideshow** — fade or slide transition with configurable interval and animation duration, progress line in the header
 - **File information dialog** — all EXIF groups of an image plus basic file information, with the embedded preview shown as an image
-- **Lossless JPEG rotation and flip** — rotate left/right and mirror horizontally/vertically in the large view rewrite `.jpg`/`.jpeg` in place without recompressing; EXIF and the other markers survive, and it runs in-process through the bundled `@chimok/jpegtran-js` WebAssembly module
-- **Lossless JPEG crop** — a crop mode in the large view whose selection snaps to the iMCU grid of the file, so the result is exactly the area that was picked; it is written as `<name>-crop-<n>.jpg` next to the source, which stays untouched
+- **Lossless rotation and flip** — rotate left/right and mirror horizontally/vertically in the large view rewrite `.jpg`/`.jpeg` in place without recompressing (EXIF and the other markers survive) and turn a `.jxl` through its orientation tag with the pixels untouched; it runs in-process through the bundled `@chimok/jpegtran-js` and `@chimok/jxltran-js` WebAssembly modules
+- **Lossless crop** — a crop mode in the large view whose selection snaps to the iMCU grid of a JPEG, so the result is exactly the area that was picked; it is written as `<name>-crop-<n>.jpg`/`.jxl` next to the source, which stays untouched. A JPEG XL crop is a metadata-only canvas resize (animations are excluded)
 - **Path bar** — clickable breadcrumbs, up and home buttons, and a path field for typed or pasted paths
 - **Settings** — color scheme, tile open behavior, thumbnail fit, transparency background, editor command, slideshow, checksum verification
 - **Help** — the full shortcut and gesture reference (`Help → Usage`) and the About window with version and license

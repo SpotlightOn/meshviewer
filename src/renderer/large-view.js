@@ -1,7 +1,7 @@
 import {
+  cropGrid,
   displayGrid,
   displaySize,
-  imcuSize,
   moveRegion,
   orientFlipAxis,
   orientRegion,
@@ -14,6 +14,7 @@ import { createImageView } from "./image-view.js";
 import {
   clampZoomPercent,
   formatSize,
+  isEditableImage,
   isJpeg,
   mimeFor,
   parseZoomPercent,
@@ -242,23 +243,26 @@ export function createLargeView({
   }
 
   /**
-   * Returns whether the shown file supports the lossless JPEG tools: JPEG is the
-   * only supported format, every other file type has no block-based transform.
+   * Returns whether the shown file supports the lossless image tools: JPEG
+   * and JPEG XL are the only formats with a block- or tag-based transform,
+   * every other file type has none.
    * @returns {boolean} true when a rotation, a flip or a crop is possible.
    */
-  function canEditJpeg() {
+  function canEditImage() {
     const file = largeViewState?.file;
-    return Boolean(file) && isJpeg(file.name);
+    return Boolean(file) && isEditableImage(file.name);
   }
 
   /**
-   * Shows the JPEG tools only for JPEG files and disables them while one of
-   * them is running. For every other format the buttons are hidden, so the
-   * toolbar never offers an action the file does not support.
+   * Shows the lossless tools only for transformable files and disables them
+   * while one of them is running or the file is an animation. For every other
+   * format the buttons are hidden, so the toolbar never offers an action the
+   * file does not support.
    */
   function updateToolButtons() {
-    const applicable = canEditJpeg() && largeViewState?.mode !== "equirect";
+    const applicable = canEditImage() && largeViewState?.mode !== "equirect";
     const busy = transforming || cropping;
+    const cropable = applicable && largeViewState?.animated !== true;
     largeRotateLeft.hidden = !applicable;
     largeRotateRight.hidden = !applicable;
     largeFlipHorizontal.hidden = !applicable;
@@ -267,8 +271,8 @@ export function createLargeView({
     largeRotateRight.disabled = !applicable || busy;
     largeFlipHorizontal.disabled = !applicable || busy;
     largeFlipVertical.disabled = !applicable || busy;
-    largeCrop.hidden = !applicable || crop !== null;
-    largeCrop.disabled = !applicable || busy;
+    largeCrop.hidden = !cropable || crop !== null;
+    largeCrop.disabled = !cropable || busy;
     cropTools.hidden = crop === null;
     cropApply.disabled = busy;
     cropReset.disabled = busy;
@@ -276,17 +280,17 @@ export function createLargeView({
   }
 
   /**
-   * Runs a lossless JPEG transform on disk and reloads the file, so the pixels
-   * in the file and the pixels on screen match again. The JPEG tools stay
-   * disabled until the transform finished; a failure only reaches the console
-   * and leaves the file untouched.
+   * Runs a lossless image transform on disk and reloads the file, so the pixels
+   * in the file and the pixels on screen match again. The tools stay disabled
+   * until the transform finished; a failure only reaches the console and leaves
+   * the file untouched.
    * @param {(file: {path: string, size: number, mtimeMs: number}) => Promise<{ok: boolean, size?: number, mtimeMs?: number, perfect?: boolean, code?: string, detail?: string}>} transform - IPC call that rewrites the file.
    * @param {string} failureKey - i18n key of the console message for a failed transform.
    * @param {string} imperfectKey - i18n key of the console message for a transform that could not keep every image edge (edge blocks may be missing).
    * @returns {Promise<void>}
    */
   async function applyLosslessTransform(transform, failureKey, imperfectKey) {
-    if (transforming || cropping || !canEditJpeg()) return;
+    if (transforming || cropping || !canEditImage()) return;
     const state = largeViewState;
     transforming = true;
     updateToolButtons();
@@ -311,33 +315,41 @@ export function createLargeView({
   }
 
   /**
-   * Rotates the shown JPEG losslessly on disk and reloads it.
+   * Rotates the shown image losslessly on disk and reloads it. The angle is
+   * the turn of the displayed picture: a JPEG rotation rearranges its DCT
+   * blocks, a JPEG XL rotation only replaces the orientation tag in the
+   * header, and each backend does its own mapping.
    * @param {number} degrees - Clockwise angle: 90 for a quarter turn to the right, 270 for a quarter turn to the left.
    * @returns {Promise<void>}
    */
   function rotateCurrent(degrees) {
     return applyLosslessTransform(
-      (file) => window.api.rotateJpeg(file.path, degrees),
+      (file) => window.api.rotateImage(file.path, degrees),
       "console.rotateFailed",
       "console.rotateImperfect",
     );
   }
 
   /**
-   * Mirrors the shown JPEG losslessly on disk and reloads it. The axis is the
-   * one the user sees: for the EXIF orientations that turn the image by 90 or
-   * 270 degrees the mirror axes in the file are swapped.
+   * Mirrors the shown image losslessly on disk and reloads it. The axis is the
+   * one the user sees: a JPEG transform runs on the stored pixels, so for the
+   * EXIF orientations that turn the image by 90 or 270 degrees the mirror axes
+   * in the file are swapped first, while a JPEG XL transform composes the axis
+   * with the orientation tag internally.
    * @param {"horizontal"|"vertical"} axis - Flip axis on screen: "horizontal" mirrors left/right, "vertical" mirrors top/bottom.
    * @returns {Promise<void>}
    */
   async function flipCurrent(axis) {
-    if (!canEditJpeg()) return;
+    if (!canEditImage()) return;
     const state = largeViewState;
-    const orientation = await readOrientation(state.file.path);
-    if (largeViewState !== state) return;
-    const storedAxis = orientFlipAxis(axis, orientation);
+    let storedAxis = axis;
+    if (isJpeg(state.file.name)) {
+      const orientation = await readOrientation(state.file.path);
+      if (largeViewState !== state) return;
+      storedAxis = orientFlipAxis(axis, orientation);
+    }
     await applyLosslessTransform(
-      (file) => window.api.flipJpeg(file.path, storedAxis),
+      (file) => window.api.flipImage(file.path, storedAxis),
       "console.flipFailed",
       "console.flipImperfect",
     );
@@ -370,25 +382,38 @@ export function createLargeView({
   }
 
   /**
-   * Starts the crop mode for the shown JPEG. The selection grid is the iMCU of
-   * the file, so the crop never has to move or grow the region that was picked.
+   * Starts the crop mode for the shown image. The selection grid is the iMCU
+   * of a JPEG, so the crop never has to move or grow the region that was
+   * picked, and the pixel grid of a JPEG XL, which accepts any region. The
+   * selection lives in display space: a JPEG maps it onto the stored pixels
+   * before it is sent, a JPEG XL sends it as it is picked.
    * @returns {Promise<void>}
    */
   async function startCrop() {
-    if (crop !== null || !canEditJpeg()) return;
+    if (crop !== null || !canEditImage() || largeViewState?.animated === true) return;
     const state = largeViewState;
-    const orientation = await readOrientation(state.file.path);
-    if (largeViewState !== state) return;
+    const jpeg = isJpeg(state.file.name);
+    let orientation = 1;
+    if (jpeg) {
+      orientation = await readOrientation(state.file.path);
+      if (largeViewState !== state) return;
+    }
 
     const display = state.imageSize;
-    const imcu = imcuSize(state.imageBytes);
+    const grid = cropGrid(state.file.name, state.imageBytes);
     const overlay = createCropOverlay(largeCanvas, {
       getTransform: () => state.imageView.getTransform(),
       getBounds: () => display,
-      getGrid: () => displayGrid(imcu, orientation),
+      getGrid: () => displayGrid(grid, orientation),
       onChange: updateCropReadout,
     });
-    crop = { overlay, orientation, imcu, stored: displaySize(display, orientation) };
+    crop = {
+      overlay,
+      orientation,
+      grid,
+      stored: displaySize(display, orientation),
+      displaySpace: !jpeg,
+    };
     overlay.setRegion({ x: 0, y: 0, width: display.width, height: display.height });
     updateCropReadout();
     updateToolButtons();
@@ -425,11 +450,13 @@ export function createLargeView({
     const displayRegion = crop.overlay.getRegion();
     if (displayRegion === null) return;
 
-    const rect = orientRegion(displayRegion, crop.orientation, crop.stored);
+    const rect = crop.displaySpace
+      ? displayRegion
+      : orientRegion(displayRegion, crop.orientation, crop.stored);
     cropping = true;
     updateToolButtons();
     try {
-      const result = await window.api.cropJpeg(state.file.path, rect);
+      const result = await window.api.cropImage(state.file.path, rect);
       if (!result.ok) {
         console.error(t("console.cropFailed"), state.file.path, result.code, result.detail ?? "");
         return;
@@ -487,7 +514,7 @@ export function createLargeView({
     event.preventDefault();
     const region = crop.overlay.getRegion();
     if (region === null) return true;
-    const grid = displayGrid(crop.imcu, crop.orientation);
+    const grid = displayGrid(crop.grid, crop.orientation);
     const bounds = largeViewState.imageSize;
     const dx = direction[0] * grid.width;
     const dy = direction[1] * grid.height;
@@ -762,6 +789,14 @@ export function createLargeView({
       frame,
       imageEl: img,
     };
+
+    if (isEditableImage(file.name)) {
+      void window.api.imageCapabilities(file.path).then((capabilities) => {
+        if (largeViewState?.token !== token) return;
+        largeViewState.animated = capabilities?.ok === true && capabilities.animated === true;
+        updateToolButtons();
+      });
+    }
   }
 
   /**

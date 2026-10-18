@@ -37,9 +37,10 @@ const { contextBridge, ipcRenderer } = require("electron");
  * @property {(filePath: string) => Promise<string>} openPath - Opens a file with the system handler.
  * @property {() => Promise<string|null>} pickExecutable - Opens a native file dialog to choose an editor executable, or null when canceled.
  * @property {(command: string, filePath: string) => Promise<{ok: boolean, error?: string}>} runEditor - Launches the given editor command on the file.
- * @property {(filePath: string, degrees: number) => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, angle?: number, perfect?: boolean, code?: string, detail?: string}>} rotateJpeg - Rotates a JPEG losslessly in place (90 = clockwise, 180, 270 = counter-clockwise). On success the new file size and modification time are returned; on failure `code` is one of `invalid-angle`, `not-jpeg`, `transform`, `io`.
- * @property {(filePath: string, axis: "horizontal"|"vertical") => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, axis?: string, perfect?: boolean, code?: string, detail?: string}>} flipJpeg - Mirrors a JPEG losslessly in place ("horizontal" = left/right, "vertical" = top/bottom). On success the new file size and modification time are returned; on failure `code` is one of `invalid-axis`, `not-jpeg`, `transform`, `io`.
- * @property {(filePath: string, rect: {x: number, y: number, width: number, height: number}) => Promise<{ok: boolean, path?: string, name?: string, size?: number, mtimeMs?: number, width?: number, height?: number, code?: string, detail?: string}>} cropJpeg - Crops a JPEG losslessly into a new `<name>-crop-<n>.jpg` next to it and leaves the source untouched. On success the path and name of the new file and its dimensions are returned; on failure `code` is one of `invalid-rect`, `not-jpeg`, `bad-crop`, `transform`, `io`.
+ * @property {(filePath: string, degrees: number) => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, angle?: number, perfect?: boolean, code?: string, detail?: string}>} rotateImage - Rotates a JPEG or JPEG XL file losslessly in place (90 = clockwise, 180, 270 = counter-clockwise), routed to the backend of the format. On success the new file size and modification time are returned; on failure `code` is one of `invalid-angle`, `unsupported-format`, `not-jpeg`, `not-jxl`, `transform`, `io`.
+ * @property {(filePath: string, axis: "horizontal"|"vertical") => Promise<{ok: boolean, path?: string, size?: number, mtimeMs?: number, axis?: string, perfect?: boolean, code?: string, detail?: string}>} flipImage - Mirrors a JPEG or JPEG XL file losslessly in place ("horizontal" = left/right, "vertical" = top/bottom), routed to the backend of the format. The axis is the one of the displayed image. On success the new file size and modification time are returned; on failure `code` is one of `invalid-axis`, `unsupported-format`, `not-jpeg`, `not-jxl`, `transform`, `io`.
+ * @property {(filePath: string, rect: {x: number, y: number, width: number, height: number}) => Promise<{ok: boolean, path?: string, name?: string, size?: number, mtimeMs?: number, width?: number, height?: number, code?: string, detail?: string}>} cropImage - Crops a JPEG or JPEG XL file losslessly into a new `<name>-crop-<n>.<ext>` next to it and leaves the source untouched, routed to the backend of the format. The region is in displayed pixels. On success the path and name of the new file and its dimensions are returned; on failure `code` is one of `invalid-rect`, `unsupported-format`, `not-jpeg`, `not-jxl`, `bad-crop`, `animated`, `transform`, `io`.
+ * @property {(filePath: string) => Promise<{ok: boolean, format?: string, animated?: boolean, code?: string, detail?: string}>} imageCapabilities - Reports what a lossless-transformable file supports: its format and whether it is animated, so the renderer can hide the crop tool for animations. Unreadable files fail with `code` instead of throwing.
  * @property {() => Promise<StoredSettings>} getSettings - Returns the current application settings.
  * @property {(settings: StoredSettings) => Promise<StoredSettings>} saveSettings - Persists and returns the normalized settings.
  * @property {(callback: () => void) => () => void} onOpenSettings - Subscribes to the "open settings" menu event; returns an unsubscribe function.
@@ -68,9 +69,10 @@ const api = {
   openPath: (filePath) => ipcRenderer.invoke("shell:openPath", filePath),
   pickExecutable: () => ipcRenderer.invoke("editor:pick"),
   runEditor: (command, filePath) => ipcRenderer.invoke("editor:run", command, filePath),
-  rotateJpeg: (filePath, degrees) => ipcRenderer.invoke("rotate:jpeg", filePath, degrees),
-  flipJpeg: (filePath, axis) => ipcRenderer.invoke("flip:jpeg", filePath, axis),
-  cropJpeg: (filePath, rect) => ipcRenderer.invoke("crop:jpeg", filePath, rect),
+  rotateImage: (filePath, degrees) => ipcRenderer.invoke("rotate:image", filePath, degrees),
+  flipImage: (filePath, axis) => ipcRenderer.invoke("flip:image", filePath, axis),
+  cropImage: (filePath, rect) => ipcRenderer.invoke("crop:image", filePath, rect),
+  imageCapabilities: (filePath) => ipcRenderer.invoke("image:capabilities", filePath),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (settings) => ipcRenderer.invoke("settings:save", settings),
   onOpenSettings: (callback) => {

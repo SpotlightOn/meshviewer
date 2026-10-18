@@ -2,7 +2,7 @@ import { chmod, copyFile, mkdtemp, readFile, rm, stat, writeFile } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { cropJpeg, registerCropIpc } from "../../src/jpeg-crop.js";
+import { cropJpeg } from "../../src/jpeg-crop.js";
 import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
 import { dirEntries } from "./helpers/files.js";
 import { hasJfif } from "./helpers/jpeg.js";
@@ -219,21 +219,5 @@ describe("cropJpeg with the WebAssembly module", () => {
     const result = await cropJpeg(filePath, { x: 0, y: 0, width: 8, height: 8 });
     expect(result).toMatchObject({ ok: false, code: "not-jpeg" });
     expect(await readFile(filePath, "utf8")).toBe("definitely not a jpeg");
-  });
-});
-
-describe("registerCropIpc", () => {
-  it("registers the crop handler", async () => {
-    const handlers = {};
-    const ipcMain = {
-      handle: (channel, handler) => {
-        handlers[channel] = handler;
-      },
-    };
-    registerCropIpc(ipcMain);
-    expect(Object.keys(handlers)).toEqual(["crop:jpeg"]);
-    await expect(
-      handlers["crop:jpeg"](null, join(dir, "photo.txt"), { x: 0, y: 0, width: 8, height: 8 }),
-    ).resolves.toEqual({ ok: false, code: "not-jpeg" });
   });
 });

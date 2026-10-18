@@ -1,24 +1,7 @@
 import fsp from "node:fs/promises";
 import { COPY } from "@chimok/jpegtran-js";
-import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpeg-transform.js";
-
-/**
- * Rotation angles the module can apply (clockwise turns of the stored pixels).
- * @type {Set<number>}
- */
-const ROTATION_ANGLES = new Set([90, 180, 270]);
-
-/**
- * Normalizes a requested rotation angle to one of the supported clockwise
- * turns. Negative values are accepted (`-90` becomes `270`).
- * @param {number} degrees - Requested angle in degrees.
- * @returns {number|null} A multiple of 90° in [0, 360), or null when the angle is not supported.
- */
-function normalizeAngle(degrees) {
-  if (typeof degrees !== "number" || !Number.isFinite(degrees)) return null;
-  const angle = ((Math.trunc(degrees) % 360) + 360) % 360;
-  return ROTATION_ANGLES.has(angle) ? angle : null;
-}
+import { normalizeAngle, writeAtomically } from "./image-transform.js";
+import { loadTransformer, readJpeg, transformFailure } from "./jpeg-transform.js";
 
 /**
  * Rotates JPEG bytes in memory through the @chimok/jpegtran-js API: the module
@@ -91,12 +74,4 @@ async function rotateJpeg(filePath, degrees, options = {}) {
   }
 }
 
-/**
- * Registers the rotation IPC handler on the given ipcMain.
- * @param {{handle: Function}} ipcMain - The Electron ipcMain module.
- */
-function registerRotateIpc(ipcMain) {
-  ipcMain.handle("rotate:jpeg", (_event, filePath, degrees) => rotateJpeg(filePath, degrees));
-}
-
-export { normalizeAngle, registerRotateIpc, rotateJpeg };
+export { rotateJpeg };

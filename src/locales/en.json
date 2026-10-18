@@ -134,7 +134,7 @@
     "cropResize": "Resize the crop selection",
     "cropApply": "Save the crop",
     "cropCancel": "Leave crop mode",
-    "crop": "Crop (JPEG)"
+    "crop": "Crop"
   },
   "mouse": {
     "leftClick": "Left click",
@@ -227,10 +227,10 @@
     "editorLaunchError": "Error launching the editor:",
     "pasteFailed": "Some files could not be copied:",
     "trashFailed": "Some files could not be moved to trash:",
-    "rotateFailed": "Error rotating the JPEG:",
+    "rotateFailed": "Error rotating the image:",
     "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):",
-    "flipFailed": "Error flipping the JPEG:",
+    "flipFailed": "Error flipping the image:",
     "flipImperfect": "Flipped, but the image edges could not be transformed perfectly (edge blocks may be missing):",
-    "cropFailed": "Error cropping the JPEG:"
+    "cropFailed": "Error cropping the image:"
   }
 }

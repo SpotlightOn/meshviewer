@@ -1,24 +1,18 @@
 import path from "node:path";
 import { createRotator, STATUS } from "@chimok/jpegtran-js";
+import { transformFailure as failureOf, readSourceFile } from "./image-transform.js";
+
+/**
+ * JPEG layer of the lossless transforms: the file extensions that count as
+ * JPEG, the WebAssembly transformer singleton and the error mapping that
+ * keeps the `not-jpeg` code for input that is no JPEG.
+ */
 
 /**
  * File extensions that are treated as JPEG input.
  * @type {Set<string>}
  */
 const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
-
-/** Permission bits that are carried over from the source file. */
-const MODE_MASK = 0o7777;
-
-/**
- * Marker inside the name of a temporary file, which also carries a `.tmp`
- * extension so a leftover file is never picked up as a media file.
- * @type {string}
- */
-const TEMP_MARKER = ".meshviewer-jpeg";
-
-/** Sequence number for the temporary file names inside this process. */
-let tempCounter = 0;
 
 /** The loaded transformer, shared by every transform in this process. */
 let transformerPromise = null;
@@ -48,27 +42,14 @@ async function loadTransformer() {
 }
 
 /**
- * Returns the temporary path a transform writes to before the result is moved
- * to its final name. It lives in the same directory as the target, so the move
- * is an atomic rename inside one filesystem.
- * @param {string} targetPath - Absolute path of the final output file.
- * @returns {string} Absolute path of the temporary file.
- */
-function tempPathFor(targetPath) {
-  const name = `${path.basename(targetPath)}.${process.pid}-${tempCounter}${TEMP_MARKER}.tmp`;
-  tempCounter += 1;
-  return path.join(path.dirname(targetPath), name);
-}
-
-/**
- * Maps a failed transform to a result object for the renderer.
+ * Maps a failed transform to a result object for the renderer. jpegtran
+ * reports "not a JPEG" with its own status, which becomes the `not-jpeg` code.
  * @param {Error & {status?: number}} error - Error the transform threw.
  * @returns {{ok: false, code: 'not-jpeg'|'transform', detail: string}} Error result.
  */
 function transformFailure(error) {
-  const detail = (error?.message ?? String(error)).trim();
-  const code = error?.status === STATUS.notJpeg ? "not-jpeg" : "transform";
-  return { ok: false, code, detail };
+  const result = failureOf(error);
+  return error?.status === STATUS.notJpeg ? { ...result, code: "not-jpeg" } : result;
 }
 
 /**
@@ -79,44 +60,9 @@ function transformFailure(error) {
  * @returns {Promise<{ok: true, stat: object, bytes: Uint8Array} | {ok: false, code: 'not-jpeg'|'io', detail?: string}>} File content or an error result.
  */
 async function readJpeg(filePath, fileSystem) {
-  if (!isJpegPath(filePath)) return { ok: false, code: "not-jpeg" };
-
-  let stat;
-  try {
-    stat = await fileSystem.stat(filePath);
-  } catch (error) {
-    return { ok: false, code: "io", detail: error?.message ?? String(error) };
-  }
-  if (!stat.isFile()) return { ok: false, code: "io", detail: "not a regular file" };
-
-  try {
-    const bytes = await fileSystem.readFile(filePath);
-    return { ok: true, stat, bytes: new Uint8Array(bytes) };
-  } catch (error) {
-    return { ok: false, code: "io", detail: error?.message ?? String(error) };
-  }
+  const input = await readSourceFile(filePath, JPEG_EXTENSIONS, fileSystem);
+  if (input.ok || input.code !== "unsupported-format") return input;
+  return { ok: false, code: "not-jpeg" };
 }
 
-/**
- * Writes data to a path atomically: the bytes go to a temporary file in the
- * same directory, receive the given permission bits and are then renamed onto
- * the target, so a half-written file is never visible under its final name.
- * @param {object} fileSystem - fs/promises-compatible module.
- * @param {string} targetPath - Absolute path of the output file.
- * @param {Uint8Array} data - Bytes to write.
- * @param {number} mode - Permission bits of the source file.
- * @returns {Promise<void>} Resolves once the file is in place.
- */
-async function writeAtomically(fileSystem, targetPath, data, mode) {
-  const tempPath = tempPathFor(targetPath);
-  try {
-    await fileSystem.writeFile(tempPath, data);
-    await fileSystem.chmod(tempPath, mode & MODE_MASK).catch(() => {});
-    await fileSystem.rename(tempPath, targetPath);
-  } catch (error) {
-    await fileSystem.rm(tempPath, { force: true }).catch(() => {});
-    throw error;
-  }
-}
-
-export { loadTransformer, readJpeg, transformFailure, writeAtomically };
+export { isJpegPath, loadTransformer, readJpeg, transformFailure };

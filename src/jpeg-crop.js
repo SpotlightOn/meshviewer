@@ -1,25 +1,8 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { COPY, STATUS } from "@chimok/jpegtran-js";
-import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpeg-transform.js";
-
-/** Highest number appended to a crop file name before giving up. */
-const MAX_CROP_SUFFIX = 999;
-
-/**
- * Validates a crop rectangle coming from the renderer. The values are pixel
- * counts in the stored image, so they have to be non-negative integers and the
- * region has to have a size.
- * @param {object} rect - Requested region `{x, y, width, height}`.
- * @returns {{x: number, y: number, width: number, height: number}|null} Normalized region, or null when it is not usable.
- */
-function normalizeRect(rect) {
-  if (rect === null || typeof rect !== "object") return null;
-  const { x, y, width, height } = rect;
-  if (![x, y, width, height].every((value) => Number.isInteger(value) && value >= 0)) return null;
-  if (width === 0 || height === 0) return null;
-  return { x, y, width, height };
-}
+import { cropPathFor, normalizeRect, writeAtomically } from "./image-transform.js";
+import { loadTransformer, readJpeg, transformFailure } from "./jpeg-transform.js";
 
 /**
  * Crops JPEG bytes in memory through the @chimok/jpegtran-js API. Only whole
@@ -39,28 +22,6 @@ async function cropBytes(bytes, rect) {
   const transformer = await loadTransformer();
   const { data, width, height } = transformer.crop(bytes, rect, { copy: COPY.all });
   return { data, width, height };
-}
-
-/**
- * Picks the output path of a crop: `<basename>-crop-<n><ext>` next to the
- * source, using the first number that is still free.
- * @param {object} fileSystem - fs/promises-compatible module.
- * @param {string} filePath - Absolute path of the source file.
- * @returns {Promise<string>} Absolute path that is not in use yet.
- */
-async function cropPathFor(fileSystem, filePath) {
-  const dir = path.dirname(filePath);
-  const extension = path.extname(filePath);
-  const base = path.basename(filePath, extension);
-  for (let number = 1; number <= MAX_CROP_SUFFIX; number += 1) {
-    const candidate = path.join(dir, `${base}-crop-${number}${extension}`);
-    try {
-      await fileSystem.access(candidate);
-    } catch {
-      return candidate;
-    }
-  }
-  throw new Error("no free name for the cropped file");
 }
 
 /**
@@ -120,12 +81,4 @@ async function cropJpeg(filePath, rect, options = {}) {
   }
 }
 
-/**
- * Registers the crop IPC handler on the given ipcMain.
- * @param {{handle: Function}} ipcMain - The Electron ipcMain module.
- */
-function registerCropIpc(ipcMain) {
-  ipcMain.handle("crop:jpeg", (_event, filePath, rect) => cropJpeg(filePath, rect));
-}
-
-export { cropJpeg, registerCropIpc };
+export { cropJpeg };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  cropGrid,
   displayGrid,
   displaySize,
   imcuSize,
@@ -31,6 +32,24 @@ describe("imcuSize", () => {
       width: 8,
       height: 8,
     });
+  });
+});
+
+describe("cropGrid", () => {
+  it("reads the iMCU of a JPEG", () => {
+    const bytes = Uint8Array.from([
+      0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x10, 0x03, 0x01, 0x22, 0x00,
+      0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xff, 0xd9,
+    ]);
+    expect(cropGrid("photo.jpg", bytes)).toEqual({ width: 16, height: 16 });
+    expect(cropGrid("photo.jpeg", bytes)).toEqual({ width: 16, height: 16 });
+    expect(cropGrid("PHOTO.JPG", bytes)).toEqual({ width: 16, height: 16 });
+  });
+
+  it("uses the pixel grid for a JPEG XL and any other file", () => {
+    expect(cropGrid("photo.jxl", new Uint8Array([]))).toEqual({ width: 1, height: 1 });
+    expect(cropGrid("photo.png", new Uint8Array([]))).toEqual({ width: 1, height: 1 });
+    expect(cropGrid("photo", new Uint8Array([]))).toEqual({ width: 1, height: 1 });
   });
 });
 

@@ -100,12 +100,19 @@ In fullscreen the header and the status bar hide; moving the mouse reveals the
 exit button, which fades again after a moment. `Esc` leaves the fullscreen
 first, a second `Esc` closes the large view.
 
-## Rotate, flip and crop (JPEG)
+## Rotate, flip and crop (JPEG and JPEG XL)
 
-The rotate, flip and crop buttons appear in the header while a `.jpg`/`.jpeg`
-file is shown. All of them run losslessly through the bundled jpegtran
-WebAssembly module: rotation and flip rewrite the file in place, the crop is
-written next to it as `<name>-crop-<n>.jpg` and the source stays untouched.
+The rotate, flip and crop buttons appear in the header while a `.jpg`/`.jpeg` or
+`.jxl` file is shown. All of them run losslessly through the bundled jpegtran and
+jxltran WebAssembly modules: rotation and flip rewrite the file in place, the
+crop is written next to it as `<name>-crop-<n>.jpg`/`.jxl` and the source stays
+untouched.
+
+For a JPEG, rotation and flip rearrange the DCT blocks and the crop is a real
+region of the image. For a JPEG XL, rotation and flip only replace the
+orientation tag in the header — the pixels never move — and a crop is a
+metadata-only canvas resize. Animations can be rotated and flipped that way, but
+the crop button is hidden for them.
 
 | Input | Action |
 | --- | --- |
@@ -118,5 +125,5 @@ written next to it as `<name>-crop-<n>.jpg` and the source stays untouched.
 | `Enter` | Write the crop as a new file |
 | `Esc` | Leave the crop mode |
 
-The selection snaps to the iMCU grid of the file, so the result is exactly the
-area that was picked.
+The selection snaps to the iMCU grid of a JPEG, so the result is exactly the
+area that was picked; a JPEG XL accepts any region.
