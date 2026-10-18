@@ -26,6 +26,7 @@ they cannot be ESM.
 │ src/fs-ipc.js       filesystem IPC handlers (fs:*)                           │
 │ src/thumbnail-cache.js  thumbnail cache (sharp, freedesktop, EXIF)           │
 │ src/jpeg-rotate.js      lossless JPEG rotation via @chimok/jpegtran-js       │
+│ src/jpeg-flip.js        lossless JPEG flip via @chimok/jpegtran-js           │
 │ src/jpeg-crop.js        lossless JPEG crop via @chimok/jpegtran-js           │
 │ src/settings-store.js  settings.json in userData (settings:*)                │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
@@ -60,6 +61,7 @@ they cannot be ESM.
 | `src/thumbnail-cache.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
 | `src/jpeg-transform.js` | Shared JPEG plumbing: lazy `@chimok/jpegtran-js` transformer, reading a file with its stat, atomic writes and error mapping |
 | `src/jpeg-rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory, writes to a temp file, keeps the mode and renames over the original; registers `rotate:jpeg` |
+| `src/jpeg-flip.js` | Lossless in-place JPEG flip: mirrors the bytes in memory on the horizontal or vertical axis, writes to a temp file, keeps the mode and renames over the original; registers `flip:jpeg` |
 | `src/jpeg-crop.js` | Lossless JPEG crop: writes the selected region to a new `<name>-crop-<n>.jpg` next to the source and leaves it untouched; registers `crop:jpeg` |
 | `src/settings-store.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
@@ -68,7 +70,7 @@ they cannot be ESM.
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
 | `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
-| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate and crop; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate, flip and crop; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
 | `src/renderer/image-view.js` | Interactive image large view: zoom, pan, drag-to-throw navigation, fit/100% toggles; same role for images as `3d/glb-view.js` and `equirectangular/pano-view.js` for GLB and panoramas |
 | `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
 | `src/renderer/3d/glb-view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
@@ -81,13 +83,14 @@ they cannot be ESM.
 | `src/renderer/i18n.js` | i18next init, `t()`, `data-i18n` attribute translation |
 | `src/renderer/styles.css` | Stylesheet entry point: `@import`s the CSS modules in cascade order |
 | `src/renderer/styles/<block>.css` | One CSS module (BEM block) per UI area, named after its block; see AGENTS.md, "CSS modules" |
-| `src/renderer/crop-geometry.js` | Pure crop geometry: snapping onto the iMCU grid, moving/resizing the selection and mapping it through the EXIF orientation |
+| `src/renderer/crop-geometry.js` | Pure geometry of the lossless JPEG tools: snapping the crop onto the iMCU grid, moving/resizing the selection and mapping what is picked on screen (the selection, the flip axis) through the EXIF orientation |
 | `src/renderer/jpeg-frame.js` | Reads the frame header of a JPEG (pixel dimensions and iMCU grid); shared by the crop geometry and the transform tests |
 | `src/renderer/crop-overlay.js` | Crop selection overlay: darkened layer, handles, pointer gestures; projects the selection through the image zoom and pan |
 | `src/renderer/utils.js` | Pure helpers: file size formatting, MIME detection, zoom, EXIF rows, `ArrayBuffer` conversion |
 
 Pure, Electron-independent logic lives in `fs-ipc.js`, `settings-store.js`,
-`thumbnail-cache.js`, `jpeg-transform.js`, `jpeg-rotate.js`, `jpeg-crop.js`,
+`thumbnail-cache.js`, `jpeg-transform.js`, `jpeg-rotate.js`, `jpeg-flip.js`,
+`jpeg-crop.js`,
 `renderer/crop-geometry.js`, `renderer/jpeg-frame.js`, `renderer/utils.js` and the
 `renderer/three/` + `renderer/3d/` + `renderer/equirectangular/` helper modules
 so it can be unit-tested without launching the app.
@@ -112,6 +115,7 @@ resize observer and the render-loop/dispose lifecycle for both.
 | `fs:getThumbnail` | renderer → main | Cached/generated JPEG data URL, or `null` |
 | `shell:openPath` | renderer → main | Open a file with the system handler |
 | `rotate:jpeg` | renderer → main | Rotate a JPEG losslessly in place (`@chimok/jpegtran-js`); returns the new size/mtime or an error code |
+| `flip:jpeg` | renderer → main | Mirror a JPEG losslessly in place (`@chimok/jpegtran-js`); returns the new size/mtime or an error code |
 | `crop:jpeg` | renderer → main | Crop a JPEG losslessly into a new file next to it; returns the new path and dimensions or an error code |
 | `settings:get` / `settings:save` | renderer → main | Read/validate/persist settings |
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |

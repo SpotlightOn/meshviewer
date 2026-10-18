@@ -515,7 +515,7 @@ test("trashes a folder from the tree context menu after confirmation", async () 
   }
 });
 
-test("rotate buttons are shown for JPEG files and hidden for other images", async () => {
+test("rotate and flip buttons are shown for JPEG files and hidden for other images", async () => {
   const { electronApp, page } = await launchApp();
   const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-rotate-"));
   const background = { r: 51, g: 102, b: 153 };
@@ -542,12 +542,18 @@ test("rotate buttons are shown for JPEG files and hidden for other images", asyn
     await expect(page.locator("#large-rotate-left")).toBeEnabled();
     await expect(page.locator("#large-rotate-right")).toBeVisible();
     await expect(page.locator("#large-rotate-right")).toBeEnabled();
+    await expect(page.locator("#large-flip-horizontal")).toBeVisible();
+    await expect(page.locator("#large-flip-horizontal")).toBeEnabled();
+    await expect(page.locator("#large-flip-vertical")).toBeVisible();
+    await expect(page.locator("#large-flip-vertical")).toBeEnabled();
 
     await page.locator("#large-back").click();
     await page.locator(".grid__card", { hasText: "photo.png" }).dblclick();
     await expect(page.locator("#large-view")).toBeVisible();
     await expect(page.locator("#large-rotate-left")).toBeHidden();
     await expect(page.locator("#large-rotate-right")).toBeHidden();
+    await expect(page.locator("#large-flip-horizontal")).toBeHidden();
+    await expect(page.locator("#large-flip-vertical")).toBeHidden();
   } finally {
     await electronApp.close();
     await rm(dir, { recursive: true, force: true });

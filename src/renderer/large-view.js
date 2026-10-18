@@ -3,6 +3,7 @@ import {
   displaySize,
   imcuSize,
   moveRegion,
+  orientFlipAxis,
   orientRegion,
   resizeRegion,
 } from "./crop-geometry.js";
@@ -26,7 +27,7 @@ import {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeRotateLeft: HTMLButtonElement, largeRotateRight: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeRotateLeft: HTMLButtonElement, largeRotateRight: HTMLButtonElement, largeFlipHorizontal: HTMLButtonElement, largeFlipVertical: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
@@ -52,6 +53,8 @@ export function createLargeView({
     infoButton,
     largeRotateLeft,
     largeRotateRight,
+    largeFlipHorizontal,
+    largeFlipVertical,
     largeSlideshow,
     largeEquirect,
     largeActual,
@@ -74,7 +77,7 @@ export function createLargeView({
   let fullscreen = false;
   let fullscreenExitVisible = false;
   let fullscreenIdleTimer = null;
-  let rotating = false;
+  let transforming = false;
   let crop = null;
   let cropping = false;
 
@@ -241,7 +244,7 @@ export function createLargeView({
   /**
    * Returns whether the shown file supports the lossless JPEG tools: JPEG is the
    * only supported format, every other file type has no block-based transform.
-   * @returns {boolean} true when a rotation or a crop is possible.
+   * @returns {boolean} true when a rotation, a flip or a crop is possible.
    */
   function canEditJpeg() {
     const file = largeViewState?.file;
@@ -255,11 +258,15 @@ export function createLargeView({
    */
   function updateToolButtons() {
     const applicable = canEditJpeg() && largeViewState?.mode !== "equirect";
-    const busy = rotating || cropping;
+    const busy = transforming || cropping;
     largeRotateLeft.hidden = !applicable;
     largeRotateRight.hidden = !applicable;
+    largeFlipHorizontal.hidden = !applicable;
+    largeFlipVertical.hidden = !applicable;
     largeRotateLeft.disabled = !applicable || busy;
     largeRotateRight.disabled = !applicable || busy;
+    largeFlipHorizontal.disabled = !applicable || busy;
+    largeFlipVertical.disabled = !applicable || busy;
     largeCrop.hidden = !applicable || crop !== null;
     largeCrop.disabled = !applicable || busy;
     cropTools.hidden = crop === null;
@@ -269,26 +276,28 @@ export function createLargeView({
   }
 
   /**
-   * Rotates the shown JPEG losslessly on disk and reloads it, so the pixels in
-   * the file and the pixels on screen match again. The buttons stay disabled
-   * until the tool finished; a failure only reaches the console and leaves the
-   * file untouched.
-   * @param {number} degrees - Clockwise angle: 90 for a quarter turn to the right, 270 for a quarter turn to the left.
+   * Runs a lossless JPEG transform on disk and reloads the file, so the pixels
+   * in the file and the pixels on screen match again. The JPEG tools stay
+   * disabled until the transform finished; a failure only reaches the console
+   * and leaves the file untouched.
+   * @param {(file: {path: string, size: number, mtimeMs: number}) => Promise<{ok: boolean, size?: number, mtimeMs?: number, perfect?: boolean, code?: string, detail?: string}>} transform - IPC call that rewrites the file.
+   * @param {string} failureKey - i18n key of the console message for a failed transform.
+   * @param {string} imperfectKey - i18n key of the console message for a transform that could not keep every image edge (edge blocks may be missing).
    * @returns {Promise<void>}
    */
-  async function rotateCurrent(degrees) {
-    if (rotating || !canEditJpeg()) return;
+  async function applyLosslessTransform(transform, failureKey, imperfectKey) {
+    if (transforming || cropping || !canEditJpeg()) return;
     const state = largeViewState;
-    rotating = true;
+    transforming = true;
     updateToolButtons();
     try {
-      const result = await window.api.rotateJpeg(state.file.path, degrees);
+      const result = await transform(state.file);
       if (!result.ok) {
-        console.error(t("console.rotateFailed"), state.file.path, result.code, result.detail ?? "");
+        console.error(t(failureKey), state.file.path, result.code, result.detail ?? "");
         return;
       }
       if (result.perfect === false) {
-        console.warn(t("console.rotateImperfect"), state.file.path);
+        console.warn(t(imperfectKey), state.file.path);
       }
       state.file.size = result.size;
       state.file.mtimeMs = result.mtimeMs;
@@ -296,14 +305,48 @@ export function createLargeView({
       if (largeViewState !== state) return;
       await show(state.file, 0);
     } finally {
-      rotating = false;
+      transforming = false;
       updateToolButtons();
     }
   }
 
   /**
+   * Rotates the shown JPEG losslessly on disk and reloads it.
+   * @param {number} degrees - Clockwise angle: 90 for a quarter turn to the right, 270 for a quarter turn to the left.
+   * @returns {Promise<void>}
+   */
+  function rotateCurrent(degrees) {
+    return applyLosslessTransform(
+      (file) => window.api.rotateJpeg(file.path, degrees),
+      "console.rotateFailed",
+      "console.rotateImperfect",
+    );
+  }
+
+  /**
+   * Mirrors the shown JPEG losslessly on disk and reloads it. The axis is the
+   * one the user sees: for the EXIF orientations that turn the image by 90 or
+   * 270 degrees the mirror axes in the file are swapped.
+   * @param {"horizontal"|"vertical"} axis - Flip axis on screen: "horizontal" mirrors left/right, "vertical" mirrors top/bottom.
+   * @returns {Promise<void>}
+   */
+  async function flipCurrent(axis) {
+    if (!canEditJpeg()) return;
+    const state = largeViewState;
+    const orientation = await readOrientation(state.file.path);
+    if (largeViewState !== state) return;
+    const storedAxis = orientFlipAxis(axis, orientation);
+    await applyLosslessTransform(
+      (file) => window.api.flipJpeg(file.path, storedAxis),
+      "console.flipFailed",
+      "console.flipImperfect",
+    );
+  }
+
+  /**
    * Reads the EXIF orientation of an image, so a selection made on the rotated
-   * display can be mapped back to the stored pixels.
+   * display and a flip axis picked there can be mapped back to the stored
+   * pixels.
    * @param {string} filePath - Absolute path of the image.
    * @returns {Promise<number>} Orientation between 1 and 8, 1 when unknown.
    */
@@ -860,6 +903,8 @@ export function createLargeView({
   largeFit.addEventListener("click", fitToScreen);
   largeRotateLeft.addEventListener("click", () => void rotateCurrent(270));
   largeRotateRight.addEventListener("click", () => void rotateCurrent(90));
+  largeFlipHorizontal.addEventListener("click", () => void flipCurrent("horizontal"));
+  largeFlipVertical.addEventListener("click", () => void flipCurrent("vertical"));
   largeCrop.addEventListener("click", () => void startCrop());
   cropApply.addEventListener("click", () => void applyCrop());
   cropReset.addEventListener("click", resetCrop);

@@ -5,6 +5,7 @@ import { registerDialogIpc, showAbout, showUsage } from "./dialogs.js";
 import { registerEditorIpc } from "./editor-ipc.js";
 import { registerFsIpc } from "./fs-ipc.js";
 import { registerCropIpc } from "./jpeg-crop.js";
+import { registerFlipIpc } from "./jpeg-flip.js";
 import { registerRotateIpc } from "./jpeg-rotate.js";
 import i18nDe from "./locales/de.json" with { type: "json" };
 import i18nEn from "./locales/en.json" with { type: "json" };
@@ -52,6 +53,7 @@ app.whenReady().then(async () => {
   });
   registerEditorIpc(ipcMain, dialog);
   registerRotateIpc(ipcMain);
+  registerFlipIpc(ipcMain);
   registerCropIpc(ipcMain);
   registerDialogIpc(ipcMain);
   registerWindowIpc(ipcMain);
