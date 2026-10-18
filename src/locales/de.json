@@ -134,7 +134,7 @@
     "cropResize": "Zuschnitt skalieren",
     "cropApply": "Zuschnitt speichern",
     "cropCancel": "Zuschneiden verlassen",
-    "crop": "Zuschneiden (JPEG)"
+    "crop": "Zuschneiden"
   },
   "mouse": {
     "leftClick": "Linksklick",
@@ -227,10 +227,10 @@
     "editorLaunchError": "Fehler beim Starten des Editors:",
     "pasteFailed": "Einige Dateien konnten nicht kopiert werden:",
     "trashFailed": "Einige Dateien konnten nicht in den Papierkorb verschoben werden:",
-    "rotateFailed": "Fehler beim Drehen der JPEG-Datei:",
+    "rotateFailed": "Fehler beim Drehen der Datei:",
     "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
-    "flipFailed": "Fehler beim Spiegeln der JPEG-Datei:",
+    "flipFailed": "Fehler beim Spiegeln der Datei:",
     "flipImperfect": "Gespiegelt, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
-    "cropFailed": "Fehler beim Zuschneiden der JPEG-Datei:"
+    "cropFailed": "Fehler beim Zuschneiden der Datei:"
   }
 }

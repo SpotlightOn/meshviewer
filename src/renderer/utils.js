@@ -48,13 +48,31 @@ function extensionOf(filename) {
 }
 
 /**
- * Whether a file name is a JPEG, the only format that can be rotated
- * losslessly on disk.
+ * Whether a file name is a JPEG.
  * @param {string} filename - File name.
  * @returns {boolean} true for `.jpg` and `.jpeg`.
  */
 function isJpeg(filename) {
   return extensionOf(filename) === ".jpg" || extensionOf(filename) === ".jpeg";
+}
+
+/**
+ * Whether a file name is a JPEG XL.
+ * @param {string} filename - File name.
+ * @returns {boolean} true for `.jxl`.
+ */
+function isJxl(filename) {
+  return extensionOf(filename) === ".jxl";
+}
+
+/**
+ * Whether a file name is one of the formats the lossless image tools
+ * (rotate, flip, crop) support.
+ * @param {string} filename - File name.
+ * @returns {boolean} true for JPEG and JPEG XL.
+ */
+function isEditableImage(filename) {
+  return isJpeg(filename) || isJxl(filename);
 }
 
 /**
@@ -415,7 +433,9 @@ export {
   formatSize,
   IMAGE_MIME,
   imageDataUrl,
+  isEditableImage,
   isJpeg,
+  isJxl,
   MAX_ZOOM,
   MAX_ZOOM_PERCENT,
   MIN_ZOOM,

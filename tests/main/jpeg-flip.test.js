@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { flipJpeg, normalizeAxis, registerFlipIpc } from "../../src/jpeg-flip.js";
+import { normalizeAxis } from "../../src/image-transform.js";
+import { flipJpeg } from "../../src/jpeg-flip.js";
 import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
 import { dirEntries } from "./helpers/files.js";
 import { hasJfif } from "./helpers/jpeg.js";
@@ -204,20 +205,5 @@ describe("flipJpeg with the WebAssembly module", () => {
     const result = await flipJpeg(filePath, "horizontal");
     expect(result).toMatchObject({ ok: false, code: "not-jpeg" });
     expect(await readFile(filePath, "utf8")).toBe("definitely not a jpeg");
-  });
-});
-
-describe("registerFlipIpc", () => {
-  it("registers the flip handler", async () => {
-    const handlers = {};
-    const ipcMain = {
-      handle: (channel, handler) => {
-        handlers[channel] = handler;
-      },
-    };
-    registerFlipIpc(ipcMain);
-    expect(Object.keys(handlers)).toEqual(["flip:jpeg"]);
-    const result = await handlers["flip:jpeg"](null, join(dir, "photo.txt"), "horizontal");
-    expect(result).toEqual({ ok: false, code: "not-jpeg" });
   });
 });

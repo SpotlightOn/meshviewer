@@ -2,7 +2,8 @@ import { chmod, copyFile, mkdtemp, readFile, rm, stat, writeFile } from "node:fs
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { normalizeAngle, registerRotateIpc, rotateJpeg } from "../../src/jpeg-rotate.js";
+import { normalizeAngle } from "../../src/image-transform.js";
+import { rotateJpeg } from "../../src/jpeg-rotate.js";
 import { readJpegFrame } from "../../src/renderer/jpeg-frame.js";
 import { dirEntries } from "./helpers/files.js";
 import { hasJfif } from "./helpers/jpeg.js";
@@ -192,22 +193,5 @@ describe("rotateJpeg with the WebAssembly module", () => {
     const result = await rotateJpeg(filePath, 90);
     expect(result).toMatchObject({ ok: false, code: "not-jpeg" });
     expect(await readFile(filePath, "utf8")).toBe("definitely not a jpeg");
-  });
-});
-
-describe("registerRotateIpc", () => {
-  it("registers the rotation handler", async () => {
-    const handlers = {};
-    const ipcMain = {
-      handle: (channel, handler) => {
-        handlers[channel] = handler;
-      },
-    };
-    registerRotateIpc(ipcMain);
-    expect(Object.keys(handlers)).toEqual(["rotate:jpeg"]);
-    await expect(handlers["rotate:jpeg"](null, join(dir, "photo.txt"), 90)).resolves.toEqual({
-      ok: false,
-      code: "not-jpeg",
-    });
   });
 });

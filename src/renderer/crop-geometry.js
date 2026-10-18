@@ -1,10 +1,13 @@
 /**
- * Pure geometry for the lossless JPEG tools: the iMCU grid of an image,
- * snapping a selection onto it and mapping what is picked on the displayed
- * image (the crop selection, the flip axis) back to the stored pixels.
+ * Pure geometry for the lossless image tools: the transform grid of a file
+ * (the iMCU of a JPEG, the pixel grid of a JPEG XL), snapping a selection onto
+ * it and mapping what is picked on the displayed image (the crop selection,
+ * the flip axis) back to the stored pixels of a JPEG. JPEG XL crops work
+ * directly in display space, so they need no mapping.
  */
 
 import { readJpegFrame } from "./jpeg-frame.js";
+import { isJpeg } from "./utils.js";
 
 /** Grid assumed when the frame header cannot be read. */
 const DEFAULT_IMCU = Object.freeze({ width: 8, height: 8 });
@@ -58,6 +61,19 @@ function roundTo(value, step) {
  */
 function imcuSize(bytes) {
   return readJpegFrame(bytes)?.imcu ?? { ...DEFAULT_IMCU };
+}
+
+/**
+ * Reads the grid the crop selection of a file snaps to: the iMCU of a JPEG,
+ * the only grid a lossless JPEG crop can start on, and the pixel grid for
+ * every other transformable format - a JPEG XL crop accepts any region, so
+ * the selection can move pixel by pixel.
+ * @param {string} filename - File name; decides which header is read.
+ * @param {Uint8Array} bytes - Content of the file.
+ * @returns {{width: number, height: number}} Grid steps in pixels.
+ */
+function cropGrid(filename, bytes) {
+  return isJpeg(filename) ? imcuSize(bytes) : { width: 1, height: 1 };
 }
 
 /**
@@ -252,6 +268,7 @@ function resizeRegion(region, handle, dx, dy, grid, bounds) {
 }
 
 export {
+  cropGrid,
   displayGrid,
   displaySize,
   imcuSize,

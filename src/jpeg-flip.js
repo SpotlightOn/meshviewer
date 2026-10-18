@@ -1,12 +1,7 @@
 import fsp from "node:fs/promises";
 import { COPY, TRANSFORM } from "@chimok/jpegtran-js";
-import { loadTransformer, readJpeg, transformFailure, writeAtomically } from "./jpeg-transform.js";
-
-/**
- * Flip axes the module can apply.
- * @type {Set<string>}
- */
-const FLIP_AXES = new Set(["horizontal", "vertical"]);
+import { normalizeAxis, writeAtomically } from "./image-transform.js";
+import { loadTransformer, readJpeg, transformFailure } from "./jpeg-transform.js";
 
 /**
  * The jpegtran transform behind every supported flip axis.
@@ -16,15 +11,6 @@ const FLIP_TRANSFORMS = {
   horizontal: TRANSFORM.flipHorizontal,
   vertical: TRANSFORM.flipVertical,
 };
-
-/**
- * Normalizes a requested flip axis to one of the supported ones.
- * @param {unknown} axis - Requested axis ("horizontal" mirrors left/right, "vertical" top/bottom).
- * @returns {string|null} The axis, or null when it is not supported.
- */
-function normalizeAxis(axis) {
-  return typeof axis === "string" && FLIP_AXES.has(axis) ? axis : null;
-}
 
 /**
  * Flips JPEG bytes in memory through the @chimok/jpegtran-js API: the module
@@ -99,12 +85,4 @@ async function flipJpeg(filePath, axis, options = {}) {
   }
 }
 
-/**
- * Registers the flip IPC handler on the given ipcMain.
- * @param {{handle: Function}} ipcMain - The Electron ipcMain module.
- */
-function registerFlipIpc(ipcMain) {
-  ipcMain.handle("flip:jpeg", (_event, filePath, axis) => flipJpeg(filePath, axis));
-}
-
-export { flipJpeg, normalizeAxis, registerFlipIpc };
+export { flipJpeg };
