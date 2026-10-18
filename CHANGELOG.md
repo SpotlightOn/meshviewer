@@ -4,6 +4,8 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-18
+
 ### Added
 - Lossless JPEG flip: flip-horizontal / flip-vertical buttons in the large view mirror `.jpg`/`.jpeg` in place through the bundled `@chimok/jpegtran-js` WebAssembly module (no recompression, EXIF preserved)
 - Lossless JPEG XL rotate, flip and crop: the rotate/flip buttons turn `.jxl` files in place by replacing the orientation tag (pixels untouched, works for animations too) and the crop mode writes `<name>-crop-<n>.jxl` next to the source; both go through the bundled `@chimok/jxltran-js` WebAssembly module

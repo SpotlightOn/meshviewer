@@ -2,7 +2,7 @@
   "name": "meshviewer",
   "productName": "MeshViewer",
   "desktopName": "meshviewer.desktop",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "A classic photo viewer that renders thumbnails of local *.glb files and 360° images using three.js",
   "main": "src/main.js",
   "type": "module",
