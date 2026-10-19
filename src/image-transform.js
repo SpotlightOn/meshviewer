@@ -31,8 +31,8 @@ const ROTATION_ANGLES = new Set([90, 180, 270]);
  */
 const FLIP_AXES = new Set(["horizontal", "vertical"]);
 
-/** Highest number appended to a crop file name before giving up. */
-const MAX_CROP_SUFFIX = 999;
+/** Highest number appended to a transform output name before giving up. */
+const MAX_OUTPUT_SUFFIX = 999;
 
 /**
  * Normalizes a requested rotation angle to one of the supported clockwise
@@ -145,25 +145,49 @@ async function writeAtomically(fileSystem, targetPath, data, mode) {
 }
 
 /**
- * Picks the output path of a crop: `<basename>-crop-<n><ext>` next to the
- * source, using the first number that is still free.
+ * Picks a free output path next to a source file, named
+ * `<basename>-<marker>-<n><ext>` and numbered up while a name is taken.
  * @param {object} fileSystem - fs/promises-compatible module.
  * @param {string} filePath - Absolute path of the source file.
+ * @param {string} marker - Word between the source name and the number, e.g. "crop".
  * @returns {Promise<string>} Absolute path that is not in use yet.
+ * @throws {Error} When every number up to the limit is taken.
  */
-async function cropPathFor(fileSystem, filePath) {
+async function numberedPathFor(fileSystem, filePath, marker) {
   const dir = path.dirname(filePath);
   const extension = path.extname(filePath);
   const base = path.basename(filePath, extension);
-  for (let number = 1; number <= MAX_CROP_SUFFIX; number += 1) {
-    const candidate = path.join(dir, `${base}-crop-${number}${extension}`);
+  for (let number = 1; number <= MAX_OUTPUT_SUFFIX; number += 1) {
+    const candidate = path.join(dir, `${base}-${marker}-${number}${extension}`);
     try {
       await fileSystem.access(candidate);
     } catch {
       return candidate;
     }
   }
-  throw new Error("no free name for the cropped file");
+  throw new Error(`no free ${marker} output name for ${filePath}`);
+}
+
+/**
+ * Picks the output path of a crop: `<basename>-crop-<n><ext>` next to the
+ * source, using the first number that is still free.
+ * @param {object} fileSystem - fs/promises-compatible module.
+ * @param {string} filePath - Absolute path of the source file.
+ * @returns {Promise<string>} Absolute path that is not in use yet.
+ */
+function cropPathFor(fileSystem, filePath) {
+  return numberedPathFor(fileSystem, filePath, "crop");
+}
+
+/**
+ * Picks the output path of an undone crop: `<basename>-undo-<n><ext>` next to
+ * the source, using the first number that is still free.
+ * @param {object} fileSystem - fs/promises-compatible module.
+ * @param {string} filePath - Absolute path of the source file.
+ * @returns {Promise<string>} Absolute path that is not in use yet.
+ */
+function undoPathFor(fileSystem, filePath) {
+  return numberedPathFor(fileSystem, filePath, "undo");
 }
 
 export {
@@ -176,5 +200,6 @@ export {
   readSourceFile,
   tempPathFor,
   transformFailure,
+  undoPathFor,
   writeAtomically,
 };

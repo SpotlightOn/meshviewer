@@ -127,3 +127,16 @@ the crop button is hidden for them.
 
 The selection snaps to the iMCU grid of a JPEG, so the result is exactly the
 area that was picked; a JPEG XL accepts any region.
+
+### Undoing a JPEG XL crop
+
+A JPEG XL crop deletes nothing: the pixels outside the selection stay in the file
+and only the canvas gets smaller. As long as such a file still holds more image
+than it shows, the large view offers an undo button; a JPEG never shows it,
+because its crop really removes the data. A file that displays everything it
+holds — and an animation, which carries one frame region per frame — has nothing
+to undo.
+
+One click writes the whole image back as `<name>-undo-<n>.jxl` next to the
+cropped file, which stays as it is. Nothing is decoded or recompressed on the
+way: the copy shows exactly the pixels the crop had left behind.

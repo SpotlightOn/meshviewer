@@ -40,6 +40,17 @@ async function jxlInfo(target) {
 }
 
 /**
+ * Crops JPEG XL bytes losslessly through the real WebAssembly module, so a test
+ * can build a file that still holds the area a crop took away.
+ * @param {Uint8Array} bytes - JPEG XL file content.
+ * @param {{x: number, y: number, width: number, height: number}} rect - Region to keep, in displayed pixels.
+ * @returns {Promise<Uint8Array>} Cropped bytes.
+ */
+async function jxlCropOf(bytes, rect) {
+  return (await loadTransformer()).crop(bytes, rect).data;
+}
+
+/**
  * Reports whether JPEG XL bytes start with an ISOBMFF container instead of a
  * bare codestream: the JXL signature box, followed by the file type box.
  * @param {Buffer|Uint8Array} bytes - JPEG XL file content.
@@ -50,4 +61,4 @@ function isContainer(bytes) {
   return box === "JXL " || box === "ftyp";
 }
 
-export { isContainer, jxlInfo, jxlInfoOf };
+export { isContainer, jxlCropOf, jxlInfo, jxlInfoOf };

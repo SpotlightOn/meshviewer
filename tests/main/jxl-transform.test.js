@@ -1,13 +1,15 @@
-import { copyFile, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   composeOrientation,
+  hiddenRegion,
   isJxlPath,
   jxlCapabilities,
   readJxlInfo,
 } from "../../src/jxl-transform.js";
+import { jxlCropOf } from "./helpers/jxl.js";
 
 /**
  * The still sample: 256x256, lossy, alpha, orientation tag 1, bare codestream.
@@ -127,20 +129,95 @@ describe("readJxlInfo", () => {
   });
 });
 
+describe("hiddenRegion", () => {
+  /**
+   * Builds header information for a still image.
+   * @param {{width: number, height: number}} canvas - Canvas size.
+   * @param {{x: number, y: number, width: number, height: number}} frame - Frame rectangle.
+   * @returns {object} Fake header information.
+   */
+  function info(canvas, frame) {
+    return { ...canvas, orientation: 1, animation: false, frames: [{ index: 0, ...frame }] };
+  }
+
+  it("reports nothing for a file that shows the whole frame", () => {
+    const region = hiddenRegion(
+      info({ width: 256, height: 256 }, { x: 0, y: 0, width: 256, height: 256 }),
+    );
+    expect(region).toBe(null);
+  });
+
+  it("reports nothing for a padded canvas that holds the frame", () => {
+    const region = hiddenRegion(
+      info({ width: 300, height: 300 }, { x: 20, y: 20, width: 200, height: 200 }),
+    );
+    expect(region).toBe(null);
+  });
+
+  it("reports the frame of a cropped file, including negative offsets", () => {
+    const region = hiddenRegion(
+      info({ width: 100, height: 80 }, { x: -10, y: -20, width: 256, height: 256 }),
+    );
+    expect(region).toEqual({ x: -10, y: -20, width: 256, height: 256 });
+  });
+
+  it("reports a frame that only reaches beyond one border", () => {
+    const region = hiddenRegion(
+      info({ width: 256, height: 100 }, { x: 0, y: -20, width: 256, height: 256 }),
+    );
+    expect(region).toEqual({ x: 0, y: -20, width: 256, height: 256 });
+  });
+
+  it("reports nothing for an animation", () => {
+    const animated = info({ width: 32, height: 32 }, { x: -8, y: -8, width: 64, height: 64 });
+    animated.animation = true;
+    expect(hiddenRegion(animated)).toBe(null);
+  });
+
+  it("reports nothing when the frame is missing or unusable", () => {
+    expect(hiddenRegion({ width: 100, height: 100, frames: [] })).toBe(null);
+    expect(hiddenRegion({ width: 100, height: 100 })).toBe(null);
+    expect(hiddenRegion(null)).toBe(null);
+    const empty = hiddenRegion(
+      info({ width: 100, height: 100 }, { x: -10, y: 0, width: 0, height: 10 }),
+    );
+    expect(empty).toBe(null);
+    const fractional = hiddenRegion(
+      info({ width: 100, height: 100 }, { x: -10.5, y: 0, width: 200, height: 200 }),
+    );
+    expect(fractional).toBe(null);
+  });
+});
+
 describe("jxlCapabilities", () => {
-  it("reports a still image as not animated", async () => {
+  it("reports a still image as not animated and without a hidden area", async () => {
     await copyFile(STILL, join(dir, "still.jxl"));
     await expect(jxlCapabilities(join(dir, "still.jxl"))).resolves.toEqual({
       ok: true,
       animated: false,
+      undoable: false,
     });
   });
 
-  it("reports an animation", async () => {
+  it("reports a cropped file as undoable", async () => {
+    const still = new Uint8Array(await readFile(STILL));
+    await writeFile(
+      join(dir, "cropped.jxl"),
+      await jxlCropOf(still, { x: 10, y: 20, width: 100, height: 80 }),
+    );
+    await expect(jxlCapabilities(join(dir, "cropped.jxl"))).resolves.toEqual({
+      ok: true,
+      animated: false,
+      undoable: true,
+    });
+  });
+
+  it("reports an animation as animated and without a hidden area", async () => {
     await copyFile(ANIM, join(dir, "anim.jxl"));
     await expect(jxlCapabilities(join(dir, "anim.jxl"))).resolves.toEqual({
       ok: true,
       animated: true,
+      undoable: false,
     });
   });
 

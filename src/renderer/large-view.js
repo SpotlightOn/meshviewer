@@ -28,7 +28,7 @@ import {
  * Large view module: shows a file (image or GLB) at full size with zoom,
  * keyboard navigation and a slideshow.
  * @param {object} deps - Module dependencies.
- * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeRotateLeft: HTMLButtonElement, largeRotateRight: HTMLButtonElement, largeFlipHorizontal: HTMLButtonElement, largeFlipVertical: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
+ * @param {{largeView: HTMLElement, largeCanvas: HTMLElement, largeInfo: HTMLElement, largeZoom: HTMLInputElement, largeZoomValue: HTMLInputElement, largeBack: HTMLButtonElement, infoButton: HTMLButtonElement, largeRotateLeft: HTMLButtonElement, largeRotateRight: HTMLButtonElement, largeFlipHorizontal: HTMLButtonElement, largeFlipVertical: HTMLButtonElement, largeUndo: HTMLButtonElement, largeSlideshow: HTMLInputElement, largeEquirect: HTMLInputElement, largeActual: HTMLButtonElement, largeFit: HTMLButtonElement, largePrev: HTMLButtonElement, largeNext: HTMLButtonElement, largeFullscreen: HTMLButtonElement, largeFullscreenExit: HTMLButtonElement, slideshowProgress: HTMLDivElement}} deps.dom - Large view DOM elements.
  * @param {{get: () => object}} deps.settings - Settings module API.
  * @param {() => Array} deps.getFiles - Returns the media files of the current folder.
  * @param {{open: (file: object, imageSize?: {width: number, height: number}) => void, close: () => void, isOpen: () => boolean}} deps.infoDialog - File information dialog API.
@@ -56,6 +56,7 @@ export function createLargeView({
     largeRotateRight,
     largeFlipHorizontal,
     largeFlipVertical,
+    largeUndo,
     largeSlideshow,
     largeEquirect,
     largeActual,
@@ -255,22 +256,26 @@ export function createLargeView({
 
   /**
    * Shows the lossless tools only for transformable files and disables them
-   * while one of them is running or the file is an animation. For every other
-   * format the buttons are hidden, so the toolbar never offers an action the
-   * file does not support.
+   * while one of them is running or the file is an animation. The undo of a
+   * crop appears only when the file still holds an area it does not display,
+   * which only a JPEG XL file can. For every other format the buttons are
+   * hidden, so the toolbar never offers an action the file does not support.
    */
   function updateToolButtons() {
     const applicable = canEditImage() && largeViewState?.mode !== "equirect";
     const busy = transforming || cropping;
     const cropable = applicable && largeViewState?.animated !== true;
+    const undoable = applicable && largeViewState?.undoable === true;
     largeRotateLeft.hidden = !applicable;
     largeRotateRight.hidden = !applicable;
     largeFlipHorizontal.hidden = !applicable;
     largeFlipVertical.hidden = !applicable;
+    largeUndo.hidden = !undoable;
     largeRotateLeft.disabled = !applicable || busy;
     largeRotateRight.disabled = !applicable || busy;
     largeFlipHorizontal.disabled = !applicable || busy;
     largeFlipVertical.disabled = !applicable || busy;
+    largeUndo.disabled = !undoable || busy;
     largeCrop.hidden = !cropable || crop !== null;
     largeCrop.disabled = !cropable || busy;
     cropTools.hidden = crop === null;
@@ -474,6 +479,44 @@ export function createLargeView({
       await show(created, 0);
     } finally {
       cropping = false;
+      updateToolButtons();
+    }
+  }
+
+  /**
+   * Undoes a lossless crop of the shown image: the area the file still holds
+   * but does not display becomes visible again in a new file next to it, while
+   * the source stays untouched. The new file replaces the shown one.
+   * @returns {Promise<void>}
+   */
+  async function restoreCurrent() {
+    if (transforming || cropping || !canEditImage() || largeViewState?.undoable !== true) return;
+    const state = largeViewState;
+    transforming = true;
+    updateToolButtons();
+    try {
+      const result = await window.api.restoreImage(state.file.path);
+      if (!result.ok) {
+        console.error(
+          t("console.restoreFailed"),
+          state.file.path,
+          result.code,
+          result.detail ?? "",
+        );
+        return;
+      }
+      if (largeViewState !== state) return;
+      const restored = {
+        path: result.path,
+        name: result.name,
+        type: "image",
+        size: result.size,
+        mtimeMs: result.mtimeMs,
+      };
+      await onFileCreated?.(restored);
+      await show(restored, 0);
+    } finally {
+      transforming = false;
       updateToolButtons();
     }
   }
@@ -794,6 +837,7 @@ export function createLargeView({
       void window.api.imageCapabilities(file.path).then((capabilities) => {
         if (largeViewState?.token !== token) return;
         largeViewState.animated = capabilities?.ok === true && capabilities.animated === true;
+        largeViewState.undoable = capabilities?.ok === true && capabilities.undoable === true;
         updateToolButtons();
       });
     }
@@ -941,6 +985,7 @@ export function createLargeView({
   largeFlipHorizontal.addEventListener("click", () => void flipCurrent("horizontal"));
   largeFlipVertical.addEventListener("click", () => void flipCurrent("vertical"));
   largeCrop.addEventListener("click", () => void startCrop());
+  largeUndo.addEventListener("click", () => void restoreCurrent());
   cropApply.addEventListener("click", () => void applyCrop());
   cropReset.addEventListener("click", resetCrop);
   cropCancel.addEventListener("click", leaveCrop);

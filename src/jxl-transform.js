@@ -115,19 +115,49 @@ async function readJxlInfo(filePath, fileSystem = fsp) {
 }
 
 /**
- * Reports whether a JPEG XL file is animated. Every other format is treated as
- * a still image, so the caller can hide the crop tool for animations.
+ * Reports the region a JPEG XL file still holds but does not display. A
+ * lossless crop only shrinks the canvas; the codestream keeps its frame, so the
+ * frame reaches beyond the canvas whenever the file was cropped. The region is
+ * that frame rectangle in displayed pixels and is the exact inverse of the crop
+ * that produced the file.
+ *
+ * An animation has one frame region per frame and a canvas that holds the frame
+ * with room to spare hides nothing, so both report no region.
+ *
+ * @param {object} info - Header information as returned by {@link readJxlInfo}.
+ * @returns {{x: number, y: number, width: number, height: number}|null} Region that restores the file, or null when the file shows everything it holds.
+ */
+function hiddenRegion(info) {
+  if (info?.animation === true) return null;
+  const frame = info?.frames?.[0];
+  if (!frame) return null;
+  const { x, y, width, height } = frame;
+  if (![x, y, width, height].every(Number.isInteger)) return null;
+  if (width <= 0 || height <= 0) return null;
+  const insideCanvas = x >= 0 && y >= 0 && x + width <= info.width && y + height <= info.height;
+  return insideCanvas ? null : { x, y, width, height };
+}
+
+/**
+ * Reports what a JPEG XL file supports: whether it is animated (which hides the
+ * crop tool) and whether it still holds a region it does not display (which
+ * makes an undone crop possible).
  * @param {string} filePath - Absolute path of the file.
- * @returns {Promise<{ok: true, animated: boolean} | {ok: false, code: string, detail?: string}>} Animation state or an error result.
+ * @returns {Promise<{ok: true, animated: boolean, undoable: boolean} | {ok: false, code: string, detail?: string}>} Capabilities or an error result.
  */
 async function jxlCapabilities(filePath) {
   const input = await readJxlInfo(filePath);
   if (!input.ok) return input;
-  return { ok: true, animated: input.info.animation === true };
+  return {
+    ok: true,
+    animated: input.info.animation === true,
+    undoable: hiddenRegion(input.info) !== null,
+  };
 }
 
 export {
   composeOrientation,
+  hiddenRegion,
   isJxlPath,
   JXL_EXTENSIONS,
   jxlCapabilities,
