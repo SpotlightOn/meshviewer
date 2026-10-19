@@ -101,6 +101,7 @@ const largeView = createLargeView({
     largeFullscreenExit: document.getElementById("large-fullscreen-exit"),
     slideshowProgress: document.getElementById("slideshow-progress"),
     largeCrop: document.getElementById("large-crop"),
+    largeUndo: document.getElementById("large-undo"),
     cropTools: document.getElementById("crop-tools"),
     cropReadout: document.getElementById("crop-readout"),
     cropApply: document.getElementById("crop-apply"),

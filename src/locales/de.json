@@ -44,7 +44,8 @@
     "crop": "Zuschneiden (verlustfrei)",
     "cropApply": "Zuschnitt als neue Datei speichern",
     "cropReset": "Das ganze Bild auswählen",
-    "cropCancel": "Zuschneiden verlassen"
+    "cropCancel": "Zuschneiden verlassen",
+    "undo": "Verborgenen Bereich wiederherstellen (verlustfrei)"
   },
   "info": {
     "title": "Dateiinformationen",
@@ -231,6 +232,7 @@
     "rotateImperfect": "Gedreht, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
     "flipFailed": "Fehler beim Spiegeln der Datei:",
     "flipImperfect": "Gespiegelt, aber die Bildränder ließen sich nicht perfekt transformieren (Randblöcke können fehlen):",
-    "cropFailed": "Fehler beim Zuschneiden der Datei:"
+    "cropFailed": "Fehler beim Zuschneiden der Datei:",
+    "restoreFailed": "Fehler beim Wiederherstellen des verborgenen Bereichs:"
   }
 }

@@ -44,7 +44,8 @@
     "crop": "Crop (lossless)",
     "cropApply": "Save the crop as a new file",
     "cropReset": "Select the whole image",
-    "cropCancel": "Leave crop mode"
+    "cropCancel": "Leave crop mode",
+    "undo": "Restore hidden area (lossless)"
   },
   "info": {
     "title": "File information",
@@ -231,6 +232,7 @@
     "rotateImperfect": "Rotated, but the image edges could not be transformed perfectly (edge blocks may be missing):",
     "flipFailed": "Error flipping the image:",
     "flipImperfect": "Flipped, but the image edges could not be transformed perfectly (edge blocks may be missing):",
-    "cropFailed": "Error cropping the image:"
+    "cropFailed": "Error cropping the image:",
+    "restoreFailed": "Error restoring the hidden area of the image:"
   }
 }

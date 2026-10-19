@@ -4,6 +4,9 @@ Notable changes only. Format: [Keep a Changelog](https://keepachangelog.com/en/1
 
 ## [Unreleased]
 
+### Added
+- Lossless JPEG XL crop undo: a large-view button saves the pixels a cropped `.jxl` still holds as a new `<name>-undo-<n>.jxl` (source untouched)
+
 ## [0.10.0] - 2026-10-18
 
 ### Added

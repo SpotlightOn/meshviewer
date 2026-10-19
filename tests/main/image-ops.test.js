@@ -23,7 +23,8 @@ function fakeBackends() {
     rotate: record(`${name}:rotate`),
     flip: record(`${name}:flip`),
     crop: record(`${name}:crop`),
-    capabilities: async () => ({ ok: true, animated: name === "jxl-animated" }),
+    restore: record(`${name}:restore`),
+    capabilities: async () => ({ ok: true, animated: name === "jxl-animated", undoable: false }),
   }));
   return { backends, calls };
 }
@@ -52,6 +53,7 @@ describe("registerImageIpc", () => {
       "rotate:image",
       "flip:image",
       "crop:image",
+      "restore:image",
       "image:capabilities",
     ]);
   });
@@ -65,12 +67,14 @@ describe("registerImageIpc", () => {
     await handlers["rotate:image"](null, "/tmp/photo.jxl", 90);
     await handlers["flip:image"](null, "/tmp/photo.jxl", "horizontal");
     await handlers["crop:image"](null, "/tmp/photo.jpg", { x: 0, y: 0, width: 8, height: 8 });
+    await handlers["restore:image"](null, "/tmp/photo.jxl");
 
     expect(calls).toEqual([
       ["jpeg:rotate", "/tmp/photo.jpg", 90],
       ["jxl:rotate", "/tmp/photo.jxl", 90],
       ["jxl:flip", "/tmp/photo.jxl", "horizontal"],
       ["jpeg:crop", "/tmp/photo.jpg", { x: 0, y: 0, width: 8, height: 8 }],
+      ["jxl:restore", "/tmp/photo.jxl", undefined],
     ]);
   });
 
@@ -108,6 +112,15 @@ describe("runImageOp", () => {
     const result = await runImageOp("rotate", "/nonexistent/photo.jpg", 90, FORMAT_BACKENDS);
     expect(result).toMatchObject({ ok: false, code: "io" });
   });
+
+  it("reports an operation the backend of the format does not offer", async () => {
+    await expect(
+      runImageOp("restore", "/tmp/photo.jpg", undefined, FORMAT_BACKENDS),
+    ).resolves.toEqual({
+      ok: false,
+      code: "unsupported-format",
+    });
+  });
 });
 
 describe("imageCapabilities", () => {
@@ -116,6 +129,7 @@ describe("imageCapabilities", () => {
     await expect(imageCapabilities("/tmp/photo.jpg", backends)).resolves.toEqual({
       ok: true,
       animated: false,
+      undoable: false,
       format: "jpeg",
     });
   });
@@ -125,6 +139,15 @@ describe("imageCapabilities", () => {
     await expect(imageCapabilities("/tmp/photo.png", backends)).resolves.toEqual({
       ok: false,
       code: "unsupported-format",
+    });
+  });
+
+  it("reports a JPEG with the real registry as not undoable", async () => {
+    await expect(imageCapabilities("/tmp/photo.jpg", FORMAT_BACKENDS)).resolves.toEqual({
+      ok: true,
+      animated: false,
+      undoable: false,
+      format: "jpeg",
     });
   });
 });

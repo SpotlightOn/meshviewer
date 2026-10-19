@@ -25,7 +25,7 @@ they cannot be ESM.
 │ src/dialogs.js     About + shortcuts dialogs, dialog:close IPC               │
 │ src/fs-ipc.js       filesystem IPC handlers (fs:*)                           │
 │ src/thumbnail-cache.js  thumbnail cache (sharp, freedesktop, EXIF)           │
-│ src/image-ops.js      generic image tool IPC: routes rotate/flip/crop per format   │
+│ src/image-ops.js      generic image tool IPC: routes rotate/flip/crop/restore      │
 │ src/image-transform.js shared transform helpers (atomic write, validation)         │
 │ src/jpeg-rotate.js      lossless JPEG rotation via @chimok/jpegtran-js             │
 │ src/jpeg-flip.js        lossless JPEG flip via @chimok/jpegtran-js                 │
@@ -33,7 +33,7 @@ they cannot be ESM.
 │ src/jxl-transform.js  JPEG XL transformer + orientation algebra (@chimok/jxltran-js) │
 │ src/jxl-rotate.js       lossless JXL rotation (orientation tag only)               │
 │ src/jxl-flip.js         lossless JXL flip (orientation tag only)                   │
-│ src/jxl-crop.js         lossless JXL crop (metadata-only canvas resize)             │
+│ src/jxl-crop.js         lossless JXL crop + undo (metadata-only canvas resize)      │
 │ src/settings-store.js  settings.json in userData (settings:*)                │
 └───────────────▲──────────────────────────────────────────────▲────────────────┘
                 │ ipcRenderer.invoke / handle                  │ protocol.handle
@@ -66,15 +66,15 @@ they cannot be ESM.
 | `src/fs-ipc.js` | `fs:*` handlers: directory listing, media filtering, file/folder copy, move and trash, file reads, locale, `shell:openPath` |
 | `src/thumbnail-cache.js` | Thumbnail generation and cache lookup; returns `null` when generation is impossible |
 | `src/image-transform.js` | Format-neutral helpers of the lossless transforms: argument validation (`normalizeAngle`/`normalizeAxis`/`normalizeRect`), reading a source file with its stat, atomic writes, temp names, crop output names and error mapping |
-| `src/image-ops.js` | Generic IPC layer of the lossless image tools: registers `rotate:image`/`flip:image`/`crop:image`/`image:capabilities` and routes every call to the backend of the file's format via a registry (`FORMAT_BACKENDS`); unknown formats fail with `unsupported-format` |
+| `src/image-ops.js` | Generic IPC layer of the lossless image tools: registers `rotate:image`/`flip:image`/`crop:image`/`restore:image`/`image:capabilities` and routes every call to the backend of the file's format via a registry (`FORMAT_BACKENDS`); a format no backend handles fails with `unsupported-format`, and so does an operation the backend of the format does not implement |
 | `src/jpeg-transform.js` | JPEG layer: file extensions, lazy `@chimok/jpegtran-js` transformer, reading a JPEG with its stat and the error mapping that keeps the `not-jpeg` code |
 | `src/jpeg-rotate.js` | Lossless in-place JPEG rotation: rotates the bytes in memory, writes to a temp file, keeps the mode and renames over the original |
 | `src/jpeg-flip.js` | Lossless in-place JPEG flip: mirrors the bytes in memory on the horizontal or vertical axis, writes to a temp file, keeps the mode and renames over the original |
 | `src/jpeg-crop.js` | Lossless JPEG crop: writes the selected region to a new `<name>-crop-<n>.jpg` next to the source and leaves it untouched |
-| `src/jxl-transform.js` | JPEG XL layer: file extensions, lazy `@chimok/jxltran-js` transformer, header info (`info()`) and the orientation algebra (`composeOrientation`) that turns a display transform into the composed Exif tag; the eight tags are the symmetries of the square, `D = R^r o M^f` |
+| `src/jxl-transform.js` | JPEG XL layer: file extensions, lazy `@chimok/jxltran-js` transformer, header info (`info()`), the region a file still holds but does not display (`hiddenRegion`, the frame that reaches beyond the canvas) and the orientation algebra (`composeOrientation`) that turns a display transform into the composed Exif tag; the eight tags are the symmetries of the square, `D = R^r o M^f` |
 | `src/jxl-rotate.js` | Lossless in-place JPEG XL rotation: only replaces the orientation tag of the header (composed with the existing tag), pixels stay untouched; works for animations too |
 | `src/jxl-flip.js` | Lossless in-place JPEG XL flip: replaces the orientation tag for the mirror the user asked for on the displayed image |
-| `src/jxl-crop.js` | Lossless JPEG XL crop: metadata-only canvas resize of the display-space region into a new `<name>-crop-<n>.jxl`; refuses animations and regions outside the image |
+| `src/jxl-crop.js` | Lossless JPEG XL crop: metadata-only canvas resize of the display-space region into a new `<name>-crop-<n>.jxl`, refusing animations and regions outside the image; `restoreJxl` is the exact inverse and writes the frame the file still holds as `<name>-undo-<n>.jxl` |
 | `src/settings-store.js` | Loads/validates/persists `settings.json`, registers `settings:*` handlers |
 | `src/preload.js` | `contextBridge` API (`window.api`), typed via JSDoc `@typedef` |
 | `src/dialog-preload.js` | About and shortcuts dialogs: Close button and Esc send `dialog:close` |
@@ -82,7 +82,7 @@ they cannot be ESM.
 | `src/renderer/tree.js` | Lazy directory tree with a bounded lookahead task queue |
 | `src/renderer/pathbar.js` | Dolphin-style path bar: clickable breadcrumbs + editable text mode |
 | `src/renderer/grid.js` | Content grid: folder tiles (each showing the folder's first image inside a folder-shaped frame, queued until idle and no media thumbnails are pending) + media cards, image thumbnails, GLB thumbnails via `3d/`, multi-selection with copy/cut/trash |
-| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate, flip and crop; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
+| `src/renderer/large-view.js` | Large view: navigation, slideshow, rotate, flip, crop and crop undo; delegates the image to `image-view.js`, GLB to `3d/`, panorama to `equirectangular/` |
 | `src/renderer/image-view.js` | Interactive image large view: zoom, pan, drag-to-throw navigation, fit/100% toggles; same role for images as `3d/glb-view.js` and `equirectangular/pano-view.js` for GLB and panoramas |
 | `src/renderer/three/render-surface.js` | Shared three.js render surface (renderer, resize, start/stop loop, dispose) used by `3d/` and `equirectangular/` |
 | `src/renderer/3d/glb-view.js` | Interactive GLB large view (scene, camera, OrbitControls, render loop); same controller contract as the panorama view |
@@ -130,7 +130,8 @@ resize observer and the render-loop/dispose lifecycle for both.
 | `rotate:image` | renderer → main | Rotate a JPEG or JPEG XL losslessly in place, routed to the backend of the format (`@chimok/jpegtran-js`, `@chimok/jxltran-js`); returns the new size/mtime or an error code |
 | `flip:image` | renderer → main | Mirror a JPEG or JPEG XL losslessly in place, routed to the backend of the format; returns the new size/mtime or an error code |
 | `crop:image` | renderer → main | Crop a JPEG or JPEG XL losslessly into a new file next to it; returns the new path and dimensions or an error code |
-| `image:capabilities` | renderer → main | Format and animation state of a transformable file, so the renderer can hide the crop tool for animations |
+| `restore:image` | renderer → main | Undo a lossless JPEG XL crop: write the area the file still holds but does not display as a new `<name>-undo-<n>.jxl` next to it; returns the new path and dimensions or an error code |
+| `image:capabilities` | renderer → main | Format, animation state and hidden-area state of a transformable file, so the renderer can hide the crop tool for animations and offer the crop undo only where there is something to bring back |
 | `settings:get` / `settings:save` | renderer → main | Read/validate/persist settings |
 | `menu:open-settings` | main → renderer | Menu event, subscription returns an unsubscribe function |
 | `dialog:close` | dialog → main | Close the modal About/shortcuts dialog |

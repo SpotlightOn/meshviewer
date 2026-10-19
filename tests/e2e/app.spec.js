@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -598,6 +598,59 @@ test("crops a JPEG into a new file from the large view", async () => {
     await expect(page.locator("#large-file-info")).toHaveText(/photo-crop-1\.jpg/);
     await expect(page.locator(".grid__card", { hasText: "photo-crop-1.jpg" })).toHaveCount(1);
     await expect(page.locator("#crop-tools")).toBeHidden();
+    await expect(page.locator("#large-crop")).toBeVisible();
+  } finally {
+    await electronApp.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("brings the hidden area of a cropped JPEG XL back from the large view", async () => {
+  const { electronApp, page } = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), "meshviewer-e2e-jxl-undo-"));
+  try {
+    await copyFile(
+      new URL("../main/fixtures/jxl-lenna.jxl", import.meta.url),
+      join(dir, "photo.jxl"),
+    );
+
+    const input = page.locator("#path-input");
+    await page.locator(".pathbar__segment.pathbar__segment--active").click();
+    await expect(input).toBeVisible();
+    await input.fill(dir);
+    await input.press("Enter");
+    await expect(page.locator(".grid__card")).toHaveCount(1);
+
+    await page.locator(".grid__card", { hasText: "photo.jxl" }).dblclick();
+    await expect(page.locator("#large-view")).toBeVisible();
+    await expect(page.locator("#large-crop")).toBeVisible();
+    await expect(page.locator("#large-undo")).toBeHidden();
+
+    await page.locator("#large-crop").click();
+    await expect(page.locator(".crop__layer")).toBeVisible();
+    await expect(page.locator("#crop-readout")).toHaveText(/0, 0 — 256 × 256/);
+
+    const image = await page.locator("#large-canvas img").boundingBox();
+    const handle = await page.locator(".crop__handle--se").boundingBox();
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(image.x + image.width / 2, image.y + image.height / 2, { steps: 8 });
+    await page.mouse.up();
+
+    await expect(page.locator("#crop-readout")).not.toHaveText(/256 × 256/);
+
+    await page.locator("#crop-apply").click();
+
+    await expect(page.locator("#large-file-info")).toHaveText(/photo-crop-1\.jxl/);
+
+    await expect(page.locator("#large-undo")).toBeVisible();
+    await page.locator("#large-undo").click();
+
+    await expect(page.locator("#large-file-info")).toHaveText(/photo-crop-1-undo-1\.jxl/);
+    await expect(page.locator(".grid__card", { hasText: "photo-crop-1-undo-1.jxl" })).toHaveCount(
+      1,
+    );
+    await expect(page.locator("#large-undo")).toBeHidden();
     await expect(page.locator("#large-crop")).toBeVisible();
   } finally {
     await electronApp.close();

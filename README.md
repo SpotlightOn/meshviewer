@@ -6,17 +6,21 @@
 [![License: MIT](https://img.shields.io/github/license/SpotlightOn/meshviewer)](./LICENSE)
 [![Socket.dev: monitored](https://img.shields.io/badge/Socket.dev-monitored-34506b?logo=socketdotdev&logoColor=white)](https://github.com/SpotlightOn/meshviewer/pulls)
 
-Every file manager shows thumbnails, so why build another app?
-I wanted a photo browser that’s fast and easy to use.
+I wanted a photo browser that’s fast and easy to use, and I had some special requirements: support for 360° images from my DJI drone and for 3D GLB files.
+And how about lossless JPEG transformations?
 
-I also have lots of 360° photos from Google Photos and my DJI drone, but I couldn’t find a free image viewer that supported equirectangular images. I work with 3D scenes, too, and couldn’t find a simple viewer for GLB models.
+There was no free image viewer that supported all of the above.
 
-There’s still plenty I’d like to improve, but it’s already working really well—and advanced caching keeps it speedy.
-Enjoy a modern photo browser with an old-fashioned feel—and a real 3D viewer. Open GLB models as interactive Three.js scenes you can rotate, pan, and zoom from any angle.
+Meshviewer even **supports lossless JPEG XL transformations** — I believe it’s one of the first apps with a UI for them. A JPEG XL crop is never final: the pixels stay in the file, so one click brings the whole image back.
+
+If you don’t know JPEG XL yet: it’s a new image format that can take an existing JPEG, re-encode it into a `.jxl` file roughly 20–30 % smaller, and reconstruct the original JPEG byte for byte on demand.
+
+There’s still plenty I’d like to improve, but it’s already working really well — and advanced caching keeps it speedy.
+Enjoy a modern photo browser with an old-fashioned feel — and a real 3D viewer. Open GLB models as interactive Three.js scenes you can rotate, pan, and zoom from any angle.
 
 Have an idea? Open an issue, and let’s see what we can do.
 
-Short description:
+**Short description**:
 An Electron app that renders local .glb files as thumbnails using Three.js and GLTFLoader, displays 360° panoramas, and supports SVGs and most common image formats.
 
 [<img src="./docs/screen.png" alt="Meshviewer screenshot" width="45%" />](./docs/screen.png) [<img src="./docs/screen2.png" alt="Meshviewer screenshot 2" width="45%" />](./docs/screen2.png)
@@ -40,6 +44,7 @@ An Electron app that renders local .glb files as thumbnails using Three.js and G
 - **File information dialog** — all EXIF groups of an image plus basic file information, with the embedded preview shown as an image
 - **Lossless rotation and flip** — rotate left/right and mirror horizontally/vertically in the large view rewrite `.jpg`/`.jpeg` in place without recompressing (EXIF and the other markers survive) and turn a `.jxl` through its orientation tag with the pixels untouched; it runs in-process through the bundled `@chimok/jpegtran-js` and `@chimok/jxltran-js` WebAssembly modules
 - **Lossless crop** — a crop mode in the large view whose selection snaps to the iMCU grid of a JPEG, so the result is exactly the area that was picked; it is written as `<name>-crop-<n>.jpg`/`.jxl` next to the source, which stays untouched. A JPEG XL crop is a metadata-only canvas resize (animations are excluded)
+- **Lossless crop undo (JPEG XL)** — a `.jxl` crop only shrinks the canvas and keeps every pixel in the file, so the Undo button in the large view saves the whole image as a new `<name>-undo-<n>.jxl`, without decoding or recompressing anything
 - **Path bar** — clickable breadcrumbs, up and home buttons, and a path field for typed or pasted paths
 - **Settings** — color scheme, tile open behavior, thumbnail fit, transparency background, editor command, slideshow, checksum verification
 - **Help** — the full shortcut and gesture reference (`Help → Usage`) and the About window with version and license
