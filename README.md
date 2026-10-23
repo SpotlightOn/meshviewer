@@ -53,6 +53,11 @@ An Electron app that renders local .glb files as thumbnails using Three.js and G
 
 Release binaries are built for Linux (AppImage), Windows (NSIS installer, portable, ZIP) and macOS (arm64 and x64 DMG).
 
+The Windows builds are not code-signed, so SmartScreen shows a warning on the
+first start: click **More info** and then **Run anyway** to confirm. Prefer the
+NSIS **Setup** over the portable/ZIP build: it starts faster because the
+portable and ZIP variants have to unpack their contents on every launch.
+
 ## Running from sources
 
 ```bash
