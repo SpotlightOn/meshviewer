@@ -20,17 +20,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v3
         with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          runtime: node@22
+          cache: true
+          require-lockfile: true
 
       - name: Lint
         run: pnpm run lint
@@ -47,14 +42,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v3
         with:
-          node-version: 22
-          cache: pnpm
+          runtime: node@22
+          cache: true
+          require-lockfile: true
 
       - name: Determine version
         run: |
@@ -64,10 +57,8 @@ jobs:
             echo "VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
           fi
 
-      - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile
-          node node_modules/electron/install.js
+      - name: Install Electron binary
+        run: node node_modules/electron/install.js
 
       - name: Build Linux distributables
         run: pnpm run dist:linux -- --publish never
@@ -93,19 +84,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v3
         with:
-          node-version: 22
-          cache: pnpm
+          runtime: node@22
+          cache: true
+          require-lockfile: true
 
-      - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile
-          node node_modules/electron/install.js
+      - name: Install Electron binary
+        run: node node_modules/electron/install.js
 
       - name: Build Windows distributables
         run: pnpm run dist:win -- --publish never
@@ -129,19 +116,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Enable corepack
-        run: corepack enable
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@v3
         with:
-          node-version: 22
-          cache: pnpm
+          runtime: node@22
+          cache: true
+          require-lockfile: true
 
-      - name: Install dependencies
-        run: |
-          pnpm install --frozen-lockfile
-          node node_modules/electron/install.js
+      - name: Install Electron binary
+        run: node node_modules/electron/install.js
 
       - name: Build macOS distributables
         run: pnpm run dist:mac -- --publish never
